@@ -1,0 +1,24 @@
+{
+  "auditoria_inicial": {
+    "linhas": 21613,
+    "colunas": 21,
+    "duplicatas_exatas": 0,
+    "ids_com_revenda": 176,
+    "registros_adicionais_de_revenda": 177,
+    "ausentes": {
+      "sqft_above": 2
+    },
+    "quartos_incompativeis_com_area": 1,
+    "vendas_antes_do_ano_de_construcao": 12
+  },
+  "tratamento": {
+    "duplicatas_removidas": 0,
+    "nulos_sqft_above_imputados": 2,
+    "mediana_sqft_above": 1560.0,
+    "anomalias_bedrooms_corrigidas": 1,
+    "imoveis_comparaveis": 2328,
+    "mediana_quartos_comparaveis": 3.0
+  },
+  "quartos_11_preservados": 1,
+  "quartos_33_remanescentes": 0
+}
