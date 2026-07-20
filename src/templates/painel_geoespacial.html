@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Painel geoespacial — King County</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root{--ink:#172033;--muted:#667085;--line:#d8e1ea;--paper:#fff;--canvas:#eef3f7;--soft:#f7fafc;--petrol:#21485f;--deep:#0b2036;--gold:#b08d57}
+    *{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#edf3f7,#f7f9fb 54%,#e9f0f3);color:var(--ink);font:15px/1.5 Inter,system-ui,"Segoe UI",sans-serif}
+    main{max-width:1460px;margin:22px auto;padding:26px;background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 52px #0b203619}
+    h1{margin:0;font-size:clamp(1.85rem,4vw,2.65rem);letter-spacing:-.04em}.lead{margin:5px 0 18px;color:var(--muted)}
+    .toolbar{display:grid;grid-template-columns:1.25fr 1.2fr 1fr 1fr;gap:10px;padding:14px;background:var(--soft);border:1px solid var(--line);border-radius:13px}
+    label{display:grid;gap:4px;font-size:.82rem;font-weight:650;color:#344054}.check{display:flex;align-items:center;gap:7px;min-height:38px}
+    select,input[type=search]{width:100%;min-height:38px;padding:7px 9px;border:1px solid #c7d2dc;border-radius:8px;background:#fff;color:var(--ink)}input[type=range]{width:100%}
+    button{min-height:38px;padding:7px 12px;border:1px solid #c7d2dc;border-radius:8px;background:#fff;color:var(--ink);cursor:pointer}button:hover{background:#eaf1f4}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #91bbc1;outline-offset:1px}button:disabled,select:disabled,input:disabled{opacity:.48;cursor:not-allowed}
+    .actions{display:flex;gap:8px;align-items:end;grid-column:span 2}.actions button{flex:1}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.card{padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:#fff}.card span{display:block;color:var(--muted);font-size:.82rem}.card b{font-size:1.38rem}
+    .layout{display:grid;grid-template-columns:minmax(0,2.25fr) minmax(280px,.75fr);gap:14px}.mapbox{position:relative}#map{height:690px;border:1px solid var(--line);border-radius:13px;background:#dce6ee;box-shadow:inset 0 0 0 1px #ffffff55}.map-fit{position:absolute;z-index:650;top:12px;right:12px;background:#fffffff2;border-color:#aebdca;box-shadow:0 7px 20px #0b203626;font-weight:700;backdrop-filter:blur(8px)}.legend{position:absolute;z-index:500;left:14px;bottom:66px;min-width:245px;max-width:310px;padding:10px 12px;background:#fffffff0;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px #0b203620;backdrop-filter:blur(8px)}.legend-block+.legend-block{margin-top:10px;padding-top:9px;border-top:1px solid var(--line)}.gradient{height:9px;margin:6px 0;border-radius:999px;background:linear-gradient(90deg,#eaf1f4,#c7dce1,#91bbc1,#5e959f,#356c7b,#21485f,#132f48,#0b2036)}.legend-values{display:flex;justify-content:space-between;gap:12px;font-size:.76rem;color:var(--muted)}.gold-key{display:flex;gap:7px;align-items:center;margin-top:7px;color:var(--muted);font-size:.76rem}.gold-key i{width:16px;height:9px;border:2px solid var(--gold);border-radius:2px}
+    .selected{min-height:46px;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--muted);background:var(--soft)}
+    aside{border:1px solid var(--line);border-radius:13px;padding:15px;background:#fff}aside h2{margin:0 0 2px;font-size:1.2rem}aside .sub{margin:0 0 13px;color:var(--muted);font-size:.82rem}.rank{display:grid;grid-template-columns:22px minmax(0,1fr);gap:7px;align-items:center;margin:8px 0}.rank-num{font-weight:750;color:var(--gold);text-align:right}.rank button{width:100%;text-align:left;padding:8px 9px}.rank b{display:flex;justify-content:space-between;gap:8px}.rank small{display:block;color:var(--muted);margin-top:2px}.track{display:block;height:4px;margin-top:6px;background:#eaf0f3;border-radius:99px;overflow:hidden}.bar{display:block;height:100%;background:linear-gradient(90deg,#5e959f,#21485f)}
+    .note{margin-top:14px;padding:12px;background:#f5f1e9;border-left:4px solid var(--gold);border-radius:7px;font-size:.82rem;color:#59472b}.footer{margin:14px 2px 0;color:var(--muted);font-size:.78rem}
+    .leaflet-tooltip{border:1px solid var(--line);box-shadow:0 8px 24px #17203324;border-radius:8px;padding:9px 11px}.leaflet-control-attribution{font-size:10px}
+    @media(max-width:1080px){.toolbar{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}aside{order:2}}
+    @media(max-width:650px){main{margin:0;padding:14px;border:0;border-radius:0}.toolbar{grid-template-columns:1fr}.cards{grid-template-columns:1fr}#map{height:590px}.legend{right:10px;left:10px;max-width:none}.actions{width:100%;grid-column:auto;flex-wrap:wrap}.actions button{flex:1 1 100%}}
+  </style>
+</head>
+<body><main>
+  <h1>Painel geoespacial de valor residencial</h1>
+  <p class="lead">King County · duas leituras complementares reconstruídas a partir das 21.613 vendas</p>
+
+  <section class="toolbar" aria-label="Filtros do painel">
+    <label>Camada
+      <select id="layer-mode">
+        <option value="h3">H3 — valor regional por m²</option>
+        <option value="transactions">Transações — preço absoluto</option>
+        <option value="both">Ambas as camadas</option>
+      </select>
+    </label>
+    <label>Métrica regional
+      <select id="metric">
+        <option value="valor_m2_mediano">Valor mediano (US$/m²)</option>
+        <option value="preco_mediano">Preço mediano (US$)</option>
+        <option value="vendas">Quantidade de vendas</option>
+        <option value="iqr_valor_m2">Dispersão IQR (US$/m²)</option>
+      </select>
+    </label>
+    <label>Mínimo de vendas H3: <span id="min-value">20</span>
+      <input id="min-sales" type="range" min="20" max="100" step="5" value="20">
+    </label>
+    <label>ZIP
+      <input id="zip" type="search" inputmode="numeric" placeholder="Todos ou 98004" maxlength="5">
+    </label>
+    <label>Mapa-base
+      <select id="basemap"><option value="light">Claro</option><option value="osm">OpenStreetMap</option><option value="dark">Escuro</option><option value="satellite">Satélite</option></select>
+    </label>
+    <label class="check"><input id="top-only" type="checkbox">Somente decil superior da camada</label>
+    <div class="actions"><button id="fit" type="button">Ajustar às vendas</button><button id="reset" type="button">Restaurar</button><button id="export" type="button">Exportar CSV</button></div>
+  </section>
+
+  <section class="cards" aria-live="polite">
+    <div class="card"><span id="stat-label-1">Células visíveis</span><b id="stat-1">290</b></div>
+    <div class="card"><span id="stat-label-2">Vendas representadas</span><b id="stat-2">20.014</b><span id="stat-detail-2">92,6% da base</span></div>
+    <div class="card"><span id="stat-label-3">Mediana das células</span><b id="stat-3">US$ 2.625/m²</b></div>
+  </section>
+
+  <section class="layout">
+    <div class="mapbox">
+      <div id="map" aria-label="Mapa navegável do valor residencial"></div>
+      <button id="fit-map" class="map-fit" type="button" aria-label="Ajustar o mapa à área com vendas visíveis">Ajustar mapa</button>
+      <div class="legend" aria-label="Legenda">
+        <div class="legend-block" id="legend-h3"><b id="legend-title-h3">Valor mediano (US$/m²)</b><div class="gradient"></div><div class="legend-values"><span id="legend-min-h3">US$ 1.572/m²</span><span id="legend-max-h3">US$ 4.297/m²</span></div><span class="gold-key"><i></i>Contorno: decil superior H3</span></div>
+        <div class="legend-block" id="legend-points"><b>Preço de venda · escala logarítmica</b><div class="gradient"></div><div class="legend-values"><span id="legend-min-points">US$ 75 mil</span><span id="legend-max-points">US$ 7,7 mi</span></div></div>
+      </div>
+      <div class="selected" id="selected">Clique em uma célula ou transação para fixar os detalhes.</div>
+    </div>
+    <aside><h2 id="ranking-title">Maiores valores no filtro</h2><p class="sub" id="ranking-subtitle">O ranking responde à métrica e à amostra visível.</p><div id="ranking"></div><div class="note" id="note">O contorno dourado identifica o decil superior do valor regional por m². Células abaixo da amostra mínima não são exibidas.</div></aside>
+  </section>
+  <p class="footer">Geometria territorial: US Census / us-atlas · valores: King County House Sales (2014–2015). Os mapas-base dependem de conexão à internet e mantêm a atribuição de seus provedores.</p>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(() => {
+  const regions = __REGIONS_JSON__;
+  const transactions = __TRANSACTIONS_JSON__;
+  const county = __COUNTY_JSON__;
+  const totalSales = transactions.length;
+  const palette = ["#eaf1f4","#c7dce1","#91bbc1","#5e959f","#356c7b","#21485f","#132f48","#0b2036"];
+  const gold = "#b08d57";
+  transactions.forEach((row,index) => { row.id = index; });
+  const fmt0 = (v) => new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0}).format(v);
+  const fmt1 = (v) => new Intl.NumberFormat("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}).format(v);
+  const moneyShort = (v) => v >= 1e6 ? `US$ ${fmt1(v/1e6)} mi` : `US$ ${fmt0(v/1e3)} mil`;
+  const metrics = {
+    valor_m2_mediano:{label:"Valor mediano",legend:"Valor mediano (US$/m²)",format:(v)=>`US$ ${fmt0(v)}/m²`},
+    preco_mediano:{label:"Preço mediano",legend:"Preço mediano (US$)",format:(v)=>`US$ ${fmt0(v)}`},
+    vendas:{label:"Quantidade de vendas",legend:"Quantidade de vendas",format:(v)=>`${fmt0(v)} vendas`},
+    iqr_valor_m2:{label:"Dispersão IQR",legend:"Dispersão IQR (US$/m²)",format:(v)=>`US$ ${fmt0(v)}/m²`}
+  };
+  const q = (values,p) => { const s=[...values].sort((a,b)=>a-b); if(!s.length)return 0; const x=(s.length-1)*p,i=Math.floor(x),r=x-i; return s[i+1]===undefined?s[i]:s[i]+r*(s[i+1]-s[i]); };
+  const priceMin = Math.min(...transactions.map((row)=>row.price));
+  const priceMax = Math.max(...transactions.map((row)=>row.price));
+  const priceTop = q(transactions.map((row)=>row.price),.90);
+  const els = {
+    mode:document.querySelector("#layer-mode"), metric:document.querySelector("#metric"), min:document.querySelector("#min-sales"), minValue:document.querySelector("#min-value"), zip:document.querySelector("#zip"), base:document.querySelector("#basemap"), top:document.querySelector("#top-only"), fit:document.querySelector("#fit"), fitMap:document.querySelector("#fit-map"), reset:document.querySelector("#reset"), export:document.querySelector("#export"),
+    statLabel1:document.querySelector("#stat-label-1"),stat1:document.querySelector("#stat-1"),statLabel2:document.querySelector("#stat-label-2"),stat2:document.querySelector("#stat-2"),statDetail2:document.querySelector("#stat-detail-2"),statLabel3:document.querySelector("#stat-label-3"),stat3:document.querySelector("#stat-3"),
+    legendH3:document.querySelector("#legend-h3"),legendPoints:document.querySelector("#legend-points"),legendTitleH3:document.querySelector("#legend-title-h3"),legendMinH3:document.querySelector("#legend-min-h3"),legendMaxH3:document.querySelector("#legend-max-h3"),legendMinPoints:document.querySelector("#legend-min-points"),legendMaxPoints:document.querySelector("#legend-max-points"),selected:document.querySelector("#selected"),ranking:document.querySelector("#ranking"),rankingTitle:document.querySelector("#ranking-title"),rankingSubtitle:document.querySelector("#ranking-subtitle"),note:document.querySelector("#note")
+  };
+
+  const map = L.map("map",{zoomControl:true,preferCanvas:true});
+  const bases = {
+    light:L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{maxZoom:20,attribution:"&copy; OpenStreetMap &copy; CARTO"}),
+    osm:L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}),
+    dark:L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:20,attribution:"&copy; OpenStreetMap &copy; CARTO"}),
+    satellite:L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Tiles &copy; Esri"})
+  };
+  bases.light.addTo(map);
+  const countyLayer = L.geoJSON(county,{interactive:false,style:{color:"#607487",weight:1.2,fillColor:"#dbe5eb",fillOpacity:.10}}).addTo(map);
+  const countyBounds = countyLayer.getBounds();
+  map.fitBounds(countyBounds.pad(.025));
+  const renderer = L.canvas({padding:.5,tolerance:5});
+  const cells = L.layerGroup().addTo(map);
+  const points = L.layerGroup().addTo(map);
+  let cellsById = new Map(), pointsById = new Map(), currentBase = "light", selected = null;
+
+  const filteredRegions = () => { const min=Number(els.min.value),zip=els.zip.value.trim(); return regions.filter((row)=>row.vendas>=min&&(!zip||String(row.zipcode_dominante).includes(zip))&&(!els.top.checked||row.top_decil)); };
+  const filteredTransactions = () => { const zip=els.zip.value.trim(); return transactions.filter((row)=>(!zip||row.zipcode.includes(zip))&&(!els.top.checked||row.price>=priceTop)); };
+  const relevantBounds = () => {
+    const coordinates=[];
+    if(els.mode.value==="h3")filteredRegions().forEach((row)=>row.boundary.forEach(([lon,lat])=>coordinates.push([lat,lon])));
+    else filteredTransactions().forEach((row)=>coordinates.push([row.lat,row.lon]));
+    const bounds=L.latLngBounds(coordinates);
+    return bounds.isValid()?bounds:countyBounds;
+  };
+  const fitRelevant = () => { map.stop(); map.fitBounds(relevantBounds().pad(.06),{maxZoom:13,animate:true,duration:.45}); };
+  const linearColor = (value,low,high) => { const t=Math.max(0,Math.min(.999,(value-low)/(high-low||1))); return palette[Math.floor(t*palette.length)]; };
+  const logColor = (value) => { const t=Math.max(0,Math.min(.999,(Math.log(value)-Math.log(priceMin))/(Math.log(priceMax)-Math.log(priceMin)))); return palette[Math.floor(t*palette.length)]; };
+  const tooltipRegion = (row,metric) => `<b>ZIP ${row.zipcode_dominante}</b><br>${metrics[metric].label}: ${metrics[metric].format(row[metric])}<br>${fmt0(row.vendas)} vendas<br>Preço mediano: US$ ${fmt0(row.preco_mediano)}<br>Área mediana: ${fmt1(row.area_mediana_m2)} m²`;
+  const tooltipTransaction = (row) => `<b>Venda · ZIP ${row.zipcode}</b><br>Preço: US$ ${fmt0(row.price)}<br>Valor: US$ ${fmt0(row.valor_m2)}/m²<br>${row.date} · ${fmt0(row.sqft_living)} ft²<br>${row.bedrooms} quartos · ${fmt1(row.bathrooms)} banheiros`;
+
+  function selectRegion(row){ selected={kind:"h3",id:row.h3}; render(); const layer=cellsById.get(row.h3); if(layer){map.fitBounds(layer.getBounds().pad(2.2),{maxZoom:12});layer.openTooltip();} }
+  function selectTransaction(row){ selected={kind:"transaction",id:row.id}; render(); const layer=pointsById.get(row.id); if(layer){map.setView(layer.getLatLng(),14);layer.openTooltip();} }
+
+  function renderCells(rows,metric,low,high,combined){
+    cells.clearLayers(); cellsById=new Map();
+    rows.forEach((row)=>{
+      const geometry={type:"Feature",properties:{h3:row.h3},geometry:{type:"Polygon",coordinates:[row.boundary]}};
+      const isSelected=selected?.kind==="h3"&&selected.id===row.h3;
+      const layer=L.geoJSON(geometry,{style:{color:isSelected?"#2c6f8a":row.top_decil?gold:"#f8fafc",weight:isSelected?3:row.top_decil?1.8:.6,fillColor:linearColor(row[metric],low,high),fillOpacity:combined?.50:.76}});
+      layer.bindTooltip(tooltipRegion(row,metric),{sticky:true,direction:"top"});
+      layer.on("click",()=>selectRegion(row)); layer.addTo(cells); cellsById.set(row.h3,layer);
+    });
+  }
+
+  function renderPoints(rows,combined){
+    points.clearLayers(); pointsById=new Map();
+    rows.forEach((row)=>{
+      const isSelected=selected?.kind==="transaction"&&selected.id===row.id;
+      const marker=L.circleMarker([row.lat,row.lon],{renderer,radius:isSelected?5.5:2.4,color:isSelected?gold:logColor(row.price),weight:isSelected?2:0,fillColor:logColor(row.price),fillOpacity:combined?.62:.54});
+      marker.bindTooltip(tooltipTransaction(row),{sticky:true,direction:"top"});
+      marker.on("click",()=>selectTransaction(row)); marker.addTo(points); pointsById.set(row.id,marker);
+    });
+  }
+
+  function addRankRegion(row,index,max,metric){
+    const wrap=document.createElement("div"); wrap.className="rank"; wrap.innerHTML=`<span class="rank-num">${index+1}</span>`;
+    const button=document.createElement("button"); button.type="button"; button.innerHTML=`<b><span>ZIP ${row.zipcode_dominante}</span><span>${metrics[metric].format(row[metric])}</span></b><small>${fmt0(row.vendas)} vendas</small><span class="track"><span class="bar" style="width:${100*row[metric]/max}%"></span></span>`; button.addEventListener("click",()=>selectRegion(row)); wrap.appendChild(button); els.ranking.appendChild(wrap);
+  }
+  function addRankTransaction(row,index,max){
+    const wrap=document.createElement("div"); wrap.className="rank"; wrap.innerHTML=`<span class="rank-num">${index+1}</span>`;
+    const button=document.createElement("button"); button.type="button"; button.innerHTML=`<b><span>ZIP ${row.zipcode}</span><span>${moneyShort(row.price)}</span></b><small>${row.date} · US$ ${fmt0(row.valor_m2)}/m²</small><span class="track"><span class="bar" style="width:${100*row.price/max}%"></span></span>`; button.addEventListener("click",()=>selectTransaction(row)); wrap.appendChild(button); els.ranking.appendChild(wrap);
+  }
+
+  function render(){
+    const mode=els.mode.value,metric=els.metric.value,showH3=mode!=="transactions",showPoints=mode!=="h3",regionRows=filteredRegions(),transactionRows=filteredTransactions(),values=regionRows.map((row)=>Number(row[metric])),low=q(values,.05),high=q(values,.95);
+    els.metric.disabled=!showH3; els.min.disabled=!showH3; els.minValue.textContent=els.min.value;
+    if(showH3)renderCells(regionRows,metric,low,high,mode==="both");else{cells.clearLayers();cellsById=new Map();}
+    if(showPoints)renderPoints(transactionRows,mode==="both");else{points.clearLayers();pointsById=new Map();}
+    els.legendH3.hidden=!showH3; els.legendPoints.hidden=!showPoints; els.legendTitleH3.textContent=metrics[metric].legend; els.legendMinH3.textContent=regionRows.length?metrics[metric].format(low):"—"; els.legendMaxH3.textContent=regionRows.length?metrics[metric].format(high):"—"; els.legendMinPoints.textContent=moneyShort(priceMin);els.legendMaxPoints.textContent=moneyShort(priceMax);
+    els.ranking.replaceChildren();
+    if(mode==="transactions"){
+      els.statLabel1.textContent="Transações visíveis";els.stat1.textContent=fmt0(transactionRows.length);els.statLabel2.textContent="Preço mediano";els.stat2.textContent=transactionRows.length?moneyShort(q(transactionRows.map((row)=>row.price),.5)):"—";els.statDetail2.textContent=`${fmt1(100*transactionRows.length/totalSales)}% da base`;els.statLabel3.textContent="Valor mediano por m²";els.stat3.textContent=transactionRows.length?`US$ ${fmt0(q(transactionRows.map((row)=>row.valor_m2),.5))}/m²`:"—";
+      els.rankingTitle.textContent="Maiores vendas no filtro";els.rankingSubtitle.textContent="Ranking por preço absoluto da transação.";els.note.textContent="Cada ponto representa uma venda. A cor segue o preço absoluto em escala logarítmica, preservando simultaneamente imóveis usuais e vendas de alto padrão.";
+      const ranked=[...transactionRows].sort((a,b)=>b.price-a.price).slice(0,8),max=ranked[0]?.price||1;ranked.forEach((row,index)=>addRankTransaction(row,index,max));
+    }else{
+      const sales=regionRows.reduce((sum,row)=>sum+row.vendas,0);
+      els.statLabel1.textContent=mode==="both"?"Células H3 visíveis":"Células visíveis";els.stat1.textContent=fmt0(regionRows.length);els.statLabel2.textContent=mode==="both"?"Transações visíveis":"Vendas representadas";els.stat2.textContent=fmt0(mode==="both"?transactionRows.length:sales);els.statDetail2.textContent=`${fmt1(100*(mode==="both"?transactionRows.length:sales)/totalSales)}% da base`;els.statLabel3.textContent=`Mediana · ${metrics[metric].label}`;els.stat3.textContent=regionRows.length?metrics[metric].format(q(values,.5)):"—";
+      els.rankingTitle.textContent="Maiores células H3";els.rankingSubtitle.textContent=mode==="both"?"O ranking regional permanece legível sobre as vendas individuais.":"O ranking responde à métrica e à amostra visível.";els.note.textContent=mode==="both"?"A malha H3 resume o padrão regional por m²; os pontos exibem as vendas individuais. As duas cores usam a mesma linguagem visual, mas representam métricas diferentes.":"O contorno dourado identifica o decil superior do valor regional por m². Células abaixo da amostra mínima não são exibidas.";
+      const ranked=[...regionRows].sort((a,b)=>b[metric]-a[metric]).slice(0,8),max=ranked[0]?.[metric]||1;ranked.forEach((row,index)=>addRankRegion(row,index,max,metric));
+    }
+    if(!els.ranking.children.length)els.ranking.textContent="Nenhum registro atende aos filtros.";
+    const validSelection=selected&&(selected.kind==="h3"?regionRows.some((row)=>row.h3===selected.id):transactionRows.some((row)=>row.id===selected.id));
+    if(!validSelection){selected=null;els.selected.textContent="Clique em uma célula ou transação para fixar os detalhes.";}else if(selected.kind==="h3"){
+      const row=regionRows.find((item)=>item.h3===selected.id);els.selected.innerHTML=`<b>ZIP ${row.zipcode_dominante}</b> · célula H3 · ${metrics[metric].format(row[metric])} · ${fmt0(row.vendas)} vendas`;
+    }else{
+      const row=transactionRows.find((item)=>item.id===selected.id);els.selected.innerHTML=`<b>ZIP ${row.zipcode}</b> · venda de US$ ${fmt0(row.price)} · US$ ${fmt0(row.valor_m2)}/m² · ${row.date}`;
+    }
+  }
+
+  const csvValue=(value)=>{const text=String(value??"");return /[",\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text;};
+  const downloadCSV=(name,columns,rows)=>{const csv=[columns.join(","),...rows.map((row)=>columns.map((column)=>csvValue(row[column])).join(","))].join("\n"),url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})),link=document.createElement("a");link.href=url;link.download=name;link.click();URL.revokeObjectURL(url);};
+  [els.mode,els.metric,els.min,els.zip,els.top].forEach((control)=>control.addEventListener("input",render));
+  els.base.addEventListener("change",()=>{map.removeLayer(bases[currentBase]);currentBase=els.base.value;bases[currentBase].addTo(map);bases[currentBase].bringToBack();countyLayer.bringToFront();cells.eachLayer((layer)=>layer.bringToFront&&layer.bringToFront());points.eachLayer((layer)=>layer.bringToFront&&layer.bringToFront());});
+  els.fit.addEventListener("click",fitRelevant);
+  els.fitMap.addEventListener("click",fitRelevant);
+  els.reset.addEventListener("click",()=>{els.mode.value="h3";els.metric.value="valor_m2_mediano";els.min.value="20";els.zip.value="";els.top.checked=false;selected=null;map.fitBounds(countyBounds.pad(.025));render();});
+  els.export.addEventListener("click",()=>{
+    if(els.mode.value==="transactions")downloadCSV("transacoes_filtradas.csv",["date","zipcode","price","valor_m2","lat","lon","sqft_living","bedrooms","bathrooms"],filteredTransactions());
+    else downloadCSV("regioes_h3_filtradas.csv",["h3","zipcode_dominante","vendas","valor_m2_mediano","preco_mediano","area_mediana_m2","iqr_valor_m2","top_decil"],filteredRegions());
+  });
+  render();
+})();
+</script></body></html>
