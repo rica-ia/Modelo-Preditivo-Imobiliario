@@ -1,0 +1,11 @@
+{
+  "status": "aprovado",
+  "celulas_codigo": 15,
+  "erros": 0,
+  "artefatos_confirmados": [
+    "outputs/maps/painel_geoespacial.html",
+    "outputs/figures/06_generalizacao_modelos.png",
+    "models/v1/modelo_regressao_v1.pkl"
+  ],
+  "observacao": "Execução regressiva integral concluída sem erros antes da geração do bundle."
+}
