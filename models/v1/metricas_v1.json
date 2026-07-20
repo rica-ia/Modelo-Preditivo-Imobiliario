@@ -1,0 +1,178 @@
+{
+  "treinado_em_utc": "2026-07-20T18:35:14.405722+00:00",
+  "versao": "v1",
+  "modelo": "HistGradientBoosting Log",
+  "alvo": "price",
+  "unidade_alvo": "USD",
+  "random_state": 42,
+  "separacao": "GroupShuffleSplit por id, teste de 20%",
+  "registros_treino_validacao": 17289,
+  "registros_teste": 4324,
+  "ids_compartilhados": 0,
+  "criterio_selecao": "menor RMSE médio em GroupKFold de 5 folds no treino",
+  "validacao_cruzada": [
+    {
+      "modelo": "HistGradientBoosting Log",
+      "MAE_medio": 63779.5428821685,
+      "MAE_desvio": 2365.4945621516,
+      "RMSE_medio": 119153.5024491345,
+      "RMSE_desvio": 11135.1111845235,
+      "R2_medio": 0.8932861881,
+      "R2_desvio": 0.0165765139,
+      "MAPE_medio": 0.1198584424,
+      "MAPE_desvio": 0.0051639533
+    },
+    {
+      "modelo": "HistGradientBoosting",
+      "MAE_medio": 68231.5452998975,
+      "MAE_desvio": 1242.7809853584,
+      "RMSE_medio": 126588.244150172,
+      "RMSE_desvio": 8659.8995920957,
+      "R2_medio": 0.8796220965,
+      "R2_desvio": 0.0148403677,
+      "MAPE_medio": 0.1302913906,
+      "MAPE_desvio": 0.0029218457
+    },
+    {
+      "modelo": "Regressão Linear",
+      "MAE_medio": 95805.5731829268,
+      "MAE_desvio": 1185.9831036184,
+      "RMSE_medio": 160243.7684614109,
+      "RMSE_desvio": 9071.3974597169,
+      "R2_medio": 0.8074275976,
+      "R2_desvio": 0.017571157,
+      "MAPE_medio": 0.1970898649,
+      "MAPE_desvio": 0.003031895
+    },
+    {
+      "modelo": "Baseline pela média",
+      "MAE_medio": 232912.0787947828,
+      "MAE_desvio": 2457.8023758551,
+      "RMSE_medio": 365399.3221425983,
+      "RMSE_desvio": 6616.1322357235,
+      "R2_medio": -0.0001460866,
+      "R2_desvio": 0.0002138587,
+      "MAPE_medio": 0.5339430457,
+      "MAPE_desvio": 0.0107972352
+    }
+  ],
+  "vitorias_por_fold": [
+    {
+      "fold": 1,
+      "modelo": "HistGradientBoosting Log",
+      "RMSE": 103200.7397528933
+    },
+    {
+      "fold": 2,
+      "modelo": "HistGradientBoosting Log",
+      "RMSE": 114647.4160043135
+    },
+    {
+      "fold": 3,
+      "modelo": "HistGradientBoosting Log",
+      "RMSE": 132328.0474807467
+    },
+    {
+      "fold": 4,
+      "modelo": "HistGradientBoosting Log",
+      "RMSE": 126041.2801528344
+    },
+    {
+      "fold": 5,
+      "modelo": "HistGradientBoosting Log",
+      "RMSE": 119550.0288548846
+    }
+  ],
+  "diagnostico_distribuicao_alvo": [
+    {
+      "escala": "price",
+      "media": 540088.1417665294,
+      "mediana": 450000.0,
+      "assimetria": 4.0240691447,
+      "curtose_excesso": 34.5855404319
+    },
+    {
+      "escala": "log1p(price)",
+      "media": 13.0478193716,
+      "mediana": 13.017005084,
+      "assimetria": 0.428076515,
+      "curtose_excesso": 0.6918572208
+    }
+  ],
+  "metricas_teste": {
+    "MAE": 64720.12073491336,
+    "MSE": 14577071521.040724,
+    "RMSE": 120735.54373522622,
+    "R2": 0.8956324241268407,
+    "MAPE": 0.11951702127786587
+  },
+  "diagnostico_generalizacao": [
+    {
+      "modelo": "Baseline pela média",
+      "delta_R2": 0.000294538,
+      "razao_RMSE_teste_treino": 1.0228321818,
+      "razao_MAE_teste_treino": 1.0151961027
+    },
+    {
+      "modelo": "Regressão Linear",
+      "delta_R2": -0.0029273373,
+      "razao_RMSE_teste_treino": 1.0147681967,
+      "razao_MAE_teste_treino": 1.0073588755
+    },
+    {
+      "modelo": "HistGradientBoosting",
+      "delta_R2": 0.0281738121,
+      "razao_RMSE_teste_treino": 1.1804572631,
+      "razao_MAE_teste_treino": 1.1168196747
+    },
+    {
+      "modelo": "HistGradientBoosting Log",
+      "delta_R2": 0.0217284626,
+      "razao_RMSE_teste_treino": 1.1492920675,
+      "razao_MAE_teste_treino": 1.1316924032
+    }
+  ],
+  "variaveis_brutas_entrada": [
+    "date",
+    "bedrooms",
+    "bathrooms",
+    "sqft_living",
+    "sqft_lot",
+    "floors",
+    "waterfront",
+    "view",
+    "condition",
+    "grade",
+    "sqft_above",
+    "sqft_basement",
+    "yr_built",
+    "yr_renovated",
+    "zipcode",
+    "lat",
+    "long",
+    "sqft_living15",
+    "sqft_lot15"
+  ],
+  "variaveis_explicativas": [
+    "bedrooms",
+    "bathrooms",
+    "sqft_living",
+    "floors",
+    "waterfront",
+    "view",
+    "condition",
+    "grade",
+    "sqft_basement",
+    "lat",
+    "long",
+    "sqft_living15",
+    "log_sqft_lot",
+    "idade_imovel",
+    "foi_reformado",
+    "tem_porao",
+    "mes_venda",
+    "ano_venda",
+    "zipcode"
+  ],
+  "observacao": "Pipeline bruto→previsão retreinado em toda a base; métricas preservam o holdout independente."
+}

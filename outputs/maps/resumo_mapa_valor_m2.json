@@ -1,0 +1,14 @@
+{
+  "metrica": "mediana do preço por m²",
+  "resolucao_h3": 7,
+  "minimo_vendas_por_celula": 20,
+  "vendas_validas": 21613,
+  "vendas_mapeadas": 20014,
+  "cobertura_percentual": 92.6016749178735,
+  "celulas_ocupadas": 544,
+  "celulas_exibidas": 290,
+  "celulas_top_decil": 29,
+  "limite_top_decil_usd_m2": 3823.878671993197,
+  "escala_visual_p05": 1572.0054845132759,
+  "escala_visual_p95": 4297.08582877795
+}

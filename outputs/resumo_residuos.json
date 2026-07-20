@@ -1,0 +1,8 @@
+{
+  "residuo_medio": 2729.195318819302,
+  "residuo_mediano": -1929.608429139742,
+  "erro_absoluto_p90": 139246.8971790681,
+  "erro_absoluto_p95": 213293.3535708948,
+  "percentual_erro_ate_50k": 0.6043015726179464,
+  "percentual_erro_ate_100k": 0.8279370952821462
+}

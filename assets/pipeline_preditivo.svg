@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="650" viewBox="0 0 1500 650" role="img" aria-labelledby="title desc">
+  <title id="title">Pipeline preditivo do projeto imobiliário</title>
+  <desc id="desc">Fluxo da base bruta até o modelo v1. As quatro primeiras fases ocorrem em develop, a comparação ocorre em experiment/modelos e a avaliação retorna a develop antes da consolidação da main.</desc>
+  <defs>
+    <linearGradient id="header" x1="0" x2="1">
+      <stop stop-color="#0b2036"/>
+      <stop offset="1" stop-color="#286879"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto">
+      <path d="M0 0 11 5.5 0 11Z" fill="#5e959f"/>
+    </marker>
+    <style>
+      .heading{font:750 30px Inter,Segoe UI,Arial,sans-serif;fill:#fff}
+      .subheading{font:400 15px Inter,Segoe UI,Arial,sans-serif;fill:#c7dce1}
+      .step{font:750 18px Inter,Segoe UI,Arial,sans-serif;fill:#102a3e}
+      .detail{font:500 13px Inter,Segoe UI,Arial,sans-serif;fill:#667085}
+      .number{font:800 14px Inter,Segoe UI,Arial,sans-serif;fill:#fff}
+      .branch{font:750 12px Inter,Segoe UI,Arial,sans-serif;letter-spacing:.25px}
+      .merge{font:700 12px Inter,Segoe UI,Arial,sans-serif;fill:#8a6a3d}
+      .flow{fill:none;stroke:#5e959f;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow)}
+    </style>
+  </defs>
+
+  <rect width="1500" height="650" rx="24" fill="#f6f9fb"/>
+  <rect width="1500" height="96" rx="24" fill="url(#header)"/>
+  <rect y="72" width="1500" height="24" fill="url(#header)"/>
+  <text x="54" y="43" class="heading">Pipeline preditivo</text>
+  <text x="54" y="70" class="subheading">develop → experiment/modelos → develop → main, com teste isolado e controle de vazamento</text>
+
+  <g transform="translate(54 106)">
+    <rect width="1356" height="26" rx="13" fill="#e6eef2"/>
+    <circle cx="16" cy="13" r="5" fill="#356c7b"/>
+    <text x="30" y="17" class="branch" fill="#21485f">develop · Células 0–5 · Fases 1–4</text>
+  </g>
+
+  <path d="M330 194H414" class="flow"/>
+  <path d="M690 194H774" class="flow"/>
+  <path d="M1050 194H1134" class="flow"/>
+  <path d="M1272 252V344" class="flow"/>
+  <path d="M1134 414H1050" class="flow"/>
+  <path d="M774 414H690" class="flow"/>
+
+  <g transform="translate(54 132)">
+    <rect width="276" height="120" rx="16" fill="#fff" stroke="#c7dce1"/>
+    <circle cx="30" cy="31" r="17" fill="#21485f"/><text x="30" y="36" text-anchor="middle" class="number">1</text>
+    <text x="58" y="37" class="step">Base bruta</text>
+    <text x="22" y="73" class="detail">21.613 vendas · 21 colunas</text>
+    <text x="22" y="97" class="detail">preservação dos dados originais</text>
+  </g>
+
+  <g transform="translate(414 132)">
+    <rect width="276" height="120" rx="16" fill="#fff" stroke="#c7dce1"/>
+    <circle cx="30" cy="31" r="17" fill="#21485f"/><text x="30" y="36" text-anchor="middle" class="number">2</text>
+    <text x="58" y="37" class="step">EDA e auditoria</text>
+    <text x="22" y="73" class="detail">distribuições · correlações · H3</text>
+    <text x="22" y="97" class="detail">qualidade e representatividade</text>
+  </g>
+
+  <g transform="translate(774 132)">
+    <rect width="276" height="120" rx="16" fill="#fff" stroke="#c7dce1"/>
+    <circle cx="30" cy="31" r="17" fill="#356c7b"/><text x="30" y="36" text-anchor="middle" class="number">3</text>
+    <text x="58" y="37" class="step">Limpeza e atributos</text>
+    <text x="22" y="73" class="detail">ausências · anomalia composta</text>
+    <text x="22" y="97" class="detail">idade · reforma · área · tempo</text>
+  </g>
+
+  <g transform="translate(1134 132)">
+    <rect width="276" height="120" rx="16" fill="#fff" stroke="#c7dce1"/>
+    <circle cx="30" cy="31" r="17" fill="#356c7b"/><text x="30" y="36" text-anchor="middle" class="number">4</text>
+    <text x="58" y="37" class="step">Preparação segura</text>
+    <text x="22" y="73" class="detail">VIF · one-hot · escala no pipeline</text>
+    <text x="22" y="97" class="detail">split agrupado por ID do imóvel</text>
+  </g>
+
+  <g transform="translate(1134 354)">
+    <rect width="276" height="120" rx="16" fill="#fff" stroke="#d8bd8d" stroke-width="2"/>
+    <circle cx="30" cy="31" r="17" fill="#b08d57"/><text x="30" y="36" text-anchor="middle" class="number">5</text>
+    <text x="58" y="37" class="step">GroupKFold</text>
+    <text x="22" y="73" class="detail">três candidatos · cinco folds</text>
+    <text x="22" y="97" class="detail">seleção somente nos 80% de treino</text>
+  </g>
+
+  <g transform="translate(1134 316)">
+    <rect width="276" height="28" rx="14" fill="#8a6a3d"/>
+    <text x="138" y="19" text-anchor="middle" class="branch" fill="#fff">experiment/modelos · Células 6–7</text>
+  </g>
+
+  <g transform="translate(774 354)">
+    <rect width="276" height="120" rx="16" fill="#fff" stroke="#d8bd8d" stroke-width="2"/>
+    <circle cx="30" cy="31" r="17" fill="#b08d57"/><text x="30" y="36" text-anchor="middle" class="number">6</text>
+    <text x="58" y="37" class="step">Teste isolado</text>
+    <text x="22" y="73" class="detail">4.324 registros · zero IDs comuns</text>
+    <text x="22" y="97" class="detail">métricas e diagnóstico de erros</text>
+  </g>
+
+  <g transform="translate(414 316)">
+    <rect width="636" height="28" rx="14" fill="#e6eef2"/>
+    <text x="318" y="19" text-anchor="middle" class="branch" fill="#21485f">develop · Células 8–10 · avaliação e modelo v1</text>
+  </g>
+
+  <rect x="1042" y="388" width="100" height="52" rx="10" fill="#fffaf3" stroke="#d8bd8d"/>
+  <text x="1092" y="409" text-anchor="middle" class="merge">merge</text>
+  <text x="1092" y="426" text-anchor="middle" class="merge">--no-ff</text>
+
+  <g transform="translate(414 354)">
+    <rect width="276" height="120" rx="16" fill="#0f3046" stroke="#d8bd8d" stroke-width="2"/>
+    <circle cx="30" cy="31" r="17" fill="#b08d57"/><text x="30" y="36" text-anchor="middle" class="number">7</text>
+    <text x="58" y="37" class="step" style="fill:#fff">Modelo v1</text>
+    <text x="22" y="73" class="detail" style="fill:#c7dce1">HistGradientBoosting Log</text>
+    <text x="22" y="97" class="detail" style="fill:#c7dce1">pipeline recarregável + métricas</text>
+  </g>
+
+  <path d="M552 474V512" class="flow"/>
+  <g transform="translate(414 520)">
+    <rect width="636" height="50" rx="14" fill="#0f3046" stroke="#d8bd8d" stroke-width="2"/>
+    <text x="318" y="21" text-anchor="middle" class="branch" fill="#fff">benchmark integral + sanitização + auditoria</text>
+    <text x="318" y="39" text-anchor="middle" class="branch" fill="#c7dce1">merge --no-ff → main final</text>
+  </g>
+
+  <text x="54" y="616" class="detail">Preço por m² permanece restrito à análise exploratória porque deriva diretamente do alvo.</text>
+</svg>
