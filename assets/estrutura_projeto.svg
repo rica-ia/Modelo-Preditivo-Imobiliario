@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Estrutura do projeto Modelo Preditivo Imobiliário</title>
+  <desc id="desc">Mapa das bases de dados, notebook, código-fonte, modelo, painel geoespacial, resultados e documentação.</desc>
+  <defs>
+    <linearGradient id="header" x1="0" x2="1">
+      <stop offset="0" stop-color="#172554"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .title{font:700 31px Inter,Segoe UI,Arial,sans-serif;fill:#fff}
+      .subtitle{font:400 15px Inter,Segoe UI,Arial,sans-serif;fill:#dbeafe}
+      .group{font:700 18px Inter,Segoe UI,Arial,sans-serif;fill:#0f172a}
+      .file{font:500 13px Inter,Segoe UI,Arial,sans-serif;fill:#334155}
+      .tag{font:700 12px Inter,Segoe UI,Arial,sans-serif;fill:#1e3a8a}
+      .line{stroke:#93c5fd;stroke-width:3;fill:none;stroke-linecap:round}
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" rx="26" fill="#f8fafc"/>
+  <rect width="1200" height="112" rx="26" fill="url(#header)"/>
+  <rect y="86" width="1200" height="26" fill="url(#header)"/>
+  <text x="54" y="52" class="title">Modelo Preditivo Imobiliário — arquitetura</text>
+  <text x="54" y="82" class="subtitle">Google Colab, um notebook acadêmico, módulos externos e histórico gradual</text>
+  <rect x="962" y="34" width="182" height="42" rx="21" fill="#fff" fill-opacity="0.95"/>
+  <text x="1053" y="60" text-anchor="middle" class="tag">MODELO v1</text>
+
+  <path d="M600 144 V182 M170 182 H1030 M170 182 V210 M455 182 V210 M745 182 V210 M1030 182 V210" class="line"/>
+
+  <g>
+    <rect x="42" y="210" width="256" height="220" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <rect x="42" y="210" width="256" height="54" rx="18" fill="#dbeafe"/>
+    <rect x="42" y="246" width="256" height="18" fill="#dbeafe"/>
+    <text x="66" y="244" class="group">data/</text>
+    <text x="66" y="297" class="file">raw/kc_house_data.csv</text>
+    <text x="66" y="335" class="file">processed/kc_house_processed.csv</text>
+    <text x="66" y="373" class="file">final/kc_house_final.csv</text>
+    <rect x="66" y="393" width="120" height="24" rx="12" fill="#eff6ff"/>
+    <text x="126" y="409" text-anchor="middle" class="tag">21.613 VENDAS</text>
+  </g>
+
+  <g>
+    <rect x="327" y="210" width="256" height="220" rx="18" fill="#fff" stroke="#bbf7d0"/>
+    <rect x="327" y="210" width="256" height="54" rx="18" fill="#dcfce7"/>
+    <rect x="327" y="246" width="256" height="18" fill="#dcfce7"/>
+    <text x="351" y="244" class="group">notebooks/ + src/</text>
+    <text x="351" y="297" class="file">modelo_preditivo_imobiliario.ipynb</text>
+    <text x="351" y="335" class="file">features.py · modeling.py</text>
+    <text x="351" y="373" class="file">data.py · plots.py · spatial.py</text>
+    <rect x="351" y="393" width="132" height="24" rx="12" fill="#f0fdf4"/>
+    <text x="417" y="409" text-anchor="middle" class="tag">6 FASES</text>
+  </g>
+
+  <g>
+    <rect x="617" y="210" width="256" height="220" rx="18" fill="#fff" stroke="#fde68a"/>
+    <rect x="617" y="210" width="256" height="54" rx="18" fill="#fef3c7"/>
+    <rect x="617" y="246" width="256" height="18" fill="#fef3c7"/>
+    <text x="641" y="244" class="group">models/v1/</text>
+    <text x="641" y="297" class="file">modelo_regressao_v1.pkl</text>
+    <text x="641" y="335" class="file">metricas_v1.json</text>
+    <text x="641" y="373" class="file">preprocessamento + modelo</text>
+    <rect x="641" y="393" width="125" height="24" rx="12" fill="#fffbeb"/>
+    <text x="703" y="409" text-anchor="middle" class="tag">R² 0,8956</text>
+  </g>
+
+  <g>
+    <rect x="902" y="210" width="256" height="220" rx="18" fill="#fff" stroke="#ddd6fe"/>
+    <rect x="902" y="210" width="256" height="54" rx="18" fill="#ede9fe"/>
+    <rect x="902" y="246" width="256" height="18" fill="#ede9fe"/>
+    <text x="926" y="244" class="group">outputs/</text>
+    <text x="926" y="297" class="file">figures/ · 9 diagnósticos</text>
+    <text x="926" y="335" class="file">maps/ · painel H3 + transações</text>
+    <text x="926" y="373" class="file">CV · métricas · VIF · resíduos</text>
+    <rect x="926" y="393" width="141" height="24" rx="12" fill="#f5f3ff"/>
+    <text x="996" y="409" text-anchor="middle" class="tag">EVIDÊNCIAS</text>
+  </g>
+
+  <path d="M170 430 V484 M455 430 V484 M745 430 V484 M1030 430 V484" class="line"/>
+  <path d="M170 484 H1030" class="line"/>
+  <path d="M600 484 V516" class="line"/>
+
+  <g>
+    <rect x="190" y="516" width="820" height="174" rx="20" fill="#fff" stroke="#cbd5e1"/>
+    <text x="226" y="556" class="group">Documentação e reprodutibilidade</text>
+    <line x1="226" y1="574" x2="974" y2="574" stroke="#e2e8f0"/>
+    <text x="226" y="612" class="file">README.md</text>
+    <text x="404" y="612" class="file">requirements.txt</text>
+    <text x="620" y="612" class="file">environment_info.json</text>
+    <text x="874" y="612" class="file">LICENSE</text>
+    <text x="226" y="650" class="file">um único notebook público</text>
+    <text x="512" y="650" class="file">15 células de código</text>
+    <text x="774" y="650" class="file" style="font-size:11px">experiment/modelos → develop → main</text>
+  </g>
+
+  <text x="600" y="728" text-anchor="middle" class="subtitle" style="fill:#64748b">Células acadêmicas 0–10 · checkpoints graduais · main consolidada após validação</text>
+</svg>
