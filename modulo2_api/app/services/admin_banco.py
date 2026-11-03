@@ -2,14 +2,14 @@
 # Administração do banco SQLite
 
 Navegação do console por **seções** (clientes, chaves, faturamento, e-mails, histórico
-comercial, laudos, uso da API e vendas reais): busca, paginação, ordenação, detalhe de um
+comercial, laudos, uso da API, vendas reais e artefatos do modelo): busca, paginação, ordenação, detalhe de um
 registro, exportação em CSV/JSON, baixa e exclusão de faturas, exclusão de laudos, saúde do
 arquivo e cópia de segurança.
 
 Segurança do SQL:
 - nomes de tabela e de coluna saem **só** da lista fixa `SECOES`, nunca da requisição;
 - a busca e os identificadores entram sempre como parâmetros (`?`);
-- `chaves.hash_sha256` nunca é devolvido e `avaliacoes.entrada_json` só aparece no detalhe.
+- `chaves.hash_sha256` e `modelos.artefato` (BLOB) nunca são devolvidos; `avaliacoes.entrada_json` só aparece no detalhe.
 
 A tabela `faturas` e a coluna `clientes.sintetico` são opcionais aqui: num banco antigo,
 sem elas, a seção de faturamento some da lista e a coluna deixa de aparecer.
@@ -154,6 +154,19 @@ SECOES: dict[str, dict] = {
             "preco_m2_usd": "t.preco_m2_usd", "faixa_preco": "t.faixa_preco",
         },
         "busca": ["cep", "cidade"],
+    },
+    "modelos": {
+        "titulo": "Modelos (artefatos)",
+        "tabela": "modelos",
+        "chave": "id",
+        "juncoes": "",
+        "colunas": {
+            "id": "t.id", "versao": "t.versao", "nome_arquivo": "t.nome_arquivo", "sha256": "t.sha256",
+            "tamanho_bytes": "t.tamanho_bytes", "formato": "t.formato", "estimador": "t.estimador",
+            "treinado_em": "t.treinado_em", "registrado_em": "t.registrado_em", "ativo": "t.ativo",
+        },
+        "busca": ["versao", "sha256", "estimador"],
+        "ocultas": ["artefato"],
     },
 }
 

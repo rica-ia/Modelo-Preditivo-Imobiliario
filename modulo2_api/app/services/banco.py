@@ -130,6 +130,21 @@ DESCRICOES = {
         "latencia_ms": "Tempo de inferência.",
         "sintetico": "1 se o laudo é dado sintético de exemplo (fictício), 0 se é real.",
     },
+    "modelos": {
+        "_tabela": "Artefatos do modelo registrados: o .joblib carregado pela API, guardado como BLOB e versionado.",
+        "id": "Identificador do registro.",
+        "versao": "Versão do modelo (metricas_v2.json).",
+        "nome_arquivo": "Arquivo de origem, relativo à raiz do repositório.",
+        "sha256": "Hash SHA-256 do binário; impede registrar o mesmo artefato duas vezes.",
+        "tamanho_bytes": "Tamanho do binário, em bytes.",
+        "formato": "Formato de serialização (joblib).",
+        "estimador": "Algoritmo do pipeline.",
+        "metricas_json": "Métricas de validação e teste no momento do registro (JSON).",
+        "treinado_em": "Data e hora do treino.",
+        "registrado_em": "Data e hora do registro no banco.",
+        "ativo": "1 no artefato que a API está servindo, 0 nos anteriores.",
+        "artefato": "Binário .joblib (BLOB); restaurável e verificável pelo sha256.",
+    },
 }
 
 

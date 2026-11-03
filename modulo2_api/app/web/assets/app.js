@@ -1020,6 +1020,54 @@
       $("#modelo-faixa").textContent = `Divisão por imóvel${div.criterio ? " (" + div.criterio + ")" : ""}. Faixa provável: 80 % dos imóveis de validação ficaram entre ${sinal(relativo(m.faixa_erro.p10))} e ${sinal(relativo(m.faixa_erro.p90))} do preço estimado.`;
     }
     desenharImportancia(m);
+    carregarArtefato();
+  }
+
+  // Artefato registrado: arquivo .joblib em disco + cópia versionada (BLOB) no SQLite
+  const artefatoEstado = { atual: null };
+  const tamanhoLegivel = (b) => (b >= 1048576 ? num(b / 1048576, 2) + " MB" : num(b / 1024, 1) + " KB");
+  async function carregarArtefato() {
+    const caixa = $("#artefato-info"), btn = $("#btn-verificar-artefato");
+    if (!caixa || !btn) return;
+    if (!btn.dataset.ligado) {
+      btn.dataset.ligado = "1";
+      btn.addEventListener("click", verificarArtefato);
+      caixa.addEventListener("click", async (ev) => {
+        if (!ev.target.closest("[data-copiar-sha]") || !artefatoEstado.atual) return;
+        try { await navigator.clipboard.writeText(artefatoEstado.atual.sha256); toast("SHA-256 copiado"); }
+        catch (e) { toast("Não foi possível copiar automaticamente"); }
+      });
+    }
+    const r = await api("/v1/modelo/artefatos");
+    const lista = r.ok && Array.isArray(r.dados) ? r.dados : [];
+    const a = lista.find((x) => x.ativo) || lista[0];
+    artefatoEstado.atual = a || null;
+    if (!a) { caixa.innerHTML = alertaHTML("Registro indisponível", "Não foi possível ler /v1/modelo/artefatos.", [], "aviso"); btn.disabled = true; return; }
+    const sha = String(a.sha256 || "");
+    caixa.innerHTML = `<div><small>Versão</small><b>${esc(a.versao)}</b> <span class="chip">${a.ativo ? "ativo" : "anterior"}</span></div>
+      <div><small>SHA-256</small><div class="artefato-sha"><code title="${esc(sha)}">${esc(sha.slice(0, 12))}…${esc(sha.slice(-6))}</code><button type="button" class="btn-mini" data-copiar-sha>Copiar</button></div></div>
+      <div><small>Tamanho</small><b>${tamanhoLegivel(Number(a.tamanho_bytes) || 0)}</b> <span class="nota">(${num(a.tamanho_bytes)} bytes · ${esc(a.formato)})</span></div>
+      <div><small>Onde está</small><code>${esc(String(a.nome_arquivo || "").replace(/^modulo2_api\//, ""))}</code><br><span class="nota">SQLite · tabela <code>modelos</code>, registro #${esc(a.id)}</span></div>`
+      + (lista.length > 1 ? `<p class="nota">${num(lista.length)} artefatos registrados no total.</p>` : "");
+    btn.disabled = false;
+  }
+  async function verificarArtefato() {
+    const btn = $("#btn-verificar-artefato"), saida = $("#artefato-verificacao"), a = artefatoEstado.atual;
+    if (!a) return;
+    btn.disabled = true;
+    saida.className = "artefato-verificacao";
+    saida.innerHTML = '<p class="nota"><span class="carregando"></span> Restaurando o BLOB e prevendo o imóvel de exemplo…</p>';
+    const r = await api(`/v1/modelo/artefatos/${encodeURIComponent(a.id)}/verificar`, { timeout: 20000, headers: cabAdmin() });
+    btn.disabled = false;
+    const v = r.dados;
+    if (!r.ok || !v) { saida.className = "artefato-verificacao falha"; saida.innerHTML = '<span class="selo-int">Não foi possível verificar</span>'; return; }
+    const hashes = v.sha256_blob === v.sha256_disco && v.sha256_blob === v.sha256_carregado;
+    saida.className = "artefato-verificacao " + (v.integro ? "ok" : "falha");
+    saida.innerHTML = `<span class="selo-int">${v.integro ? "✓ Íntegro" : "✗ Divergente"}</span>
+      <p class="nota">SHA-256 do BLOB ${hashes ? "igual" : "diferente"} ao do arquivo em disco e ao do artefato carregado na subida${v.erro ? " · " + esc(v.erro) : ""}.</p>
+      <div class="artefato-prev"><div><small>Previsão do modelo restaurado do SQLite</small><b>${v.previsao_restaurada != null ? usd.format(v.previsao_restaurada) : "—"}</b></div>
+      <div><small>Previsão do modelo em memória</small><b>${v.previsao_em_memoria != null ? usd.format(v.previsao_em_memoria) : "—"}</b></div></div>
+      <p class="nota">Imóvel de exemplo: ${esc(v.imovel_exemplo.quartos)} quartos, ${num(v.imovel_exemplo.area_util_m2)} m², CEP ${esc(v.imovel_exemplo.cep)}. Verificado às ${new Date().toLocaleTimeString("pt-BR")}.</p>`;
   }
   const ENDPOINTS = [
     { metodo: "GET", rota: "/health" },
@@ -1083,6 +1131,39 @@
       try { await navigator.clipboard.writeText(texto); toast("Copiado para a área de transferência"); }
       catch (e) { toast("Não foi possível copiar automaticamente"); }
     }));
+    carregarMlflow();
+  }
+  // MLflow local: resumo lido pela API do banco do MLflow e atalhos para a interface dele
+  async function carregarMlflow() {
+    const r = await api("/v1/modelo/mlflow");
+    const corpo = $("#mlflow-corpo"), status = $("#mlflow-status");
+    if (!corpo) return;
+    if (!r.ok || !r.dados) { corpo.innerHTML = avisoRota(r, "O resumo do MLflow"); status.textContent = "indisponível"; return; }
+    const d = r.dados, m = d.metricas || {};
+    $("#bt-mlflow-topo").href = d.ui_url;
+    status.textContent = d.ui_no_ar ? "interface no ar" : "interface parada";
+    status.className = d.ui_no_ar ? "chip ok" : "chip";
+    const comandos = `<pre><code>${esc(d.comando_registrar)}\n${esc(d.comando_ui)}</code></pre>`;
+    if (!d.disponivel) {
+      corpo.innerHTML = `<p class="nota">Nenhum modelo registrado ainda. Na raiz do projeto, com o <code>requirements.txt</code> instalado:</p>${comandos}`;
+      return;
+    }
+    const metrica = (k, rotulo, fmt) => (m[k] != null ? `<div class="res-item"><small>${rotulo}</small><b>${fmt(m[k])}</b></div>` : "");
+    corpo.innerHTML = `
+      <p>Modelo <b>${esc(d.modelo)}</b> · versão <b>${d.versao}</b> com o alias <span class="chip">@${esc(d.alias)}</span> · run <code>${esc(d.run_nome || d.run_id)}</code>${d.registrado_em ? ` · registrado em ${new Date(d.registrado_em).toLocaleString("pt-BR")}` : ""}</p>
+      <div class="res-grade">
+        ${metrica("teste_R2", "R² no teste", (v) => num(v, 4))}
+        ${metrica("teste_MAE", "MAE no teste", (v) => usd.format(v))}
+        ${metrica("teste_RMSE", "RMSE no teste", (v) => usd.format(v))}
+        ${metrica("teste_MAPE", "MAPE no teste", (v) => pct(v))}
+      </div>
+      <div class="acoes">
+        <a class="btn btn-pri" href="${esc(d.link_run)}" target="_blank" rel="noopener">Abrir o run no MLflow</a>
+        <a class="btn btn-borda" href="${esc(d.link_modelo)}" target="_blank" rel="noopener">Ver no Model Registry</a>
+        <a class="btn btn-borda" href="${esc(d.ui_url)}" target="_blank" rel="noopener">Interface do MLflow</a>
+      </div>
+      ${d.ui_no_ar ? "" : `<p class="nota">A interface do MLflow está parada. Para abrir os atalhos, suba-a na raiz do projeto:</p>${comandos}`}
+      <p class="nota">A API serve o <code>.joblib</code> carregado uma vez na subida; o MLflow rastreia e versiona o mesmo artefato (métricas de <code>metricas_v2.json</code>, assinatura de entrada e sha256).</p>`;
   }
 
   // ---------------------------------------------------------------- utilidades da aplicação

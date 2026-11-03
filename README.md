@@ -1,11 +1,20 @@
 # Modelo Preditivo Imobiliário
-## Real Estate Predictive Model — Precificação de imóveis em King County
+## Avaliador Imobiliário — API preditiva com FastAPI (Módulo 2) sobre o modelo de precificação de King County (Módulo 1)
 
 <p align="center">
-  <strong>Pipeline reprodutível de regressão para estimar preços residenciais, da auditoria dos dados ao modelo v1, com validação agrupada, diagnóstico de generalização e interpretação de negócio.</strong>
+  <strong>Módulo 2: o modelo de preços residenciais servido como API REST em FastAPI e Python 3.13, com contratos Pydantic, carga única no lifespan, gestão comercial, laudo profissional e banco SQLite administrável. Módulo 1: o pipeline reprodutível de regressão em notebook, da auditoria dos dados ao modelo v1.</strong>
 </p>
 
 <p align="center">
+  <img alt="Módulo 2 · API FastAPI" src="https://img.shields.io/badge/M%C3%B3dulo%202-API%20FastAPI-0f766e?style=for-the-badge&logo=fastapi&logoColor=white">
+  <img alt="Python 3.13" src="https://img.shields.io/badge/Python-3.13-1e3a8a?style=for-the-badge&logo=python&logoColor=white">
+  <img alt="Pydantic 2.14.2" src="https://img.shields.io/badge/Pydantic-2.14.2-e92063?style=for-the-badge&logo=pydantic&logoColor=white">
+  <img alt="pytest 125 aprovados" src="https://img.shields.io/badge/pytest-125%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
+  <img alt="Modelo v2" src="https://img.shields.io/badge/Modelo-v2-16a34a?style=for-the-badge">
+</p>
+
+<p align="center">
+  <img alt="Módulo 1 · notebook" src="https://img.shields.io/badge/M%C3%B3dulo%201-notebook-475569?style=for-the-badge&logo=jupyter&logoColor=white">
   <img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-1e3a8a?style=for-the-badge&logo=python&logoColor=white">
   <img alt="Pandas 2.2.3" src="https://img.shields.io/badge/Pandas-2.2.3-2563eb?style=for-the-badge&logo=pandas&logoColor=white">
   <img alt="scikit-learn 1.8.0" src="https://img.shields.io/badge/scikit--learn-1.8.0-f59e0b?style=for-the-badge&logo=scikitlearn&logoColor=white">
@@ -16,7 +25,7 @@
 
 <p align="center">
   <a href="https://colab.research.google.com/github/rica-ia/Modelo-Preditivo-Imobiliario/blob/main/notebooks/modelo_preditivo_imobiliario.ipynb">
-    <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Abrir no Google Colab">
+    <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Abrir o notebook do Módulo 1 no Google Colab">
   </a>
 </p>
 
@@ -47,7 +56,7 @@ Este repositório reúne dois módulos do curso **Desenvolvimento de IA para An�
   <img alt="Pydantic 2.14.2" src="https://img.shields.io/badge/Pydantic-2.14.2-e92063?style=for-the-badge&logo=pydantic&logoColor=white">
   <img alt="Uvicorn 0.54.0" src="https://img.shields.io/badge/Uvicorn-0.54.0-4b5563?style=for-the-badge">
   <img alt="scikit-learn 1.8.0" src="https://img.shields.io/badge/scikit--learn-1.8.0-f59e0b?style=for-the-badge&logo=scikitlearn&logoColor=white">
-  <img alt="pytest 65 aprovados" src="https://img.shields.io/badge/pytest-65%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
+  <img alt="pytest 125 aprovados" src="https://img.shields.io/badge/pytest-125%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
   <img alt="Modelo v2" src="https://img.shields.io/badge/Modelo-v2-16a34a?style=for-the-badge">
   <img alt="Licença MIT" src="https://img.shields.io/badge/Licen%C3%A7a-MIT-475569?style=for-the-badge">
 </p>
@@ -73,15 +82,15 @@ O Módulo 1 terminou com um modelo de regressão validado (R² de 0,896 no teste
 
 | Camada | O que foi entregue |
 |---|---|
-| Pipeline offline | treino com divisão treino/validação/teste, seleção na validação, nota final no teste e artefato `.joblib` |
+| Pipeline offline | treino com divisão treino/validação/teste, seleção na validação, nota final no teste e serialização em três vias: artefato `.joblib`, cópia versionada no SQLite e registro opcional no MLflow local |
 | API | FastAPI organizada em `schemas/`, `services/`, `routers/` e `main.py` |
 | Ciclo de vida | modelo lido do disco **uma única vez**, no `lifespan`, e mantido na memória RAM |
 | Contratos | entrada e saída em Pydantic com `Field` (tipos, faixas, padrões e descrições) e `extra="forbid"` |
-| Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de acesso com 2FA (`/v1/acesso/*`), de relatórios (`/v1/relatorios/*`), da visão 3D (`/v1/config/mapa3d`) e do endereço completo por geocodificação reversa no OpenStreetMap (`GET /v1/endereco`, sem custo e com cache) |
+| Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo`, `GET /v1/modelo/artefatos` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de acesso com 2FA (`/v1/acesso/*`), de relatórios (`/v1/relatorios/*`), da visão 3D (`/v1/config/mapa3d`), do endereço completo por geocodificação reversa no OpenStreetMap (`GET /v1/endereco`, sem custo e com cache), das comodidades do entorno (`GET /v1/comodidades`, pela Overpass/OpenStreetMap, sem custo) e da administração do banco (`/v1/admin/banco/*`) |
 | Erros | 400, 404, 405, 422, 500 e 503 em JSON padronizado e em português; a API não cai |
-| Qualidade | 74 testes automatizados (`pytest` + `TestClient`) |
-| Produto | plataforma web de gestão que consome a API: painel, nova avaliação com mapa e visão 3D, laudos com exportação, simulador, relatórios de mercado, mapa de valor, transparência do modelo, console comercial, documentação do banco e área do desenvolvedor |
-| Comercial e dados | chave de API por cliente com e-mail real ([M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail)) e banco SQLite com as 21.613 vendas reais, os laudos e o uso da API ([M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado)) |
+| Qualidade | 125 testes automatizados (`pytest` + `TestClient`) |
+| Produto | plataforma web de gestão que consome a API: painel, nova avaliação com mapa, visão 3D e cartão do entorno, laudo profissional em 8 seções com comodidades, simulador, relatórios de mercado, mapa de valor, transparência do modelo, gestão comercial com faturamento, explorador do banco e área do desenvolvedor |
+| Comercial e dados | chave de API por cliente com e-mail real, planos com preço, suspensão, troca de chave e faturas ([M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail)) e banco SQLite com as 21.613 vendas reais, os laudos, o uso da API e dados de exemplo sintéticos, administrável pelo portal ([M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado)) |
 
 ## M2.3 Problema de negócio
 
@@ -123,7 +132,7 @@ O modelo foi **reaproveitado e aprimorado a partir do Módulo 1** deste reposit�
 | RMSE no teste vs. baseline pela média | **US$ 116.823 vs. US$ 373.780** (−69 %) |
 | Faixa provável | preço × 0,826 a preço × 1,180 (80 % central dos erros na validação) |
 | Latência de inferência após o aquecimento | ~20 a 45 ms por requisição |
-| Testes automatizados | **65 aprovados** |
+| Testes automatizados | **125 aprovados** |
 
 ## M2.6 Estrutura do Módulo 2
 
@@ -144,19 +153,27 @@ modulo2_api/
 │   ├── schemas/                     # Fase 4: contratos Pydantic
 │   │   ├── imovel.py                #   ImovelEntrada, PrevisaoSaida, LoteEntrada, LoteSaida
 │   │   ├── sistema.py               #   SaudeSaida, ModeloInfoSaida, RegiaoSaida, ErroSaida
-│   │   ├── comercial.py             #   chaves, clientes, uso e relatórios de uso
-│   │   └── avaliacoes.py            #   laudos, filtros, paginação e relatórios de mercado
+│   │   ├── comercial.py             #   chaves, clientes, planos, ficha, faturamento e uso
+│   │   ├── avaliacoes.py            #   laudos, filtros, paginação e relatórios de mercado
+│   │   └── admin_banco.py           #   seções, listagem, registro, baixa de fatura, saúde e exclusão
 │   ├── services/                    # regras de negócio, inferência e dados
 │   │   ├── modelo.py                #   ServicoModelo
 │   │   ├── excecoes.py              #   exceções de negócio, do modelo e das chaves de API
 │   │   ├── banco.py                 #   conexão SQLite e migração do esquema
 │   │   ├── carga.py                 #   carga inicial das vendas reais e da amostra de laudos
-│   │   ├── avaliacoes.py            #   laudos: gravação, consulta, exportação e HTML
+│   │   ├── avaliacoes.py            #   laudos: gravação, consulta e exportação
+│   │   ├── laudo.py                 #   laudo profissional em HTML, em 8 seções
+│   │   ├── endereco.py              #   endereço completo pelo Nominatim (OpenStreetMap), com cache
+│   │   ├── comodidades.py           #   comodidades num raio de 1,5 km pela Overpass e índice de conveniência
 │   │   ├── mercado.py               #   relatórios de mercado a partir das vendas reais
+│   │   ├── planos.py                #   catálogo dos planos: limite mensal e preço
 │   │   ├── comercial.py             #   emissão, plano, suspensão, troca, revogação, faturamento
 │   │   ├── email.py                 #   e-mail de boas-vindas (SMTP ou arquivo .eml)
 │   │   ├── acesso.py                #   senha, código TOTP, sessões e bloqueio por tentativas
-│   │   └── relatorios.py            #   uso da API e documentação do esquema
+│   │   ├── relatorios.py            #   uso da API e documentação do esquema
+│   │   ├── sinteticos.py            #   dados de exemplo sintéticos: carga e remoção
+│   │   ├── admin_banco.py           #   explorador do banco: busca, paginação, exportação, backup
+│   │   └── registro_modelo.py       #   artefato do modelo como BLOB no SQLite: registro, restauração e verificação
 │   ├── routers/                     # Fase 5: APIRouter
 │   │   ├── saude.py                 #   GET /health
 │   │   ├── predicao.py              #   POST /v1/predict e /v1/predict/lote
@@ -166,25 +183,42 @@ modulo2_api/
 │   │   ├── relatorios.py            #   /v1/relatorios/* (uso, esquema e mercado)
 │   │   ├── mapa3d.py                #   GET /v1/config/mapa3d (só acesso local)
 │   │   ├── acesso.py                #   /v1/acesso/* (entrada com 2FA)
+│   │   ├── endereco.py              #   GET /v1/endereco
+│   │   ├── comodidades.py           #   GET /v1/comodidades
+│   │   ├── admin_banco.py           #   /v1/admin/banco/* (explorador e manutenção)
+│   │   ├── sinteticos.py            #   POST e DELETE /v1/admin/banco/sinteticos
+│   │   ├── registro_modelo.py       #   GET /v1/modelo/artefatos e /v1/modelo/artefatos/{id}/verificar
 │   │   └── dependencias.py          #   injeção dos serviços, X-API-Key, token e sessão do console
 │   └── web/                         # portal servido em "/"
 │       ├── index.html               #   plataforma de gestão (menu lateral em três grupos)
 │       ├── visao3d.html             #   voo 360° com imagens fotorrealistas (opcional)
-│       └── assets/                  #   app.css, app.js, visao3d.js, logo.svg e logo do e-mail
+│       └── assets/
+│           ├── app.css · app.js     #   identidade, telas e gestão comercial
+│           ├── banco.css · banco.js #   tela Banco de dados: explorador por seções e manutenção
+│           ├── visao3d.js           #   voo 360° no CesiumJS
+│           └── logo.svg · logo_email.png
 ├── banco/
-│   ├── esquema.sql                  # 7 tabelas e índices do SQLite
+│   ├── esquema.sql                  # 9 tabelas e índices do SQLite
 │   └── ceps_king_county.json        # cidade de cada CEP, usada nos relatórios de mercado
 ├── ferramentas/
 │   ├── gerar_video_360.py           # vídeo MP4 local do voo 360° (opcional)
-│   └── configurar_2fa.py            # segredo TOTP no .env e QR Code do autenticador
+│   ├── configurar_2fa.py            # segredo TOTP no .env e QR Code do autenticador
+│   └── registrar_mlflow.py          # run, métricas, assinatura e Model Registry no MLflow local (opcional)
 └── tests/
     ├── conftest.py                  # ambiente isolado dos testes (banco temporário)
     ├── test_ciclo_de_vida.py        # carga única do modelo
     ├── test_coerencia.py            # melhorias nunca reduzem o preço (monotonia)
-    ├── test_comercial.py            # chaves, consumo, e-mail e relatórios de uso
+    ├── test_endpoints.py            # 200 · 400 · 404 · 405 · 422 · 500 · 503
+    ├── test_comercial.py            # chaves, consumo, e-mail, planos e relatórios de uso
+    ├── test_gestao_comercial.py     # troca de plano, suspensão, troca de chave, edição e faturamento
     ├── test_acesso.py               # TOTP do RFC 6238, sessões, bloqueio e API pública aberta
     ├── test_gestao.py               # carga, laudos, exportações, mercado e visão 3D
-    └── test_endpoints.py            # 200 · 400 · 404 · 405 · 422 · 500 · 503
+    ├── test_endereco.py             # endereço completo, cache e falha de rede
+    ├── test_comodidades.py          # Overpass, tempos, índice de conveniência e laudo completo
+    ├── test_admin_banco.py          # explorador do banco, injeção SQL, baixa, exclusão e backup
+    ├── test_sinteticos.py           # carga sintética, idempotência, remoção e migração
+    ├── test_registro_modelo.py      # artefato no SQLite: sha256, idempotência, restauração e adulteração
+    └── test_mlflow.py               # run, alias @producao e previsão igual à da API (pulado sem o MLflow)
 ```
 
 <p align="center">
@@ -241,6 +275,33 @@ A restrição custou só **0,0061 de R² na validação**, dentro do limite de 0
 O critério de seleção registrado em `metricas_v2.json` é: *menor RMSE na validação; o HGB Log monotônico é preferido se perder até 0.01 de R² para o HGB Log sem restrição*. A coerência é verificada a cada execução dos testes por `tests/test_coerencia.py` ([M2.15](#m215-testes-automatizados)).
 
 Para reproduzir, rode `python -m modulo2_api.treinamento.treinar_modelo` a partir da raiz. Leva cerca de 30 segundos e regrava `modelo_imobiliario_v2.joblib`, `metricas_v2.json` e `regioes_v2.json`.
+
+**Serialização em três vias.** O mesmo artefato existe em três lugares, cada um com uma função:
+
+| Via | Onde | Para que serve |
+|---|---|---|
+| 1. Arquivo `.joblib` | `modulo2_api/models/modelo_imobiliario_v2.joblib` (344.820 bytes) | é o que a API carrega, **uma única vez**, no `lifespan` ([M2.9](#m29-fase-3--ciclo-de-vida-e-carga-única-lifespan)) |
+| 2. SQLite | tabela `modelos` do banco ([M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado)), com o binário como BLOB, versão, sha256 único, tamanho, estimador, métricas e a marca do ativo | registro versionado e verificável do artefato; gravado no `lifespan` por [`services/registro_modelo.py`](modulo2_api/app/services/registro_modelo.py), sem duplicar se o sha256 já consta |
+| 3. MLflow local (opcional) | backend SQLite em `mlruns/`, fora do Git | rastreamento do experimento e Model Registry, sem custo; a API não depende dele |
+
+A verificação de integridade (`GET /v1/modelo/artefatos/{artefato_id}/verificar`) restaura o BLOB, compara três sha256 (o do BLOB, o do arquivo em disco e o do artefato lido na subida) e confere que o modelo restaurado prevê o mesmo valor que o modelo em memória: **US$ 619.661,36 nos dois** para o imóvel de exemplo. A verificação é uma auditoria do administrador e fica fora do caminho das predições, que usam só o modelo carregado uma vez na subida. No portal, a tela **Modelo** tem o cartão **Artefato registrado**, com o botão **Verificar integridade**, e a tela **Desenvolvedores** tem o cartão **MLflow**, com a versão `@producao`, as métricas de teste e os atalhos **Abrir o run no MLflow**, **Ver no Model Registry** e **Interface do MLflow**.
+
+**MLflow (opcional, custo zero).** O comando `python -m modulo2_api.ferramentas.registrar_mlflow` publica o artefato entregue, **sem retreinar**, num *run* do experimento `avaliador-imobiliario`:
+
+- parâmetros: algoritmo, hiperparâmetros do estimador final, divisão 60/20/20 agrupada por `id`, `random_state` e versão;
+- as 10 métricas de `metricas_v2.json` (validação e teste), lidas do arquivo, sem recalcular;
+- tag com o sha256 do `.joblib` e, como artefatos, `metricas_v2.json` e o próprio `.joblib`;
+- o modelo com assinatura (`infer_signature`) e exemplo de entrada, registrado no Model Registry como `avaliador-imobiliario@producao`.
+
+A previsão do modelo registrado no MLflow é a mesma da API. O MLflow 3.17.2 está no [`requirements.txt`](requirements.txt) completo do repositório, para a reprodução ser total; a API, porém, não depende dele em tempo de execução. Os comandos estão em [M2.16](#m216-como-executar).
+
+<p align="center">
+  <img src="assets/modulo2/mlflow_02_run.jpg" alt="MLflow: run modelo-v2 do experimento avaliador-imobiliario com parâmetros e métricas" width="90%">
+</p>
+
+<p align="center">
+  <img src="assets/modulo2/mlflow_03_registro.jpg" alt="MLflow: Model Registry com o modelo avaliador-imobiliario e o alias producao" width="90%">
+</p>
 
 ## M2.8 Fase 2 — Arquitetura modular em camadas
 
@@ -337,8 +398,13 @@ Os demais contratos ficam em `schemas/sistema.py`: `SaudeSaida`, `ModeloInfoSaid
 | POST | `/v1/predict/lote` | avalia de 1 a 20 imóveis (simulador de cenários; chave opcional) | 200 · 400 · 401 · 403 · 422 · 429 · 500 · 503 |
 | GET | `/v1/modelo` | métricas, divisão dos dados, baseline e importância das variáveis | 200 |
 | GET | `/v1/regioes` | preço mediano e US$/m² dos 70 CEPs da base | 200 |
+| GET | `/v1/modelo/artefatos` | artefatos do modelo registrados no SQLite, com versão, sha256, tamanho e métricas, sem o binário | 200 · 503 |
+| GET | `/v1/modelo/artefatos/{artefato_id}/verificar` | auditoria do administrador: restaura o BLOB, compara os três sha256 e a previsão do modelo restaurado com a do modelo em memória | 200 · 401 · 404 · 503 |
+| GET | `/v1/modelo/mlflow` | resumo do modelo registrado no MLflow local (versão `@producao`, *run*, métricas) e atalhos para a interface; lido do banco do MLflow em modo somente leitura | 200 |
+| GET | `/v1/endereco` | endereço completo de uma coordenada de King County (Nominatim, com cache) | 200 · 422 |
+| GET | `/v1/comodidades` | comodidades num raio de 1,5 km: 7 categorias, distância, tempo a pé e de carro e índice de conveniência de 0 a 100 (Overpass/OpenStreetMap, sem custo) | 200 · 422 |
 
-As rotas comerciais estão em [M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail); as de laudos, relatórios e banco, em [M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado); a da visão 3D, em [M2.12](#m212-portal-web-avaliador-imobiliário).
+As rotas comerciais estão em [M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail); as de laudos, relatórios e administração do banco (`/v1/admin/banco/*`), em [M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado); a da visão 3D, em [M2.12](#m212-portal-web-avaliador-imobiliário).
 
 <p align="center">
   <img src="assets/modulo2/api_01_swagger.jpg" alt="Swagger /docs com os grupos Monitoramento, Predição e Modelo" width="90%">
@@ -444,14 +510,14 @@ O portal mostra como o modelo seria usado no dia a dia de uma empresa de avalia�
 | Grupo | Tela | O que faz | Endpoints |
 |---|---|---|---|
 | Operação | Painel | indicadores de gestão (avaliações salvas, vendas históricas, clientes, chaves ativas, predições do dia e latência mediana), predições por dia, últimas avaliações e atalhos | `/v1/relatorios/resumo`, `/v1/avaliacoes` |
-| Operação | Nova avaliação | mapa em destaque com os preços medianos dos 70 CEPs, camadas **Preços / Mapa de valor / Ambos**, fundo **Mapa / Satélite**, **tela cheia** e **Visão 3D**; chip com a rua do ponto e endereço completo no resultado; painel lateral com valor, faixa provável, US$/m² contra a mediana do CEP, tempo de resposta e confiança do modelo; botão **Salvar e gerar laudo** | `/v1/predict`, `/v1/avaliacoes`, `/v1/regioes`, `/v1/endereco` |
+| Operação | Nova avaliação | mapa em destaque com os preços medianos dos 70 CEPs, camadas **Preços / Mapa de valor / Ambos**, fundo **Mapa / Satélite**, **tela cheia** e **Visão 3D**; chip com a rua do ponto e endereço completo no resultado; painel lateral com valor, faixa provável, US$/m² contra a mediana do CEP, tempo de resposta e confiança do modelo; cartão **Entorno** com as comodidades num raio de 1,5 km e o índice de conveniência; botão **Salvar e gerar laudo** | `/v1/predict`, `/v1/avaliacoes`, `/v1/regioes`, `/v1/endereco`, `/v1/comodidades` |
 | Operação | Avaliações | histórico de laudos do portal, da API e da amostra da base, com filtros (título, cidade, CEP, quartos, origem, faixa e valores), ordenação, paginação, detalhe com mapa e exportação **CSV** ou **JSON** | `/v1/avaliacoes`, `/v1/avaliacoes/exportar` |
 | Operação | Simulador | cinco cenários em cartões (reforma, banheiro extra, +20 % de área, padrão +1 e vista +1) numa única chamada em lote, com gráfico e tabela; um clique aplica o cenário à avaliação | `/v1/predict/lote` |
 | Análise | Relatórios de mercado | mediana, média e intervalo p25–p75 das **21.613 vendas reais**, por quartos, cidade/bairro, CEP, faixa de preço, padrão construtivo ou ano da venda, com filtros, exportação CSV ou JSON e impressão | `/v1/relatorios/mercado`, `/v1/relatorios/mercado/exportar` |
 | Análise | Mapa de valor | camada de CEPs com cor pelo US$/m² e raio pelo número de vendas, ligada a um ranking em barras | `/v1/regioes`, `/v1/predict` |
-| Análise | Modelo | R² do teste, MAPE, MAE, RMSE, redução sobre o baseline, latência medida ao vivo, validação × teste × baseline e importância das variáveis | `/v1/modelo` |
-| Administração | Comercial | gestão comercial: painel de faturamento (MRR, previsão anual, ticket médio, receita por plano e clientes perto do limite); emissão por plano, confirmada pela senha da conta, com **e-mail real** ao cliente; lista de clientes com situação e consumo do mês; ficha **Gerenciar** com edição do cadastro, troca de plano, suspensão e reativação, troca da chave, revogação, consumo por dia, histórico de auditoria e e-mails enviados; testador de chave | `/v1/comercial/*` |
-| Administração | Banco de dados | uso da API (por dia, por origem e por status HTTP), últimas predições e documentação viva das 7 tabelas, com colunas, índices, relações e contagem de linhas | `/v1/relatorios/resumo`, `/v1/relatorios/predicoes`, `/v1/relatorios/esquema` |
+| Análise | Modelo | R² do teste, MAPE, MAE, RMSE, redução sobre o baseline, latência medida ao vivo, validação × teste × baseline, importância das variáveis e o cartão **Artefato registrado**, com **Verificar integridade** | `/v1/modelo`, `/v1/modelo/artefatos` |
+| Administração | Comercial | gestão comercial: faixa de faturamento com receita mensal (MRR), receita anual prevista, ticket médio, chaves ativas, suspensas e revogadas, predições no mês, **Recebido no mês**, **Em aberto** e **Vencido**; receita por plano e alerta dos clientes com 80 % ou mais do limite; emissão por plano, confirmada pela senha da conta, com **e-mail real** ao cliente; tabela de clientes com chip de situação, barra de consumo, filtros (busca, situação e plano) e botão **Gerenciar**; testador de chave | `/v1/comercial/*`, `/v1/admin/banco/faturas/{id}` |
+| Administração | Banco de dados | explorador por seções (Clientes, Chaves de API emitidas, Faturamento, E-mails enviados, Histórico comercial, Laudos de avaliação, Uso da API (predições), Vendas reais (base) e Modelos (artefatos)) com busca, filtros por situação, ordenação, paginação, registro completo e **Exportar CSV**; saúde do banco, **Baixar cópia de segurança** e **Carregar** ou **Remover dados de exemplo**; uso da API (por dia, por origem e por status HTTP), últimas predições (as 5 mais recentes à vista e o resto recolhido em **Históricos anteriores**) e documentação viva das 9 tabelas, com colunas, índices, relações e contagem de linhas | `/v1/admin/banco/*`, `/v1/relatorios/resumo`, `/v1/relatorios/predicoes`, `/v1/relatorios/esquema` |
 | Administração | Desenvolvedores | exemplos em curl e Python, endpoints, códigos HTTP e corpo JSON de exemplo | — |
 
 **Interação entre as telas.** Todas as telas leem um único estado compartilhado, com o imóvel atual e o CEP selecionado:
@@ -460,13 +526,41 @@ O portal mostra como o modelo seria usado no dia a dia de uma empresa de avalia�
 |---|---|
 | Clicar num *pin* de preço ou em qualquer ponto do mapa em **Nova avaliação** | o imóvel é posicionado ali, o CEP mais próximo é escolhido e a avaliação aparece na hora, num *popup* e no painel lateral, com a rua no chip do mapa e o endereço completo no resultado |
 | Clicar em **Salvar e gerar laudo** | o servidor recalcula o preço (o cliente não envia valor), grava o laudo e oferece **Abrir laudo** e **Ver na lista** |
-| Abrir um laudo | página HTML pronta para imprimir ou salvar em PDF, com valor, faixa, US$/m², referência de mercado do CEP e da cidade, dados do imóvel, as 5 vendas comparáveis mais parecidas do mesmo CEP e o aviso de uso |
+| Abrir um laudo | laudo profissional em HTML, pronto para imprimir ou salvar em PDF, em 8 seções (abaixo) |
+| Clicar em **Gerenciar** na tabela de clientes | abre a janela do cliente com as abas **Dados**, **Plano**, **Chave**, **Consumo**, **Faturas**, **Histórico** e **E-mails** (abaixo) |
 | Ligar a **Visão 3D** | o mapa inclina, os prédios do OpenFreeMap sobem em volume e a câmera faz um voo orbital; há também **Satélite 3D** e **Parar voo** |
 | Clicar num cartão do **Simulador** | o cenário é aplicado ao formulário e marcado como "Aplicado à avaliação" |
 | Clicar num círculo ou numa barra do **Mapa de valor** | o círculo e a barra do ranking se destacam juntos, e o mapa voa até o CEP |
 | Clicar numa variável da importância em **Modelo** | o portal leva ao campo correspondente do formulário |
 | Emitir uma chave em **Comercial** | o portal pede a senha da conta no próprio formulário; a chave aparece uma única vez (mascarada nas capturas), o e-mail é enviado e o cliente entra na lista com o consumo zerado |
 | Enviar dados incoerentes | as mensagens 400 e 422 da API aparecem campo a campo |
+
+**Janela Gerenciar cliente (tela Comercial)**
+
+| Aba | O que faz |
+|---|---|
+| Dados | edita nome, e-mail e empresa (**Salvar alterações**); cada mudança entra no histórico |
+| Plano | cartões dos três planos com limite, preço e custo por predição; **Mudar para …** e **Confirmar upgrade** ou **Confirmar downgrade**, com o novo limite valendo na hora |
+| Chave | **Suspender** (com motivo opcional e **Confirmar suspensão**), **Reativar**, **Trocar chave** (pede a senha da conta e **Emitir a nova chave**) e **Revogar**, que só libera **Revogar definitivamente** depois de digitar o prefixo da chave |
+| Consumo | uso do mês contra o limite e consumo por dia |
+| Faturas | faturas por competência, com status e **Dar baixa** nas em aberto ou vencidas |
+| Histórico | trilha de auditoria: emissão, troca de plano, suspensão, reativação, troca de chave, revogação e edição |
+| E-mails | e-mails enviados ao cliente, com **Ver e-mail** |
+
+**Laudo profissional** (`GET /v1/avaliacoes/{avaliacao_id}/laudo`, montado em [`services/laudo.py`](modulo2_api/app/services/laudo.py)), em 8 seções:
+
+| Seção | Conteúdo |
+|---|---|
+| 1. Identificação | nº do laudo no formato **AV-AAAA-NNNNNN**, data de emissão, solicitante, finalidade e **endereço completo** (Nominatim) |
+| 2. Sumário executivo | valor estimado, faixa provável, US$/m², posição no CEP e índice de conveniência |
+| 3. Características do imóvel | dados informados na avaliação |
+| 4. Análise de mercado | mediana do CEP e da cidade, **percentil** do US$/m² no CEP e as **5 vendas comparáveis** mais parecidas |
+| 5. Localização e comodidades | 7 categorias (escolas, saúde, supermercados, transporte público, parques, restaurantes e bancos) num raio de 1,5 km, com distância, tempo a pé e de carro e o **índice de conveniência de 0 a 100**, pela Overpass/OpenStreetMap, sem custo (`GET /v1/comodidades`); se a Overpass não responder, o laudo sai com um aviso e a posição no CEP no lugar do índice |
+| 6. Metodologia e desempenho do modelo | métricas reais lidas de `metricas_v2.json` (R², MAPE, MAE e RMSE do teste) |
+| 7. Limitações e aviso legal | vendas de 2014–2015 em dólares, imóvel não vistoriado, faixa de 80 % e comodidades de base colaborativa; o documento é uma estimativa estatística e não substitui o laudo técnico da ABNT NBR 14653 |
+| 8. Responsabilidade | responsável pela emissão, nº do laudo e rodapé com os créditos do OpenStreetMap |
+
+Os nomes de lugares vindos do OpenStreetMap são escapados antes de entrar no HTML. No portal, o resultado da avaliação mostra o mesmo entorno no cartão **Entorno**.
 
 **Visão 3D fotorrealista (opcional).** Além da visão 3D do MapLibre, que funciona sem chave, a página `/visao3d` faz um **voo de 360° em volta do imóvel** sobre o Google Photorealistic 3D Tiles, no CesiumJS 1.122, com o valor estimado e a faixa sobrepostos e o crédito "Imagens © Google" sempre visível. A ficha do imóvel mostra o endereço completo e tem uma seta para recolher e expandir. Os controles são **Iniciar voo 360°**, **Pausar**, **Gravar vídeo** (`.webm`) e **Voltar ao portal**, que volta já com a sessão aberta; no portal, o botão **Voo fotorrealista** aparece no mapa da avaliação e no detalhe do laudo.
 
@@ -566,7 +660,7 @@ O módulo comercial transforma a API num serviço que pode ser oferecido a clien
 | POST | `/v1/comercial/chaves/{chave_id}/rotacionar` | troca a chave (vazamento, troca de equipe): revoga a atual, emite outra no mesmo plano e envia por e-mail | console + senha da conta · 201 |
 | GET | `/v1/comercial/clientes/{cliente_id}` | ficha do cliente: chaves, consumo por dia, histórico de auditoria e e-mails | console |
 | PATCH | `/v1/comercial/clientes/{cliente_id}` | edita nome, e-mail ou empresa | console |
-| GET | `/v1/comercial/faturamento` | receita recorrente mensal (MRR), previsão anual, ticket médio, receita por plano e clientes com 80 % ou mais do limite | console |
+| GET | `/v1/comercial/faturamento` | receita recorrente mensal (MRR), previsão anual, ticket médio, chaves por situação, predições no mês, receita por plano, clientes com 80 % ou mais do limite e o resumo das faturas (recebido no mês, em aberto e vencido) | console |
 | GET | `/v1/comercial/planos` | catálogo dos planos com limite, preço e custo por predição | público |
 | GET | `/v1/comercial/emails/{envio_id}` | pré-visualiza o e-mail enviado ao cliente | console |
 | GET | `/v1/comercial/uso` | consumo do mês da própria chave | cliente (`X-API-Key`) |
@@ -655,10 +749,28 @@ Os dados da plataforma ficam num **banco SQLite**, criado e migrado automaticame
 | `vendas_historicas` | as 21.613 vendas reais, com cidade, CEP, quartos, faixa de preço e data, indexadas para os relatórios |
 | `avaliacoes` | laudos salvos pelo portal, pela API e pela amostra da base, com o imóvel, o preço estimado e a faixa |
 | `predicoes` | data, chave, origem (`api`, `portal` ou `anonima`), CEP, área, preço estimado, latência e status HTTP |
-| `clientes` | nome, e-mail, empresa e plano |
+| `clientes` | nome, e-mail, empresa, plano e a marca `sintetico` (1 nos dados de exemplo) |
 | `chaves` | prefixo, hash SHA-256, limite mensal, criação, suspensão e revogação |
-| `eventos_comerciais` | histórico de auditoria de cada cliente: tipo da ação, chave, detalhe e data |
+| `eventos_comerciais` | histórico de auditoria de cada cliente: tipo da ação (emissão, troca de plano, suspensão, reativação, troca de chave, revogação ou edição), chave, detalhe e data |
 | `envios_email` | destinatário, assunto, modo (`smtp` ou `arquivo`) e status |
+| `modelos` | artefato do modelo serializado: versão, arquivo, sha256 único, tamanho, formato, estimador, métricas, data do treino e do registro, marca `ativo` e o binário `.joblib` como BLOB |
+| `faturas` | uma fatura por cliente e competência (`AAAA-MM`): plano, valor, predições, status (`paga`, `em_aberto`, `vencida` ou `cancelada`), emissão, vencimento e data do pagamento |
+
+São 9 tabelas. A migração do `lifespan` acrescenta a coluna `sintetico` em `clientes` e em `avaliacoes` e cria `faturas` e `eventos_comerciais` num banco antigo, sem perder dados.
+
+**Dados de exemplo sintéticos.** Para o banco não aparecer vazio na demonstração, [`services/sinteticos.py`](modulo2_api/app/services/sinteticos.py) grava um conjunto fictício e determinístico (semente 42, datas dos últimos 90 dias): imobiliárias, corretoras, construtoras, incorporadoras, financeiras e pessoas físicas, com e-mails só no domínio reservado `@exemplo.com`. A carga roda sozinha no `lifespan` (`AVALIADOR_DADOS_SINTETICOS`, padrão `1`; `0` desliga), não duplica nas subidas seguintes e também pode ser feita ou desfeita pelo console.
+
+| Registro | Quantidade | Observação |
+|---|---:|---|
+| Clientes | 20 | marcados com `sintetico = 1`; 3 pessoas físicas |
+| Chaves | 20 | uma por cliente, com o limite do plano; o hash é de um texto aleatório nunca gravado, então nenhuma chave funciona |
+| E-mails | 20 | boas-vindas com status `exemplo_sintetico`, sem envio real |
+| Eventos comerciais | 32 | 20 emissões, 3 trocas de plano, 4 suspensões, 1 reativação, 2 revogações e 2 edições |
+| Predições | 656 | preços e CEPs tirados das vendas reais; ao menos um cliente passa de 80 % do limite |
+| Laudos | 20 | marcados com `sintetico = 1` |
+| Faturas | 36 | 21 pagas, 10 em aberto, 3 vencidas e 2 canceladas (de chaves revogadas) |
+
+A remoção apaga só o que é sintético, na ordem das chaves estrangeiras, e preserva os dados reais.
 
 **Laudos de avaliação**
 
@@ -681,15 +793,44 @@ Os dados da plataforma ficam num **banco SQLite**, criado e migrado automaticame
 | GET | `/v1/relatorios/mercado/exportar` | o mesmo relatório em CSV (Excel pt-BR) ou JSON |
 | GET | `/v1/config/mapa3d` | configuração da visão 3D fotorrealista, entregue apenas a acessos locais |
 
+**Administração do banco** (todas exigem `X-Admin-Token` ou a sessão do console; sem credencial, 401)
+
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/v1/admin/banco/secoes` | seções do banco com título, total de registros, colunas, colunas de busca e permissões |
+| GET | `/v1/admin/banco/{secao}` | lista a seção com `busca`, `pagina`, `por_pagina` (1 a 100), `ordem` e `direcao`; coluna fora da lista devolve 400 |
+| GET | `/v1/admin/banco/{secao}/{registro_id}` | registro completo (404 se não existir) |
+| GET | `/v1/admin/banco/{secao}/exportar` | exporta a seção, com a busca aplicada, em CSV (Excel pt-BR) ou JSON |
+| PATCH | `/v1/admin/banco/faturas/{registro_id}` | baixa ou mudança de status da fatura: `paga` preenche `paga_em`; os demais o limpam |
+| DELETE | `/v1/admin/banco/{secao}/{registro_id}` | exclui um registro, só em laudos e faturas; nas demais seções, 400 |
+| GET | `/v1/admin/banco/saude` | tamanho do arquivo, integridade, linhas por tabela e total de sintéticos |
+| GET | `/v1/admin/banco/backup` | cópia consistente do arquivo `.db` (API de backup do SQLite) |
+| POST | `/v1/admin/banco/sinteticos` | carrega os dados de exemplo (não duplica) |
+| DELETE | `/v1/admin/banco/sinteticos` | remove só os dados de exemplo |
+
+| Seção do explorador | Tabela | Busca por | Ações |
+|---|---|---|---|
+| Clientes | `clientes` | nome, e-mail e empresa | consulta e exportação |
+| Chaves de API emitidas | `chaves` | prefixo e nome do cliente | consulta e exportação, sem o hash |
+| Faturamento | `faturas` | cliente, competência, status e plano | baixa, mudança de status e exclusão |
+| E-mails enviados | `envios_email` | destinatário, assunto e status | consulta e exportação |
+| Histórico comercial | `eventos_comerciais` | cliente, tipo e detalhe | consulta e exportação |
+| Laudos de avaliação | `avaliacoes` | título, CEP, cidade e responsável | consulta, exportação e exclusão |
+| Uso da API (predições) | `predicoes` | CEP, origem e status HTTP | consulta e exportação |
+| Vendas reais (base) | `vendas_historicas` | CEP e cidade | consulta e exportação |
+| Modelos (artefatos) | `modelos` | versão, sha256 e estimador | só leitura, sem o BLOB |
+
+Nomes de tabela e de coluna saem só de uma lista fixa no serviço, e a busca vai sempre como parâmetro da consulta, o que bloqueia injeção de SQL. Na tela **Banco de dados**, o explorador fica acima da administração (saúde, cópia de segurança e dados de exemplo), e a tabela **Últimas predições** mostra as 5 mais recentes; o resto fica recolhido em **Históricos anteriores**.
+
 **Banco de dados no portal: uso da API e documentação viva do esquema**
 
 <p align="center">
-  <img src="assets/modulo2/portal_relatorios.jpg" alt="Portal: banco de dados com uso da API, últimas predições e diagrama das 7 tabelas" width="90%">
+  <img src="assets/modulo2/portal_relatorios.jpg" alt="Portal: banco de dados com uso da API, últimas predições e diagrama das tabelas" width="90%">
 </p>
 
 ## M2.15 Testes automatizados
 
-Os testes usam o `TestClient` do FastAPI, com o `lifespan` real e um banco SQLite temporário, e ficam em [`modulo2_api/tests/`](modulo2_api/tests/).
+Os testes usam o `TestClient` do FastAPI, com o `lifespan` real e um banco SQLite temporário, e ficam em [`modulo2_api/tests/`](modulo2_api/tests/). São 125 testes, todos aprovados; as consultas ao OpenStreetMap são simuladas, então a suíte roda sem internet. Os três testes do MLflow (123 a 125) rodam num rastreamento temporário e são pulados se o MLflow não estiver instalado.
 
 | # | Teste | O que comprova | Código |
 |---:|---|---|:---:|
@@ -743,6 +884,65 @@ Os testes usam o `TestClient` do FastAPI, com o `lifespan` real e um banco SQLit
 | 63 | `test_sexta_tentativa_429_e_bloqueio` | depois de 5 falhas, a 6ª tentativa é bloqueada, mesmo com a senha certa | 401 · 429 |
 | 64 | `test_sessao_inventada_ou_expirada_401` | sessão inventada ou vencida não entra no console | 401 |
 | 65 | `test_predicao_publica_continua_aberta_com_2fa` | com 2FA ligado, `POST /v1/predict` continua aberto | 200 |
+| 66 | `test_senha_propria_guardada_como_hash` | a senha própria fica só como hash PBKDF2-SHA256 e tem prioridade sobre as alternativas do `.env` | — |
+| 67 | `test_entrar_com_senha_em_hash` | a entrada com 2FA aceita a senha guardada em hash | 200 |
+| 68 | `test_qr_quadrado_e_uri_curta` | o QR Code do terminal sai quadrado, com 35 colunas × 18 linhas | — |
+| 69 | `test_entrada_de_contingencia_so_local_e_com_token` | a entrada sem senha só vale em 127.0.0.1 e com o token certo, e a sessão abre o console | 200 · 401 |
+| 70 | `test_entrada_so_com_senha_apenas_local` | a entrada só com a senha da conta só vale em 127.0.0.1 | 200 · 401 |
+| 71 | `test_sessao_sobrevive_ao_reinicio` | a sessão vai para o disco só como hash, continua válida depois de um reinício e acaba no **Sair** | — |
+| 72 | `test_monta_endereco_completo` | o endereço completo (número, rua, bairro, cidade e CEP) é montado da resposta do Nominatim | — |
+| 73 | `test_cache_e_falha_de_rede` | o mesmo ponto usa o cache, e a falta de rede devolve "indisponível" sem erro | — |
+| 74 | `test_rota_valida_king_county` | `GET /v1/endereco` responde em King County e recusa coordenada de fora | 200 · 422 |
+| 75 | `test_planos_com_preco_e_custo_por_predicao` | o catálogo traz limite e preço de cada plano, e o custo por predição cai com o volume | 200 |
+| 76 | `test_troca_de_plano_muda_limite_e_registra_evento` | o upgrade muda limite e preço na hora e grava "Básico → Profissional" no histórico | 200 |
+| 77 | `test_mesmo_plano_400` | trocar para o mesmo plano é recusado como regra de negócio | 400 |
+| 78 | `test_suspensao_bloqueia_e_reativacao_libera` | a chave suspensa recebe `chave_suspensa`, e a reativada volta a responder | 200 · 403 |
+| 79 | `test_rotacao_revoga_a_antiga_e_entrega_nova_chave` | a troca da chave revoga a antiga, emite outra no mesmo plano e envia o e-mail; a revogada não muda de plano | 201 · 403 · 400 |
+| 80 | `test_edicao_do_cliente_registra_os_campos` | a edição do cadastro grava os campos alterados no histórico e recusa e-mail inválido | 200 · 404 · 422 |
+| 81 | `test_faturamento_soma_so_chaves_ativas` | o MRR soma só as chaves ativas, a previsão anual é MRR × 12 e a suspensa sai da receita | 200 |
+| 82 | `test_consumo_alto_aparece_no_faturamento` | a chave com 100 % do limite aparece entre os clientes perto do limite | 200 |
+| 83–84 | `test_gestao_exige_admin[...]` | faturamento e ficha do cliente sem credencial do console | 401 |
+| 85 | `test_haversine_e_tempos` | distância em linha reta (haversine) e tempos a pé e de carro | — |
+| 86 | `test_consulta_traz_todas_as_categorias_no_raio` | a consulta à Overpass cobre as 7 categorias num raio de 1,5 km | — |
+| 87 | `test_monta_categorias_ordenadas_e_indice` | categorias em ordem fixa, os 3 mais próximos com nomes distintos, lugar fora do raio descartado e índice de conveniência calculado | — |
+| 88 | `test_cache_falha_e_espera` | o mesmo ponto usa o cache; sem rede, a resposta sai "indisponível" e não há nova tentativa em 60 s | — |
+| 89 | `test_desligado_por_variavel` | `AVALIADOR_COMODIDADES=0` desliga a consulta | — |
+| 90 | `test_espelho_quando_o_principal_recusa` | se o servidor principal da Overpass recusa, a consulta passa ao espelho | — |
+| 91 | `test_rota_comodidades` | `GET /v1/comodidades` devolve categorias, tempos e índice, recusa coordenada fora de King County e aparece no OpenAPI | 200 · 422 |
+| 92 | `test_laudo_completo_com_comodidades_e_endereco` | o laudo traz as 8 seções, o nº AV-AAAA-NNNNNN, o endereço, as comodidades com tempos, os nomes escapados e o R² lido de `metricas_v2.json` | 200 |
+| 93 | `test_laudo_sem_comodidades` | sem resposta da Overpass, o laudo sai com um aviso e a posição no CEP no lugar do índice | 200 |
+| 94 | `test_sem_admin_401` | as rotas `/v1/admin/banco/*` exigem credencial do console | 401 |
+| 95 | `test_secoes_whitelist_e_campos_sensiveis` | as 9 seções vêm de lista fixa, sem o hash da chave nem o JSON de entrada; só laudos e faturas podem ser excluídos | 200 |
+| 96 | `test_busca_parametrizada_e_join` | busca parametrizada, com o nome do cliente nas chaves e no histórico; `%` não casa com tudo | 200 |
+| 97 | `test_paginacao_e_ordem` | paginação e ordenação por coluna; `por_pagina` acima de 100 ou página 0 são barrados | 200 · 422 |
+| 98 | `test_ordem_fora_da_whitelist_e_injecao` | coluna fora da lista e tentativa de injeção de SQL são recusadas, e a tabela fica intacta | 200 · 400 |
+| 99 | `test_secao_e_registro_inexistentes_404` | seção ou registro inexistente devolve o JSON `nao_encontrado` | 404 |
+| 100 | `test_detalhe_sem_hash_e_laudo_com_entrada` | o detalhe da chave não mostra o hash, e o do laudo traz a entrada | 200 |
+| 101 | `test_exportar_csv_e_json` | exportação em CSV (Excel pt-BR, com BOM) e em JSON, sem o hash | 200 |
+| 102 | `test_baixa_de_fatura` | a baixa marca a fatura como paga e preenche `paga_em`; reabrir limpa a data; status inválido e fatura inexistente são barrados | 200 · 404 · 422 |
+| 103 | `test_exclusao_permitida_e_proibida` | faturas e laudos podem ser excluídos; nas demais seções a exclusão é recusada | 200 · 400 · 404 |
+| 104 | `test_saude` | saúde do arquivo: integridade, tamanho e linhas por tabela | 200 |
+| 105 | `test_backup` | a cópia de segurança é um arquivo SQLite íntegro | 200 |
+| 106 | `test_faturas_ausente_some_da_lista` | num banco antigo sem a tabela `faturas`, a seção some da lista | — |
+| 107 | `test_lifespan_carrega_cerca_de_20_por_secao` | o `lifespan` carrega 20 clientes, chaves, e-mails, laudos e emissões sintéticos, com e-mails `@exemplo.com` | — |
+| 108 | `test_chaves_no_formato_e_limite_do_plano` | as chaves sintéticas têm prefixo `aval_`, hash SHA-256 e o limite do plano | — |
+| 109 | `test_faturas_com_valor_do_plano_e_status_coerente` | faturas com o preço do plano, maioria paga e cancelada só em chave revogada | — |
+| 110 | `test_algum_cliente_perto_do_limite` | ao menos um cliente sintético passa de 80 % do limite do mês | — |
+| 111 | `test_rotas_exigem_admin` | `POST` e `DELETE /v1/admin/banco/sinteticos` sem credencial do console | 401 |
+| 112 | `test_carga_e_idempotente` | carregar de novo não duplica nada | 200 |
+| 113 | `test_remocao_preserva_dados_reais_e_recarga` | a remoção apaga só o sintético, preserva os dados reais e permite recarregar | 200 |
+| 114 | `test_migracao_acrescenta_coluna_sintetico_em_banco_antigo` | a migração acrescenta a coluna `sintetico` e a tabela `faturas` num banco antigo | — |
+| 115 | `test_lifespan_registra_artefato_com_sha256_do_arquivo` | o `lifespan` grava o `.joblib` como BLOB, com o sha256 e o tamanho do arquivo, e o marca como ativo | — |
+| 116 | `test_registro_idempotente` | registrar de novo o mesmo artefato não duplica, e só um fica ativo | — |
+| 117 | `test_restauracao_preve_igual_ao_modelo_em_memoria` | o modelo restaurado do BLOB prevê o mesmo valor que o modelo em memória | — |
+| 118 | `test_rota_lista_artefatos_sem_blob` | `GET /v1/modelo/artefatos` lista versão, sha256 e métricas, sem o binário | 200 |
+| 119 | `test_verificacao_integra` | a verificação compara os três sha256 e as duas previsões; artefato inexistente; sem administrador | 200 · 404 · 401 |
+| 120 | `test_explorador_do_banco_mostra_modelos_sem_blob` | a seção Modelos (artefatos) aparece no explorador sem o BLOB e não pode ser excluída | 200 · 400 |
+| 121 | `test_blob_adulterado_nao_e_integro` | um BLOB adulterado é apontado como divergente | 200 |
+| 122 | `test_resumo_mlflow_sem_registro_explica_como_criar` | sem o banco do MLflow, o resumo do portal diz como registrar e abrir a interface | 200 |
+| 123 | `test_metricas_iguais_ao_json` | o *run* do MLflow traz as métricas de `metricas_v2.json`, a tag sha256 e a divisão 60/20/20 | — |
+| 124 | `test_versao_registrada_com_alias` | o Model Registry tem a versão do *run* com o alias `producao` | — |
+| 125 | `test_previsao_registrada_igual_a_da_api` | o modelo registrado no MLflow prevê o mesmo valor que a API | — |
 
 <p align="center">
   <img src="assets/modulo2/api_06_pytest.jpg" alt="Saída do pytest com os testes aprovados" width="90%">
@@ -778,6 +978,10 @@ uvicorn modulo2_api.app.main:app --port 8020
 
 # 6. Rodar os testes automatizados
 pytest modulo2_api/tests -q
+
+# 7. (opcional) MLflow local (já instalado pelo requirements.txt): registrar o modelo entregue e abrir a interface
+python -m modulo2_api.ferramentas.registrar_mlflow
+mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db --port 5000 --host 127.0.0.1
 ```
 
 Com o servidor no ar:
@@ -788,6 +992,7 @@ Com o servidor no ar:
 | <http://127.0.0.1:8020/docs> | Swagger UI, para testar os endpoints |
 | <http://127.0.0.1:8020/redoc> | ReDoc |
 | <http://127.0.0.1:8020/health> | status do serviço |
+| <http://127.0.0.1:5000/> | interface do MLflow (opcional, passo 7) |
 
 Consumo a partir de Python:
 
@@ -818,6 +1023,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | httpx | 0.28.1 | cliente HTTP do `TestClient` |
 | pytest | 9.2.0 | testes automatizados |
 | qrcode | 8.2 | QR Code do segundo fator no terminal (`configurar_2fa`) |
+| MLflow | 3.17.2 | rastreamento do experimento e Model Registry local, no `requirements.txt` completo; a API não depende dele em tempo de execução |
 | sqlite3, smtplib, hashlib | biblioteca padrão | banco de documentação, envio de e-mail e hash das chaves, sem dependência nova |
 
 **Portal web (carregado pelo navegador, sem instalação):**
@@ -832,14 +1038,14 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | CesiumJS | 1.122.0 | visão 3D fotorrealista opcional (via jsDelivr) |
 | Google Photorealistic 3D Tiles | — | imagens 3D da visão fotorrealista; exige chave própria no `.env` local |
 
-- [`requirements.txt`](requirements.txt), na raiz: cobre o Módulo 1 (incluindo matplotlib, seaborn, h3, plotly e jinja2) e o Módulo 2.
+- [`requirements.txt`](requirements.txt), na raiz: **completo**, cobre o Módulo 1 (incluindo matplotlib, seaborn, h3, plotly e jinja2), o Módulo 2 e o MLflow; é o que o passo 3 instala.
 - [`modulo2_api/requirements.txt`](modulo2_api/requirements.txt): só o necessário para a API e os testes.
 - As versões do pipeline são as mesmas do Módulo 1, o que garante a compatibilidade do artefato com o código de `src/`.
 - O `.venv/` fica fora do versionamento (`.gitignore`).
 
 ## M2.18 Organização do trabalho e uso do GitHub
 
-**Planejamento antes do código.** O enunciado foi decomposto nas cinco fases técnicas, mais o portal e a documentação. Cada tarefa ganhou um *feature branch* próprio, criado a partir da `develop`, e a ordem seguiu as dependências: o modelo vem antes da estrutura; a estrutura, antes do ciclo de vida; o ciclo de vida, antes dos contratos; os contratos, antes dos endpoints e testes; depois vêm o portal, o ajuste monotônico do modelo, a primeira versão da documentação, a revisão final, a nova identidade do portal, o módulo comercial, a plataforma de gestão, a visão 3D fotorrealista, os ajustes da auditoria e a documentação final; por último entram o e-mail profissional da chave de API, o acesso ao console com senha e segundo fator e os novos limites dos planos. São 18 *feature branches* ao todo.
+**Planejamento antes do código.** O enunciado foi decomposto nas cinco fases técnicas, mais o portal e a documentação. Cada tarefa ganhou um *feature branch* próprio, criado a partir da `develop`, e a ordem seguiu as dependências: o modelo vem antes da estrutura; a estrutura, antes do ciclo de vida; o ciclo de vida, antes dos contratos; os contratos, antes dos endpoints e testes; depois vêm o portal, o ajuste monotônico do modelo, a primeira versão da documentação, a revisão final, a nova identidade do portal, o módulo comercial, a plataforma de gestão, a visão 3D fotorrealista, os ajustes da auditoria e a documentação final; por último entram o e-mail profissional da chave de API, o acesso ao console com senha e segundo fator e os novos limites dos planos; fecham a sequência a senha em hash com as entradas de contingência e o endereço completo, a gestão comercial com o laudo profissional e a administração do banco, e a serialização do artefato em três vias (`.joblib`, SQLite e MLflow). São 21 *feature branches* ao todo.
 
 <p align="center">
   <img src="assets/modulo2/fluxo_branches_m2.svg" alt="Fluxo de branches do Módulo 2: develop e um feature branch por fase" width="100%">
@@ -865,7 +1071,10 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | 15 | `feature/m2-docs-final` | documentação final do Módulo 2, diagramas e capturas |
 | 16 | `feature/m2-email-profissional` | layout profissional do e-mail da chave de API, com logo embutido e assinatura do titular |
 | 17 | `feature/m2-acesso-2fa` | acesso ao console com senha e segundo fator TOTP, tela de entrada no portal e comando do QR Code |
-| 18 | `feature/m2-ajustes-finais` | limites mensais dos planos (básico 100, profissional 1.000 e empresarial 10.000 predições) , QR Code do 2FA compacto no terminal e documentação final (GitFlow, testes e capturas) |
+| 18 | `feature/m2-ajustes-finais` | limites mensais dos planos (básico 100, profissional 1.000 e empresarial 10.000 predições), QR Code do 2FA compacto no terminal e documentação do GitFlow, do 2FA e dos testes |
+| 19 | `feature/m2-acesso-contingencia` | senha da conta só como hash PBKDF2, entradas locais de contingência (só senha ou sem senha), sessão que sobrevive ao reinício, tela cheia nos mapas, satélite acima das formas, endereço completo pelo OpenStreetMap e ficha recolhível na Visão 3D |
+| 20 | `feature/m2-gestao-comercial` | gestão comercial (preços, troca de plano, suspensão, troca de chave, faturamento e histórico), laudo profissional com as comodidades do entorno, dados de exemplo sintéticos e administração do banco, com as telas do portal |
+| 21 | `feature/m2-serializacao-mlflow` | cópia do artefato como BLOB no SQLite com verificação de integridade, registro no MLflow local com alias de produção, cartão do MLflow em Desenvolvedores, `requirements.txt` completo e documentação final |
 | — | `main` | versão final, com todo o código integrado |
 
 **Boas práticas adotadas:**
@@ -888,7 +1097,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | 1 | Gravação do vídeo (2,0) | vídeo de até 10 min, com rosto visível, cobrindo os seis tópicos do item 5.4 | entregue diretamente na plataforma do curso |
 | 2 | Branches e commits (1,5) | `develop`, um *feature branch* por fase, PRs para a `develop`, nenhum branch excluído, merge final na `main` e commits curtos no imperativo | [M2.18](#m218-organização-do-trabalho-e-uso-do-github), aba *Branches* e *Pull requests* do GitHub, `git log --graph --all` |
 | 3 | README completo (1,5) | os seis tópicos do item 5.2 (tabela abaixo) e mais arquitetura, testes, capturas e cobertura | este documento |
-| 4 | Fase 1: serialização e modelo (1,0) | treino, validação e teste em 60/20/20 por `id`; imputação, one-hot e escala no `Pipeline`; artefato `.joblib` em `modulo2_api/models/`; métricas documentadas | [M2.7](#m27-fase-1--preparação-e-serialização-do-modelo), `treinar_modelo.py` (`dividir`, `selecionar`, `joblib.dump`), `metricas_v2.json` |
+| 4 | Fase 1: serialização e modelo (1,0) | treino, validação e teste em 60/20/20 por `id`; imputação, one-hot e escala no `Pipeline`; artefato `.joblib` em `modulo2_api/models/`, cópia versionada como BLOB no SQLite com verificação de integridade e registro opcional no MLflow local; métricas documentadas | [M2.7](#m27-fase-1--preparação-e-serialização-do-modelo), `treinar_modelo.py` (`dividir`, `selecionar`, `joblib.dump`), `metricas_v2.json`, `services/registro_modelo.py`, `ferramentas/registrar_mlflow.py`, testes 115 a 125 |
 | 5 | Fase 2: arquitetura modular (1,0) | camadas `schemas/`, `services/`, `routers/` e `main.py`; nenhuma regra de negócio nas rotas | [M2.6](#m26-estrutura-do-módulo-2), [M2.8](#m28-fase-2--arquitetura-modular-em-camadas), diagrama de arquitetura |
 | 6 | Fase 3: ciclo de vida (1,0) | `@asynccontextmanager lifespan` carrega o artefato uma única vez e o mantém na RAM; as rotas não leem o disco | [M2.9](#m29-fase-3--ciclo-de-vida-e-carga-única-lifespan), `main.py` (`lifespan`), testes 2 e 19 |
 | 7 | Fase 4: Pydantic (1,0) | `BaseModel` de entrada e saída com `Field` (`ge`, `le`, `pattern`, `multiple_of`, `description`), `extra="forbid"`, `response_model` em todas as rotas e 422 consistente | [M2.10](#m210-fase-4--contratos-de-dados-com-pydantic), `schemas/imovel.py`, testes 7 a 12, captura do 422 |
@@ -921,6 +1130,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | Restrições monotônicas crescentes no boosting | boosting sem restrição | perda de apenas 0,0061 de R² na validação (limite 0,01) em troca de coerência comercial: reforma, área, padrão ou vista melhores nunca reduzem o preço |
 | Boosting em escala log com *smearing* | regressão no preço bruto | o preço tem assimetria de 4,0; o log estabiliza o erro e o *smearing* corrige o viés ao voltar para dólares |
 | Pré-processamento dentro do `Pipeline` | tratar os dados na rota | o mesmo tratamento do treino é aplicado na inferência, sem duplicar código |
+| Artefato também como BLOB no SQLite e no MLflow local | só o arquivo em disco | o banco guarda a versão com sha256 e prova a integridade pela previsão; o MLflow dá rastreamento e registro sem custo e sem a API depender dele |
 | `joblib` com `compress=3` | `pickle` sem compressão | formato recomendado para objetos do scikit-learn; o artefato tem 337 KB |
 | Entrada em m², convertida para pés² no serviço | expor as unidades originais da base | contrato mais natural para o usuário; a conversão é regra de negócio do *service* |
 | 422 para contrato e 400 para regra de negócio | um único código de erro | o cliente distingue "JSON mal formado" de "dado incoerente" |
@@ -933,6 +1143,8 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | Preço do laudo recalculado no servidor | aceitar o valor enviado pelo cliente | um laudo nunca registra um preço que o modelo não calculou |
 | Vendas reais no SQLite para os relatórios | recalcular tudo a partir do CSV em cada consulta | consultas indexadas por cidade, CEP, quartos, faixa e data, em milissegundos |
 | Chave do Google só no `.env` local e entregue só a `127.0.0.1` | chave no código ou no repositório | a visão fotorrealista é opcional e nenhum segredo vai para o GitHub |
+| Comodidades pela Overpass/OpenStreetMap, com cache e servidor espelho | APIs pagas de lugares | o laudo ganha o entorno sem custo e sem chave; se a consulta falhar, ele sai com um aviso |
+| Dados de exemplo marcados com `sintetico = 1` e e-mails `@exemplo.com` | banco vazio na demonstração ou dados misturados | as telas aparecem preenchidas, e a remoção apaga só o fictício |
 | Portal em HTML/CSS/JS servido pela API | framework de front-end separado | nenhuma dependência extra para o avaliador; a API e o portal sobem com um único comando |
 
 ## M2.21 Limitações
@@ -946,9 +1158,9 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 
 ## M2.22 Próximas melhorias
 
-- Chave de API obrigatória, com painel de consumo por cliente.
+- Chave de API obrigatória e cobrança automática das faturas por um meio de pagamento.
 - Migração do SQLite para PostgreSQL e monitoramento de *drift* sobre as predições registradas.
-- Versionamento e acompanhamento dos modelos com MLflow.
+- Retreino periódico com comparação automática de versões no MLflow e promoção do alias `producao` só com ganho na validação.
 - Retreino com dados atuais, validação temporal e intervalos conformais.
 - Empacotamento em contêiner Docker, CI com os testes e publicação em nuvem.
 
@@ -962,6 +1174,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | Mapa base vetorial | OpenFreeMap e OpenMapTiles, com dados © colaboradores do OpenStreetMap | dados sob [ODbL](https://opendatacommons.org/licenses/odbl/) |
 | Imagens de satélite | Esri World Imagery (Esri, Maxar, Earthstar Geographics) | termos de uso da Esri |
 | Endereços (geocodificação reversa) | Nominatim, com dados © colaboradores do OpenStreetMap | dados sob [ODbL](https://opendatacommons.org/licenses/odbl/); [política de uso](https://operations.osmfoundation.org/policies/nominatim/) respeitada (identificação, 1 consulta/s e cache) |
+| Comodidades do entorno | Overpass API, com dados © colaboradores do OpenStreetMap | dados sob [ODbL](https://opendatacommons.org/licenses/odbl/) |
 | Biblioteca de mapas | MapLibre GL JS 4.7.1 | BSD-3-Clause |
 | Biblioteca de gráficos | Chart.js 4.4.1 | MIT |
 | Visão 3D fotorrealista (opcional) | CesiumJS 1.122.0 | Apache-2.0 |
@@ -976,7 +1189,7 @@ O crédito ao template e aos mapas também aparece no rodapé de todas as telas 
 |---|---|
 | Código da API | [`modulo2_api/app/`](modulo2_api/app/) |
 | Artefato e métricas | [`modulo2_api/models/`](modulo2_api/models/) |
-| Testes | [`modulo2_api/tests/`](modulo2_api/tests/): 65 aprovados |
+| Testes | [`modulo2_api/tests/`](modulo2_api/tests/): 125 aprovados |
 | Capturas do Swagger, do pytest, do 404/405 e das telas da plataforma | [`assets/modulo2/`](assets/modulo2/) |
 | Transparência sobre o uso de IA | [seção 21](#21-transparência-sobre-uso-de-ia) |
 

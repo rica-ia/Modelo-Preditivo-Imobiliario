@@ -76,3 +76,33 @@ class ErroSaida(BaseModel):
     erro: str = Field(..., examples=["dados_invalidos"])
     mensagem: str
     detalhes: list[DetalheErro] | None = None
+
+
+class ArtefatoSaida(BaseModel):
+    """Artefato registrado na tabela `modelos` (o BLOB nunca sai em JSON)."""
+
+    id: int
+    versao: str = Field(..., examples=["v2"])
+    nome_arquivo: str = Field(..., examples=["modulo2_api/models/modelo_imobiliario_v2.joblib"])
+    sha256: str = Field(..., min_length=64, max_length=64)
+    tamanho_bytes: int = Field(..., ge=0)
+    formato: str = Field(..., examples=["joblib"])
+    estimador: str | None = None
+    metricas: dict = Field(default_factory=dict, description="Métricas de validação e teste no registro.")
+    treinado_em: str | None = None
+    registrado_em: str
+    ativo: bool = Field(..., description="Artefato que a API está servindo.")
+
+
+class VerificacaoArtefatoSaida(BaseModel):
+    id: int
+    integro: bool = Field(..., description="Hashes iguais e a mesma previsão do modelo em memória.")
+    sha256_registrado: str
+    sha256_blob: str
+    sha256_disco: str | None
+    sha256_carregado: str | None = Field(None, description="Hash do arquivo lido na subida da API.")
+    tamanho_bytes: int
+    previsao_restaurada: float | None
+    previsao_em_memoria: float | None
+    imovel_exemplo: dict
+    erro: str | None = None

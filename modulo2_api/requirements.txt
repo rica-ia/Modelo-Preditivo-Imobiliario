@@ -1,4 +1,5 @@
-# Módulo 2 · API preditiva (Python 3.13)
+# Módulo 2 · API preditiva (Python 3.13): mínimo para subir a API e rodar os testes.
+# O ambiente completo do repositório (notebook, gráficos e MLflow) está em ../requirements.txt.
 # Pipeline de dados e modelo (mesmas versões do Módulo 1)
 pandas==2.2.3
 numpy==2.3.5
