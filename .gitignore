@@ -24,3 +24,6 @@ ROTEIRO-COMMITS-MODELO-PREDITIVO.html
 modulo2_api/banco/*.db
 modulo2_api/banco/*.db-*
 modulo2_api/banco/emails/
+
+# Vídeos 360° gerados localmente (imagens do Google não são redistribuídas)
+modulo2_api/saida/
