@@ -37,6 +37,8 @@ MENSAGENS = {
 
 
 def _traduzir(erro: dict) -> dict:
+    if erro.get("type") == "json_invalid":
+        return {"campo": "corpo", "mensagem": MENSAGENS["json_invalid"]}
     campo = ".".join(str(parte) for parte in erro.get("loc", ()) if parte != "body") or "corpo"
     modelo = MENSAGENS.get(erro.get("type", ""))
     try:
