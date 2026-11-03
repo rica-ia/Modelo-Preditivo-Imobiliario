@@ -136,6 +136,7 @@ main:has(.view-cheia:not([hidden])) { max-width: none; padding: 0; }
 .layout-avaliar { display: grid; grid-template-columns: minmax(0, 1fr) 470px; height: calc(100vh - var(--topo-h) - var(--faixa-h) - 2px); min-height: 620px; }
 .mapa-area { position: relative; min-height: 0; }
 .mapa { position: absolute; inset: 0; background: var(--card2); }
+.mapa-area:fullscreen { width: 100vw; height: 100vh; background: var(--bg); }
 .chips-mapa { position: absolute; top: 16px; left: 16px; right: 200px; display: flex; flex-wrap: wrap; gap: 8px; z-index: 3; pointer-events: none; }
 .chips-mapa span { pointer-events: auto; padding: 8px 14px; border-radius: 999px; background: color-mix(in srgb, var(--bg2) 88%, transparent); border: 1px solid var(--line2); font-size: 14px; font-weight: 700; box-shadow: var(--sombra-flut); backdrop-filter: blur(8px); }
 .chips-mapa span.preco { background: var(--accent); border-color: var(--accent); color: #fff; }

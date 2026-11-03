@@ -142,6 +142,9 @@
     });
     m.touchZoomRotate.disableRotation();
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    // Tela cheia da área inteira do mapa, para levar junto os chips, a legenda e os seletores sobrepostos
+    const area = m.getContainer().closest(".mapa-area") || m.getContainer().parentElement;
+    m.addControl(new maplibregl.FullscreenControl({ container: area }), "bottom-right");
     const reg = { m, chave, tema: escuroAtivo(), depoisDoEstilo, tres: false, raf: null };
     m.on("style.load", () => { adicionarSatelite(reg); adicionarPredios(reg); if (reg.depoisDoEstilo) reg.depoisDoEstilo(); });
     m.on("error", (e) => { window.__errosMapa.push(String((e && e.error && e.error.message) || e)); });
@@ -153,7 +156,11 @@
   function adicionarSatelite(reg) {
     const m = reg.m;
     if (!m.getSource("satelite")) m.addSource("satelite", { type: "raster", tiles: [ESRI], tileSize: 256, maxzoom: 19, attribution: "Imagens: Esri, Maxar, Earthstar Geographics" });
-    const rotulos = (m.getStyle().layers || []).find((l) => l.type === "symbol");
+    // A foto entra acima de todo o desenho do estilo (prédios e ruas em cor escura) e abaixo só dos
+    // rótulos finais; o primeiro rótulo (nome da água) vem antes dos prédios e deixava tudo preto.
+    const camadas = m.getStyle().layers || [];
+    const ultimaForma = camadas.reduce((u, l, i) => (l.type !== "symbol" ? i : u), -1);
+    const rotulos = camadas.slice(ultimaForma + 1).find((l) => l.type === "symbol");
     if (!m.getLayer("satelite")) {
       m.addLayer({ id: "satelite", type: "raster", source: "satelite", layout: { visibility: basePreferida[reg.chave] === "satelite" ? "visible" : "none" } }, rotulos && rotulos.id);
     }
@@ -483,7 +490,7 @@
     const comp = comparativoCep(d, payload);
     $("#resultado").innerHTML = `
       <div class="res-topo"><div><h3 class="res-titulo">Avaliação do imóvel</h3>
-        <p class="res-local">${esc(num(payload.area_util_m2))} m² · ${esc(payload.quartos)} quartos · CEP ${esc(payload.cep)} · ${num(payload.latitude, 4)}, ${num(payload.longitude, 4)}</p></div>
+        <p class="res-local">${esc(num(payload.area_util_m2))} m² · ${esc(payload.quartos)} quartos · CEP ${esc(payload.cep)} · <span id="res-endereco">${num(payload.latitude, 4)}, ${num(payload.longitude, 4)}</span></p></div>
         ${d.versao_modelo ? `<span class="chip">modelo ${esc(d.versao_modelo)}</span>` : ""}</div>
       <div class="res-rotulo">Valor estimado</div>
       <div class="res-preco"><small>US$</small>${num(preco)}</div>
@@ -497,6 +504,7 @@
       </div>
       ${blocoConfianca()}
       <p class="ref">${esc(d.referencia_mercado || "")}</p>`;
+    mostrarEndereco($("#res-endereco"), payload.latitude, payload.longitude, (e) => e.endereco);
   }
 
   // ---------------------------------------------------------------- mapa da avaliação
@@ -519,10 +527,34 @@
       .setHTML(`<span class="pop-sub">Valor estimado · CEP ${esc(payload.cep)}</span><span class="pop-preco">${usd.format(d.preco_estimado_usd)}</span><span class="pop-sub">Faixa: ${usd.format(fx.minimo)} – ${usd.format(fx.maximo)}</span>`)
       .addTo(mapaAvaliar.m);
   }
+  // ---------------------------------------------------------------- endereço (OpenStreetMap, com cache no servidor e aqui)
+  const enderecos = new Map();
+  const chaveCoord = (lat, lng) => `${Number(lat).toFixed(5)},${Number(lng).toFixed(5)}`;
+  function enderecoDe(lat, lng) {
+    const k = chaveCoord(lat, lng);
+    if (!enderecos.has(k)) {
+      enderecos.set(k, api(`/v1/endereco?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`)
+        .then((r) => (r.ok && r.dados && r.dados.disponivel ? r.dados : (enderecos.delete(k), null)))
+        .catch(() => (enderecos.delete(k), null)));
+    }
+    return enderecos.get(k);
+  }
+  const ABREVIA = [[/\bNortheast\b/g, "NE"], [/\bNorthwest\b/g, "NW"], [/\bSoutheast\b/g, "SE"], [/\bSouthwest\b/g, "SW"],
+    [/\bNorth\b/g, "N"], [/\bSouth\b/g, "S"], [/\bEast\b/g, "E"], [/\bWest\b/g, "W"], [/\bStreet\b/g, "St"], [/\bAvenue\b/g, "Ave"],
+    [/\bPlace\b/g, "Pl"], [/\bBoulevard\b/g, "Blvd"], [/\bDrive\b/g, "Dr"], [/\bRoad\b/g, "Rd"], [/\bLane\b/g, "Ln"], [/\bCourt\b/g, "Ct"]];
+  const ruaCurta = (e) => ABREVIA.reduce((s, [re, ab]) => s.replace(re, ab), [e.numero, e.rua].filter(Boolean).join(" "));
+  // Preenche o elemento quando o endereço chega, se ele ainda for do mesmo ponto
+  function mostrarEndereco(el, lat, lng, formato) {
+    if (!el) return;
+    const k = chaveCoord(lat, lng);
+    el.dataset.coord = k;
+    enderecoDe(lat, lng).then((e) => { if (e && el.dataset.coord === k) { el.textContent = formato(e); el.hidden = false; el.title = `${e.endereco} · ${e.fonte}`; } });
+  }
   function atualizarChips() {
     const v = estado.imovel;
     const preco = resultadoAtual() ? `<span class="preco">${usd.format(estado.ultimoResultado.dados.preco_estimado_usd)}</span>` : "";
-    $("#chips-imovel").innerHTML = `${preco}<span>${num(v.area_util_m2)} m²</span><span>${v.quartos} quartos</span><span>${num(v.banheiros, v.banheiros % 1 ? 2 : 0)} banheiros</span><span>CEP ${esc(v.cep)}</span>`;
+    $("#chips-imovel").innerHTML = `${preco}<span>${num(v.area_util_m2)} m²</span><span>${v.quartos} quartos</span><span>${num(v.banheiros, v.banheiros % 1 ? 2 : 0)} banheiros</span><span id="chip-endereco" hidden></span><span>CEP ${esc(v.cep)}</span>`;
+    mostrarEndereco($("#chip-endereco"), v.latitude, v.longitude, ruaCurta);
   }
   ouvir(atualizarChips);
   function legendaAvaliar() {
@@ -1113,13 +1145,19 @@
   const CHAVE_SESSAO = "ai-sessao-2fa";
   const acesso = { exige: false };
   let memoriaSessao = "";
-  function sessaoAdmin() { try { return sessionStorage.getItem(CHAVE_SESSAO) || ""; } catch (e) { return memoriaSessao; } }
-  function gravarSessao(s) { memoriaSessao = s; try { if (s) sessionStorage.setItem(CHAVE_SESSAO, s); else sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) {} atualizarAdmin(); }
+  // localStorage (e não sessionStorage): a sessão vale nas outras abas do portal, como a da Visão 3D; expira no servidor em 8 h
+  function sessaoAdmin() { try { return localStorage.getItem(CHAVE_SESSAO) || ""; } catch (e) { return memoriaSessao; } }
+  function gravarSessao(s) { memoriaSessao = s; try { if (s) localStorage.setItem(CHAVE_SESSAO, s); else localStorage.removeItem(CHAVE_SESSAO); } catch (e) {} atualizarAdmin(); }
   const cabAdmin = () => (sessaoAdmin() ? { "X-Admin-Sessao": sessaoAdmin() } : tokenAdmin() ? { "X-Admin-Token": tokenAdmin() } : {});
+  // Console liberado: sessão 2FA quando o servidor exige; senão, o token de administrador
+  const temAdmin = () => (acesso.exige ? !!sessaoAdmin() : !!tokenAdmin());
+  function pedirAdmin() { if (acesso.exige) mostrarEntrada("Entre com a senha e o código do autenticador.", "info"); else abrirModal("modal-admin"); }
   function atualizarAdmin() {
+    const campoCodigo = $("#campo-senha-conta");
+    if (campoCodigo) campoCodigo.hidden = !acesso.exige;
     if (acesso.exige) {
       const tem2 = !!sessaoAdmin();
-      $("#admin-rotulo").textContent = tem2 ? "sessão 2FA ativa" : "sem sessão";
+      $("#admin-rotulo").textContent = tem2 ? "administrador · sessão ativa" : "administrador · sem sessão";
       $$(".btn-admin").forEach((b) => b.classList.toggle("ativo", tem2));
       $("#admin-token").hidden = true;
       $("#admin-2fa").hidden = false;
@@ -1129,7 +1167,7 @@
       return;
     }
     const tem = !!tokenAdmin();
-    $("#admin-rotulo").textContent = tem ? "token ativo" : "sem token";
+    $("#admin-rotulo").textContent = tem ? "administrador · token ativo" : "administrador · sem token";
     $$(".btn-admin").forEach((b) => b.classList.toggle("ativo", tem));
     const chip = $("#adm-estado");
     chip.textContent = tem ? "Token informado" : "Sem token";
@@ -1193,10 +1231,13 @@
   });
   // Sessão que expira no servidor (8 h ou reinício da API) volta para a tela de entrada
   function conferirSessao(r) {
-    if (acesso.exige && r && r.status === 401 && sessaoAdmin()) { gravarSessao(""); mostrarEntrada("A sessão expirou. Entre de novo.", "info"); }
+    if (acesso.exige && r && r.status === 401 && sessaoAdmin() && !(r.dados && r.dados.erro === "acesso_negado")) { gravarSessao(""); mostrarEntrada("A sessão expirou. Entre de novo.", "info"); }
     return r;
   }
   async function iniciarAcesso() {
+    // Entrada de contingência (comando "avaliador direto"): a sessão chega no fragmento, que não vai ao servidor
+    const direta = /^#entrar=([\w-]+)$/.exec(location.hash);
+    if (direta) { gravarSessao(direta[1]); history.replaceState(null, "", location.pathname + "#painel"); }
     const r = await api("/v1/acesso/estado");
     acesso.exige = !!(r.ok && r.dados && r.dados.exige_2fa);
     atualizarAdmin();
@@ -1553,14 +1594,24 @@
     let ok = true;
     if (!corpo.nome) { marcar("nome", "Informe o nome"); ok = false; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(corpo.email)) { marcar("email", "E-mail inválido"); ok = false; }
+    const senhaConta = f.senhaconta ? f.senhaconta.value : "";
+    if (acesso.exige && !senhaConta) { marcar("senhaconta", "Digite a senha da conta para confirmar"); ok = false; }
     if (!ok) return;
-    if (!tokenAdmin()) { $("#chave-resultado").innerHTML = alertaHTML("Token de administrador necessário", "Informe o token em Administrador, no cabeçalho, para emitir chaves.", [], "aviso"); abrirModal("modal-admin"); return; }
+    if (!temAdmin()) {
+      $("#chave-resultado").innerHTML = acesso.exige
+        ? alertaHTML("Entre na plataforma", "Entre com a senha e o código do autenticador para emitir chaves.", [], "aviso")
+        : alertaHTML("Token de administrador necessário", "Informe o token em Administrador, no cabeçalho, para emitir chaves.", [], "aviso");
+      pedirAdmin();
+      return;
+    }
     const btn = $("#btn-gerar");
     btn.disabled = true;
     btn.innerHTML = '<span class="carregando"></span> Gerando…';
-    const r = conferirSessao(await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: cabAdmin() }));
+    const r = conferirSessao(await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: { ...cabAdmin(), ...(acesso.exige ? { "X-Senha-Conta": senhaConta } : {}) } }));
     btn.disabled = false;
     btn.textContent = "Gerar chave e enviar e-mail";
+    if (!r.ok && r.dados && r.dados.erro === "acesso_negado") { marcar("senhaconta", r.dados.mensagem); f.senhaconta.value = ""; return; }
+    if (r.status === 429) { marcar("senhaconta", (r.dados && r.dados.mensagem) || "Muitas tentativas. Aguarde 5 min."); return; }
     if (!r.ok || !r.dados) {
       const det = detalhesErro(r.dados);
       det.forEach((d) => marcar(d.campo, d.mensagem));
@@ -1590,7 +1641,7 @@
   }
   async function carregarClientes() {
     const caixa = $("#tabela-clientes");
-    if (!tokenAdmin()) { caixa.innerHTML = '<p class="nota">Informe o token de administrador para listar os clientes.</p>'; return; }
+    if (!temAdmin()) { caixa.innerHTML = `<p class="nota">${acesso.exige ? "Entre com a senha e o código do autenticador" : "Informe o token de administrador"} para listar os clientes.</p>`; return; }
     const r = conferirSessao(await api("/v1/comercial/clientes", { headers: cabAdmin() }));
     if (!r.ok || !r.dados) { caixa.innerHTML = avisoRota(r, "O módulo comercial"); return; }
     const cs = lista(r.dados, "clientes", "itens");

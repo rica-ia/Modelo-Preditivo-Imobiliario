@@ -58,6 +58,11 @@ def caminho_banco() -> Path:
     return caminho if caminho.is_absolute() else RAIZ_REPOSITORIO / caminho
 
 
+def caminho_sessoes() -> Path:
+    caminho = Path(obter("AVALIADOR_SESSOES", "modulo2_api/banco/sessoes.json"))
+    return caminho if caminho.is_absolute() else RAIZ_REPOSITORIO / caminho
+
+
 VERSAO_API = "2.0.0"
 M2_POR_SQFT = 0.092903
 REFERENCIA_MERCADO = "King County (WA), vendas de mai/2014 a mai/2015"
