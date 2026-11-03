@@ -19,7 +19,7 @@ class NovaChaveEntrada(BaseModel):
         ..., max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", description="E-mail que recebe a chave.",
     )
     empresa: str | None = Field(None, max_length=80, description="Empresa (opcional).")
-    plano: Plano = Field(..., description="basico (1.000/mês), profissional (10.000) ou empresarial (100.000).")
+    plano: Plano = Field(..., description="basico (100/mês), profissional (1.000) ou empresarial (10.000).")
 
 
 class EnvioEmailSaida(BaseModel):
