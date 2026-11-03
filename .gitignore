@@ -18,3 +18,9 @@ modelo_preditivo_imobiliario_publico.ipynb
 tempo_execucao_colab_tmp.ipynb
 GUIA-PRIVADO-VERSIONAMENTO-COLAB.html
 ROTEIRO-COMMITS-MODELO-PREDITIVO.html
+
+# Módulo 2 · configuração local e banco gerado
+.env
+modulo2_api/banco/*.db
+modulo2_api/banco/*.db-*
+modulo2_api/banco/emails/
