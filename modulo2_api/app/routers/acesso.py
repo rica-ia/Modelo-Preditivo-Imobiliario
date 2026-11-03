@@ -7,12 +7,14 @@ enviada depois no cabeçalho X-Admin-Sessao das rotas do console comercial.
 A API pública de predição (/v1/predict) não passa por aqui e continua aberta.
 """
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Request, Security
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..schemas.sistema import ErroSaida
 from ..services.acesso import ServicoAcesso
-from .dependencias import cabecalho_sessao, obter_acesso
+from ..services.excecoes import AcessoNegadoError
+from .dependencias import cabecalho_sessao, exigir_admin, obter_acesso
+from .mapa3d import HOSTS_LOCAIS
 
 router = APIRouter(prefix="/v1/acesso", tags=["Acesso"])
 
@@ -58,3 +60,19 @@ def entrar(dados: EntrarEntrada, acesso: ServicoAcesso = Depends(obter_acesso)) 
 def sair(sessao: str | None = Security(cabecalho_sessao), acesso: ServicoAcesso = Depends(obter_acesso)) -> SairSaida:
     acesso.sair(sessao)
     return SairSaida(mensagem="Sessão encerrada.")
+
+
+@router.post(
+    "/entrar-local",
+    response_model=SessaoSaida,
+    summary="Entrada de contingência, só na própria máquina",
+    description="Abre uma sessão sem senha nem código, para o caso de o celular não estar à mão. "
+                "Exige o token de administrador (`X-Admin-Token`, que só existe no `.env` local) e só "
+                "responde a chamadas de 127.0.0.1; é o que o comando `avaliador direto` usa.",
+    responses={401: {"model": ErroSaida, "description": "Token ausente/incorreto ou chamada fora da máquina local."}},
+    dependencies=[Depends(exigir_admin)],
+)
+def entrar_local(request: Request, acesso: ServicoAcesso = Depends(obter_acesso)) -> SessaoSaida:
+    if request.client is None or request.client.host not in HOSTS_LOCAIS:
+        raise AcessoNegadoError("A entrada de contingência só funciona na própria máquina.")
+    return SessaoSaida(**acesso.abrir_sessao())

@@ -4,8 +4,9 @@
 Só biblioteca padrão, sem serviço externo nem custo:
 - TOTP do RFC 6238 (HMAC-SHA1, 6 dígitos, passo de 30 s), o mesmo padrão dos apps
   autenticadores (Google Authenticator, Microsoft Authenticator, Authy etc.);
-- a senha esperada é `AVALIADOR_SENHA_ACESSO`; se estiver vazia, vale a senha de app
-  do e-mail (`SMTP_SENHA_APP`), por escolha do titular;
+- a senha própria fica em `AVALIADOR_SENHA_HASH`, só como hash PBKDF2-SHA256 (gravado por
+  `configurar_2fa --senha`); sem ele, vale `AVALIADOR_SENHA_ACESSO` e, se também estiver
+  vazia, a senha de app do e-mail (`SMTP_SENHA_APP`);
 - o segredo do TOTP fica em `AVALIADOR_TOTP_SEGREDO` (gerado por
   `python -m modulo2_api.ferramentas.configurar_2fa`). Sem ele, o 2FA fica desligado e
   o console continua usando só o token de administrador;
@@ -67,10 +68,9 @@ def codigo_confere(segredo: str, codigo: str, instante: float | None = None) -> 
 
 
 def uri_autenticador(segredo: str, conta: str = "admin") -> str:
-    """URI lido pelo QR Code nos apps autenticadores (curto, para o QR caber pequeno no terminal;
-    6 dígitos e 30 s são o padrão do TOTP e não precisam ir no URI)."""
-    emissor = "Avaliador"
-    return f"otpauth://totp/{emissor}:{conta}?secret={segredo}&issuer={emissor}"
+    """URI lido pelo QR Code nos apps autenticadores. Curto de propósito: só o rótulo e o segredo
+    (6 dígitos e 30 s são o padrão do TOTP), o que cabe num QR de 33 x 33 pontos."""
+    return f"otpauth://totp/Avaliador?secret={segredo}"
 
 
 # ## Configuração lida do ambiente / .env
@@ -80,6 +80,34 @@ def segredo_configurado() -> str:
 
 def senha_esperada() -> str:
     return (obter("AVALIADOR_SENHA_ACESSO").strip() or obter("SMTP_SENHA_APP").strip()).replace(" ", "")
+
+
+# ## Senha própria guardada só como hash (PBKDF2-SHA256), nunca em texto puro
+ITERACOES_PBKDF2 = 200_000
+
+
+def hash_senha(senha: str, sal: bytes | None = None, iteracoes: int = ITERACOES_PBKDF2) -> str:
+    sal = sal or secrets.token_bytes(16)
+    resumo = hashlib.pbkdf2_hmac("sha256", senha.encode(), sal, iteracoes)
+    return f"pbkdf2_sha256${iteracoes}${sal.hex()}${resumo.hex()}"
+
+
+def senha_confere(senha: str) -> bool:
+    """Com `AVALIADOR_SENHA_HASH`, confere a senha digitada contra o hash; sem ele, contra a senha em texto."""
+    guardado = obter("AVALIADOR_SENHA_HASH").strip()
+    if guardado:
+        try:
+            _, iteracoes, sal, resumo = guardado.split("$")
+            calculado = hashlib.pbkdf2_hmac("sha256", senha.encode(), bytes.fromhex(sal), int(iteracoes))
+        except ValueError:
+            return False
+        return hmac.compare_digest(calculado.hex(), resumo)
+    esperada = senha_esperada()
+    return bool(esperada) and hmac.compare_digest(senha.replace(" ", "").encode(), esperada.encode())
+
+
+def senha_configurada() -> bool:
+    return bool(obter("AVALIADOR_SENHA_HASH").strip() or senha_esperada())
 
 
 def _hash(valor: str) -> str:
@@ -105,11 +133,10 @@ class ServicoAcesso:
             if agora < self._bloqueado_ate:
                 minutos = max(1, round((self._bloqueado_ate - agora) / 60))
                 raise MuitasTentativasError(f"Muitas tentativas incorretas. Tente de novo em {minutos} min.")
-            segredo, esperada = segredo_configurado(), senha_esperada()
-            if not segredo or not esperada:
+            segredo = segredo_configurado()
+            if not segredo or not senha_configurada():
                 raise CredenciaisInvalidasError("O acesso com senha e 2FA não está configurado neste servidor.")
-            senha_ok = hmac.compare_digest(senha.replace(" ", "").encode(), esperada.encode())
-            if not (senha_ok and codigo_confere(segredo, codigo.strip(), agora)):
+            if not (senha_confere(senha) and codigo_confere(segredo, codigo.strip(), agora)):
                 self._falhas += 1
                 if self._falhas >= MAX_FALHAS:
                     # A 5ª falha ainda responde 401; a partir da 6ª tentativa, 429 até o fim do bloqueio
@@ -118,8 +145,14 @@ class ServicoAcesso:
                 restantes = MAX_FALHAS - self._falhas
                 raise CredenciaisInvalidasError(f"Senha ou código do autenticador incorretos. Restam {restantes} tentativa(s).")
             self._falhas = 0
-            sessao = secrets.token_urlsafe(32)
-            expira = agora + VALIDADE_SESSAO_S
+        return self.abrir_sessao()
+
+    def abrir_sessao(self) -> dict:
+        """Sessão nova de 8 h (usada após senha + código, ou pela entrada de contingência local)."""
+        agora = time.time()
+        sessao = secrets.token_urlsafe(32)
+        expira = agora + VALIDADE_SESSAO_S
+        with self._trava:
             self._sessoes = {h: t for h, t in self._sessoes.items() if t > agora}
             self._sessoes[_hash(sessao)] = expira
         return {"sessao": sessao, "expira_em": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(expira))}

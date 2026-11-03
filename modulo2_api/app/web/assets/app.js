@@ -1197,6 +1197,9 @@
     return r;
   }
   async function iniciarAcesso() {
+    // Entrada de contingência (comando "avaliador direto"): a sessão chega no fragmento, que não vai ao servidor
+    const direta = /^#entrar=([\w-]+)$/.exec(location.hash);
+    if (direta) { gravarSessao(direta[1]); history.replaceState(null, "", location.pathname + "#painel"); }
     const r = await api("/v1/acesso/estado");
     acesso.exige = !!(r.ok && r.dados && r.dados.exige_2fa);
     atualizarAdmin();

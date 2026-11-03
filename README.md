@@ -597,11 +597,11 @@ O console da plataforma pode exigir **senha + código de 6 dígitos de um app au
 
 | Item | Como funciona |
 |---|---|
-| Senha | `AVALIADOR_SENHA_ACESSO`; se estiver vazia, vale a senha de app do e-mail (`SMTP_SENHA_APP`), por escolha do titular |
+| Senha | Própria, definida com `--senha` (digitada sem eco) e guardada no `.env` só como hash PBKDF2-SHA256 (`AVALIADOR_SENHA_HASH`, 200 mil iterações); sem ela, vale `AVALIADOR_SENHA_ACESSO` e, por fim, a senha de app do e-mail (`SMTP_SENHA_APP`) |
 | Segundo fator | TOTP (HMAC-SHA1, 6 dígitos, 30 s), com tolerância de ±1 janela para relógio adiantado ou atrasado; testado contra os vetores oficiais do RFC 6238 |
 | Proteção | comparação em tempo constante (`hmac.compare_digest`); 5 falhas seguidas bloqueiam novas tentativas por 5 minutos |
 | Sessão | token aleatório de 256 bits, guardado na memória da API só como hash SHA-256; expira em 8 h ou quando a API reinicia |
-| Opções do comando | `--novo` troca o segredo (o celular precisa ler o QR de novo); `--mostrar-qr` mostra o QR atual, compacto (2 × 2 pontos por caractere, cerca de 20 colunas); `--grande` desenha no formato padrão; `--testar` confere um código; `--mostrar-chave` exibe a chave para digitar no app, se preferir |
+| Opções do comando | `--novo` troca o segredo (o celular precisa ler o QR de novo); `--senha` define a senha de acesso; `--mostrar-qr` mostra o QR atual, quadrado (meio-bloco: 1 × 2 pontos por caractere, 35 colunas × 18 linhas); `--testar` confere um código; `--mostrar-chave` exibe a chave para digitar no app, se preferir |
 | Sem configuração | com `AVALIADOR_TOTP_SEGREDO` vazio, o 2FA fica desligado e o console segue com o token de administrador; quem clona o repositório roda tudo sem configurar nada |
 | API pública | `POST /v1/predict`, `/v1/predict/lote` e a documentação `/docs` **continuam abertos**: o 2FA protege só o console administrativo |
 
@@ -610,8 +610,11 @@ O console da plataforma pode exigir **senha + código de 6 dígitos de um app au
 | GET | `/v1/acesso/estado` | informa se o console exige 2FA (`exige_2fa`) | 200 |
 | POST | `/v1/acesso/entrar` | recebe `senha` e `codigo` e devolve a sessão e a expiração | 200 · 401 `acesso_negado` · 422 · 429 `muitas_tentativas` |
 | POST | `/v1/acesso/sair` | encerra a sessão enviada em `X-Admin-Sessao` | 200 |
+| POST | `/v1/acesso/entrar-local` | entrada de contingência sem senha nem código: exige `X-Admin-Token` (só existe no `.env` local) e chamada de 127.0.0.1 | 200 · 401 |
 
 Sessão inventada ou expirada nas rotas do console devolve 401 `nao_autorizado`, e o portal volta para a tela de entrada.
+
+O mesmo QR pode ser lido em mais de um celular: todos geram os mesmos códigos, porque partilham o segredo. A entrada de contingência entrega a sessão no fragmento da URL (`#entrar=...`), que o navegador não envia ao servidor, e o portal a apaga do endereço assim que a grava.
 
 <p align="center">
   <img src="assets/modulo2/portal_15_entrar_2fa.jpg" alt="Portal: tela Entrar na plataforma com senha e código do autenticador" width="70%">

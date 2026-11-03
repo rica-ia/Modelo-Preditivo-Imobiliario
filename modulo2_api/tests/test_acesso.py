@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from modulo2_api.app import main
 from modulo2_api.app.services import acesso as servico_acesso
-from modulo2_api.app.services.acesso import ServicoAcesso, codigo_confere, gerar_segredo, hotp, totp
+from modulo2_api.app.services.acesso import ServicoAcesso, codigo_confere, gerar_segredo, hotp, totp, uri_autenticador
 
 SENHA = "senha-de-teste"
 NOVA_CHAVE = {"nome": "Cliente 2FA", "email": "cliente2fa@exemplo.com", "plano": "basico"}
@@ -98,3 +98,48 @@ def test_predicao_publica_continua_aberta_com_2fa(cliente_2fa):
     cliente, _ = cliente_2fa
     from modulo2_api.app.schemas.imovel import EXEMPLO_IMOVEL
     assert cliente.post("/v1/predict", json=EXEMPLO_IMOVEL).status_code == 200
+
+
+def test_senha_propria_guardada_como_hash(monkeypatch):
+    from modulo2_api.app.services.acesso import hash_senha, senha_confere
+
+    guardado = hash_senha("Senha da conta 2026", iteracoes=1_000)
+    assert "Senha da conta" not in guardado and guardado.startswith("pbkdf2_sha256$1000$")
+    monkeypatch.setenv("AVALIADOR_SENHA_HASH", guardado)
+    monkeypatch.setenv("AVALIADOR_SENHA_ACESSO", "outra")
+    assert senha_confere("Senha da conta 2026")
+    assert not senha_confere("outra") and not senha_confere("senha da conta 2026")
+    monkeypatch.setenv("AVALIADOR_SENHA_HASH", "corrompido")
+    assert not senha_confere("Senha da conta 2026")
+
+
+def test_entrar_com_senha_em_hash(cliente_2fa, monkeypatch):
+    from modulo2_api.app.services.acesso import hash_senha
+
+    cliente, segredo = cliente_2fa
+    monkeypatch.setenv("AVALIADOR_SENHA_HASH", hash_senha("Minha senha", iteracoes=1_000))
+    assert cliente.post("/v1/acesso/entrar", json={"senha": "Minha senha", "codigo": totp(segredo)}).status_code == 200
+
+
+def test_qr_quadrado_e_uri_curta():
+    import qrcode
+
+    from modulo2_api.ferramentas.configurar_2fa import desenho_quadrado
+
+    qr = qrcode.QRCode(border=1, error_correction=qrcode.constants.ERROR_CORRECT_L)
+    qr.add_data(uri_autenticador(gerar_segredo()))
+    qr.make(fit=True)
+    linhas = desenho_quadrado(qr.get_matrix()).splitlines()
+    assert qr.version == 4 and len(linhas[0]) == 35 and len(linhas) == 18  # 35 x 36 pontos ~ quadrado
+
+
+def test_entrada_de_contingencia_so_local_e_com_token(cliente_2fa):
+    cliente, _ = cliente_2fa
+    # O TestClient se apresenta como host "testclient": fora da máquina local, mesmo com o token certo
+    assert cliente.post("/v1/acesso/entrar-local", headers={"X-Admin-Token": "token-de-teste"}).status_code == 401
+    with TestClient(main.app, client=("127.0.0.1", 50000)) as local:
+        assert local.post("/v1/acesso/entrar-local").status_code == 401
+        assert local.post("/v1/acesso/entrar-local", headers={"X-Admin-Token": "errado"}).status_code == 401
+        r = local.post("/v1/acesso/entrar-local", headers={"X-Admin-Token": "token-de-teste"})
+        assert r.status_code == 200
+        assert local.get("/v1/comercial/clientes", headers={"X-Admin-Sessao": r.json()["sessao"]}).status_code == 200
