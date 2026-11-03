@@ -1109,8 +1109,25 @@
   function tokenAdmin() { try { return sessionStorage.getItem(CHAVE_ADMIN) || ""; } catch (e) { return memoriaAdmin; } }
   let memoriaAdmin = "";
   function gravarToken(t) { memoriaAdmin = t; try { if (t) sessionStorage.setItem(CHAVE_ADMIN, t); else sessionStorage.removeItem(CHAVE_ADMIN); } catch (e) {} atualizarAdmin(); }
-  const cabAdmin = () => (tokenAdmin() ? { "X-Admin-Token": tokenAdmin() } : {});
+  // Acesso com senha + 2FA: quando o servidor exige, a sessão substitui o token no cabeçalho
+  const CHAVE_SESSAO = "ai-sessao-2fa";
+  const acesso = { exige: false };
+  let memoriaSessao = "";
+  function sessaoAdmin() { try { return sessionStorage.getItem(CHAVE_SESSAO) || ""; } catch (e) { return memoriaSessao; } }
+  function gravarSessao(s) { memoriaSessao = s; try { if (s) sessionStorage.setItem(CHAVE_SESSAO, s); else sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) {} atualizarAdmin(); }
+  const cabAdmin = () => (sessaoAdmin() ? { "X-Admin-Sessao": sessaoAdmin() } : tokenAdmin() ? { "X-Admin-Token": tokenAdmin() } : {});
   function atualizarAdmin() {
+    if (acesso.exige) {
+      const tem2 = !!sessaoAdmin();
+      $("#admin-rotulo").textContent = tem2 ? "sessão 2FA ativa" : "sem sessão";
+      $$(".btn-admin").forEach((b) => b.classList.toggle("ativo", tem2));
+      $("#admin-token").hidden = true;
+      $("#admin-2fa").hidden = false;
+      const chip2 = $("#adm-estado");
+      chip2.textContent = tem2 ? "Sessão 2FA ativa" : "Sem sessão";
+      chip2.className = "chip " + (tem2 ? "ok" : "ruim");
+      return;
+    }
     const tem = !!tokenAdmin();
     $("#admin-rotulo").textContent = tem ? "token ativo" : "sem token";
     $$(".btn-admin").forEach((b) => b.classList.toggle("ativo", tem));
@@ -1130,6 +1147,61 @@
   });
   $("#adm-token").addEventListener("keydown", (ev) => { if (ev.key === "Enter") $("#adm-usar").click(); });
   $("#adm-esquecer").addEventListener("click", () => { gravarToken(""); toast("Token esquecido"); if (inicializadas.has("comercial")) carregarClientes(); });
+
+  // ---------------------------------------------------------------- entrada com senha e segundo fator
+  function mostrarEntrada(msg, tipo) {
+    $("#tela-entrar").hidden = false;
+    $("#app").setAttribute("aria-hidden", "true");
+    const erro = $("#entrar-erro");
+    erro.hidden = !msg;
+    erro.classList.toggle("info", tipo === "info");
+    erro.textContent = msg || "";
+    setTimeout(() => $("#en-senha").focus(), 30);
+  }
+  function esconderEntrada() {
+    $("#tela-entrar").hidden = true;
+    $("#app").removeAttribute("aria-hidden");
+    $("#en-senha").value = "";
+    $("#en-codigo").value = "";
+  }
+  $("#en-codigo").addEventListener("input", (ev) => { ev.target.value = ev.target.value.replace(/\D/g, "").slice(0, 6); });
+  $("#form-entrar").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const senha = $("#en-senha").value, codigo = $("#en-codigo").value.trim();
+    if (!senha || !/^\d{6}$/.test(codigo)) { mostrarEntrada("Informe a senha e o código de 6 dígitos do autenticador."); return; }
+    const btn = $("#en-entrar");
+    btn.disabled = true;
+    btn.textContent = "Conferindo…";
+    const r = await api("/v1/acesso/entrar", { metodo: "POST", corpo: { senha, codigo } });
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+    if (r.ok && r.dados && r.dados.sessao) {
+      gravarSessao(r.dados.sessao);
+      esconderEntrada();
+      toast("Acesso liberado por 8 horas");
+      if (inicializadas.has("comercial")) carregarClientes();
+      return;
+    }
+    $("#en-codigo").value = "";
+    mostrarEntrada(r.status === 0 ? "API indisponível. Confira se o servidor está no ar." : (r.dados && r.dados.mensagem) || "Não foi possível entrar.");
+  });
+  $("#adm-sair").addEventListener("click", async () => {
+    await api("/v1/acesso/sair", { metodo: "POST", headers: cabAdmin() });
+    gravarSessao("");
+    fecharModal($("#modal-admin"));
+    mostrarEntrada("Sessão encerrada.", "info");
+  });
+  // Sessão que expira no servidor (8 h ou reinício da API) volta para a tela de entrada
+  function conferirSessao(r) {
+    if (acesso.exige && r && r.status === 401 && sessaoAdmin()) { gravarSessao(""); mostrarEntrada("A sessão expirou. Entre de novo.", "info"); }
+    return r;
+  }
+  async function iniciarAcesso() {
+    const r = await api("/v1/acesso/estado");
+    acesso.exige = !!(r.ok && r.dados && r.dados.exige_2fa);
+    atualizarAdmin();
+    if (acesso.exige && !sessaoAdmin()) mostrarEntrada();
+  }
 
   // ---------------------------------------------------------------- painel
   async function carregarResumo() {
@@ -1486,7 +1558,7 @@
     const btn = $("#btn-gerar");
     btn.disabled = true;
     btn.innerHTML = '<span class="carregando"></span> Gerando…';
-    const r = await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: cabAdmin() });
+    const r = conferirSessao(await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: cabAdmin() }));
     btn.disabled = false;
     btn.textContent = "Gerar chave e enviar e-mail";
     if (!r.ok || !r.dados) {
@@ -1511,7 +1583,7 @@
     carregarClientes();
   }
   async function verEmail(id) {
-    const r = await api(`/v1/comercial/emails/${encodeURIComponent(id)}`, { headers: cabAdmin(), texto: true });
+    const r = conferirSessao(await api(`/v1/comercial/emails/${encodeURIComponent(id)}`, { headers: cabAdmin(), texto: true }));
     if (!r.ok || !r.dados) { toast(r.status === 404 ? "E-mail não encontrado ou rota ainda inativa" : `Não foi possível abrir o e-mail (${r.status})`); return; }
     $("#modal-iframe").srcdoc = r.dados;
     abrirModal("modal");
@@ -1519,7 +1591,7 @@
   async function carregarClientes() {
     const caixa = $("#tabela-clientes");
     if (!tokenAdmin()) { caixa.innerHTML = '<p class="nota">Informe o token de administrador para listar os clientes.</p>'; return; }
-    const r = await api("/v1/comercial/clientes", { headers: cabAdmin() });
+    const r = conferirSessao(await api("/v1/comercial/clientes", { headers: cabAdmin() }));
     if (!r.ok || !r.dados) { caixa.innerHTML = avisoRota(r, "O módulo comercial"); return; }
     const cs = lista(r.dados, "clientes", "itens");
     caixa.innerHTML = cs.length ? `<table class="tabela"><thead><tr><th>Cliente</th><th>Prefixo</th><th>Plano</th><th>Uso no mês</th><th>Situação</th><th>Criada em</th><th></th></tr></thead><tbody>${cs.map((c) => {
@@ -1543,7 +1615,7 @@
       return;
     }
     b.disabled = true;
-    const r = await api(`/v1/comercial/chaves/${encodeURIComponent(b.dataset.revogar)}/revogar`, { metodo: "POST", headers: cabAdmin() });
+    const r = conferirSessao(await api(`/v1/comercial/chaves/${encodeURIComponent(b.dataset.revogar)}/revogar`, { metodo: "POST", headers: cabAdmin() }));
     if (!r.ok) { toast(r.status === 404 ? "Chave não encontrada ou rota inativa" : `Não foi possível revogar (${r.status})`); b.disabled = false; return; }
     toast("Chave revogada: as próximas chamadas com ela recebem 403");
     carregarClientes();
@@ -1782,5 +1854,6 @@
   verificarSaude();
   setInterval(verificarSaude, 15000);
   atualizarAdmin();
+  iniciarAcesso();
   rotear();
 })();
