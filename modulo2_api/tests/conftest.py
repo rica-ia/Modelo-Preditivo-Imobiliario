@@ -15,3 +15,5 @@ os.environ["AVALIADOR_SENHA_ACESSO"] = ""
 os.environ["AVALIADOR_SENHA_HASH"] = ""
 os.environ["AVALIADOR_GEOCODIFICAR"] = "0"
 os.environ["AVALIADOR_SESSOES"] = str(_PASTA / "sessoes.json")
+os.environ["AVALIADOR_COMODIDADES"] = "0"
+os.environ["AVALIADOR_DADOS_SINTETICOS"] = "0"

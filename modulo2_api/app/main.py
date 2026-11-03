@@ -28,12 +28,16 @@ from .config import (
     caminho_sessoes,
 )
 from .erros import registrar_tratadores
-from .routers import acesso, avaliacoes, comercial, endereco, mapa3d, modelo, predicao, relatorios, saude
+from .routers import acesso, avaliacoes, comercial, comodidades, endereco, mapa3d, modelo, predicao, relatorios, saude
+from .routers import admin_banco
+from .routers import sinteticos
 from .services.acesso import ServicoAcesso
+from .services.comodidades import ServicoComodidades
 from .services.endereco import ServicoEndereco
 from .services.avaliacoes import ServicoAvaliacoes
 from .services.banco import Banco
 from .services.carga import carga_inicial, limites_de_faixa
+from .services.sinteticos import carga_automatica
 from .services.comercial import ServicoComercial
 from .services.modelo import ServicoModelo
 
@@ -66,6 +70,12 @@ async def lifespan(app: FastAPI):
             log.info("Carga inicial do banco: %s em %.1f s", inseridos, time.perf_counter() - inicio)
     except Exception:
         log.exception("Falha na carga inicial do banco")
+    try:
+        sinteticos_inseridos = carga_automatica(banco, servico)  # AVALIADOR_DADOS_SINTETICOS=0 desliga
+        if sinteticos_inseridos and any(sinteticos_inseridos.values()):
+            log.info("Dados sintéticos de exemplo: %s", sinteticos_inseridos)
+    except Exception:
+        log.exception("Falha na carga dos dados sintéticos de exemplo")
     app.state.banco = banco
     app.state.comercial = ServicoComercial(banco)
     app.state.avaliacoes = ServicoAvaliacoes(banco, servico, app.state.comercial, limites_de_faixa(banco))
@@ -91,11 +101,16 @@ app.include_router(avaliacoes.router)
 app.include_router(mapa3d.router)
 app.include_router(acesso.router)
 app.include_router(endereco.router)
+app.include_router(comodidades.router)
+app.include_router(admin_banco.router)
+app.include_router(sinteticos.router)
 
 # Sessões do console: hashes em memória e em banco/sessoes.json (fora do git), para sobreviver a reinícios
 app.state.acesso = ServicoAcesso(arquivo=caminho_sessoes())
 # Endereços já consultados no OpenStreetMap ficam em cache durante a execução
 app.state.endereco = ServicoEndereco()
+# Comodidades do entorno (Overpass/OpenStreetMap), também em cache durante a execução
+app.state.comodidades = ServicoComodidades()
 
 # ## Portal web (opcional): servido pela própria API quando a pasta existir
 app.mount("/assets", StaticFiles(directory=PASTA_WEB / "assets", check_dir=False), name="assets")
