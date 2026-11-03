@@ -1145,7 +1145,7 @@
     status.className = d.ui_no_ar ? "chip ok" : "chip";
     const comandos = `<pre><code>${esc(d.comando_registrar)}\n${esc(d.comando_ui)}</code></pre>`;
     if (!d.disponivel) {
-      corpo.innerHTML = `<p class="nota">Nenhum modelo registrado ainda. Na raiz do projeto, com <code>requirements-mlflow.txt</code> instalado:</p>${comandos}`;
+      corpo.innerHTML = `<p class="nota">Nenhum modelo registrado ainda. Na raiz do projeto, com o <code>requirements.txt</code> instalado:</p>${comandos}`;
       return;
     }
     const metrica = (k, rotulo, fmt) => (m[k] != null ? `<div class="res-item"><small>${rotulo}</small><b>${fmt(m[k])}</b></div>` : "");

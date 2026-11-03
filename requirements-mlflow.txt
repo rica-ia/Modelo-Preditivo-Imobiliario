@@ -1,5 +1,0 @@
-# Camada opcional de rastreamento e registro do modelo (MLflow local, custo zero).
-# Não faz parte do mínimo da API (modulo2_api/requirements.txt): a API continua
-# carregando o .joblib e funciona sem o MLflow instalado.
-#   python -m pip install -r modulo2_api/requirements.txt -r requirements-mlflow.txt
-mlflow==3.17.2

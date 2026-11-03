@@ -31,7 +31,7 @@ Uso, na raiz do repositório:
     mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db --port 5000 --host 127.0.0.1
 
 Instalação do MLflow (fora do requirements mínimo da API):
-    python -m pip install -r requirements-mlflow.txt
+    python -m pip install -r requirements.txt
 """
 
 import argparse

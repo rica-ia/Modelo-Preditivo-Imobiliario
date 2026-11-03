@@ -293,7 +293,7 @@ A verificação de integridade (`GET /v1/modelo/artefatos/{artefato_id}/verifica
 - tag com o sha256 do `.joblib` e, como artefatos, `metricas_v2.json` e o próprio `.joblib`;
 - o modelo com assinatura (`infer_signature`) e exemplo de entrada, registrado no Model Registry como `avaliador-imobiliario@producao`.
 
-A previsão do modelo registrado no MLflow é a mesma da API. O MLflow 3.17.2 fica num requirements à parte, [`requirements-mlflow.txt`](requirements-mlflow.txt); os comandos estão em [M2.16](#m216-como-executar).
+A previsão do modelo registrado no MLflow é a mesma da API. O MLflow 3.17.2 está no [`requirements.txt`](requirements.txt) completo do repositório, para a reprodução ser total; a API, porém, não depende dele em tempo de execução. Os comandos estão em [M2.16](#m216-como-executar).
 
 <p align="center">
   <img src="assets/modulo2/mlflow_02_run.jpg" alt="MLflow: run modelo-v2 do experimento avaliador-imobiliario com parâmetros e métricas" width="90%">
@@ -979,8 +979,7 @@ uvicorn modulo2_api.app.main:app --port 8020
 # 6. Rodar os testes automatizados
 pytest modulo2_api/tests -q
 
-# 7. (opcional) MLflow local: instalar, registrar o modelo entregue e abrir a interface
-python -m pip install -r requirements-mlflow.txt
+# 7. (opcional) MLflow local (já instalado pelo requirements.txt): registrar o modelo entregue e abrir a interface
 python -m modulo2_api.ferramentas.registrar_mlflow
 mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db --port 5000 --host 127.0.0.1
 ```
@@ -1024,7 +1023,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | httpx | 0.28.1 | cliente HTTP do `TestClient` |
 | pytest | 9.2.0 | testes automatizados |
 | qrcode | 8.2 | QR Code do segundo fator no terminal (`configurar_2fa`) |
-| MLflow (opcional) | 3.17.2 | rastreamento do experimento e Model Registry local, em [`requirements-mlflow.txt`](requirements-mlflow.txt); a API não depende dele |
+| MLflow | 3.17.2 | rastreamento do experimento e Model Registry local, no `requirements.txt` completo; a API não depende dele em tempo de execução |
 | sqlite3, smtplib, hashlib | biblioteca padrão | banco de documentação, envio de e-mail e hash das chaves, sem dependência nova |
 
 **Portal web (carregado pelo navegador, sem instalação):**
@@ -1039,7 +1038,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | CesiumJS | 1.122.0 | visão 3D fotorrealista opcional (via jsDelivr) |
 | Google Photorealistic 3D Tiles | — | imagens 3D da visão fotorrealista; exige chave própria no `.env` local |
 
-- [`requirements.txt`](requirements.txt), na raiz: cobre o Módulo 1 (incluindo matplotlib, seaborn, h3, plotly e jinja2) e o Módulo 2.
+- [`requirements.txt`](requirements.txt), na raiz: **completo**, cobre o Módulo 1 (incluindo matplotlib, seaborn, h3, plotly e jinja2), o Módulo 2 e o MLflow; é o que o passo 3 instala.
 - [`modulo2_api/requirements.txt`](modulo2_api/requirements.txt): só o necessário para a API e os testes.
 - As versões do pipeline são as mesmas do Módulo 1, o que garante a compatibilidade do artefato com o código de `src/`.
 - O `.venv/` fica fora do versionamento (`.gitignore`).
