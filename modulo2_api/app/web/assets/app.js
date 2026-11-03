@@ -1116,7 +1116,12 @@
   function sessaoAdmin() { try { return sessionStorage.getItem(CHAVE_SESSAO) || ""; } catch (e) { return memoriaSessao; } }
   function gravarSessao(s) { memoriaSessao = s; try { if (s) sessionStorage.setItem(CHAVE_SESSAO, s); else sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) {} atualizarAdmin(); }
   const cabAdmin = () => (sessaoAdmin() ? { "X-Admin-Sessao": sessaoAdmin() } : tokenAdmin() ? { "X-Admin-Token": tokenAdmin() } : {});
+  // Console liberado: sessão 2FA quando o servidor exige; senão, o token de administrador
+  const temAdmin = () => (acesso.exige ? !!sessaoAdmin() : !!tokenAdmin());
+  function pedirAdmin() { if (acesso.exige) mostrarEntrada("Entre com a senha e o código do autenticador.", "info"); else abrirModal("modal-admin"); }
   function atualizarAdmin() {
+    const campoCodigo = $("#campo-codigo2fa");
+    if (campoCodigo) campoCodigo.hidden = !acesso.exige;
     if (acesso.exige) {
       const tem2 = !!sessaoAdmin();
       $("#admin-rotulo").textContent = tem2 ? "sessão 2FA ativa" : "sem sessão";
@@ -1164,6 +1169,7 @@
     $("#en-senha").value = "";
     $("#en-codigo").value = "";
   }
+  $("#c-codigo2fa").addEventListener("input", (ev) => { ev.target.value = ev.target.value.replace(/\D/g, "").slice(0, 6); });
   $("#en-codigo").addEventListener("input", (ev) => { ev.target.value = ev.target.value.replace(/\D/g, "").slice(0, 6); });
   $("#form-entrar").addEventListener("submit", async (ev) => {
     ev.preventDefault();
@@ -1193,7 +1199,7 @@
   });
   // Sessão que expira no servidor (8 h ou reinício da API) volta para a tela de entrada
   function conferirSessao(r) {
-    if (acesso.exige && r && r.status === 401 && sessaoAdmin()) { gravarSessao(""); mostrarEntrada("A sessão expirou. Entre de novo.", "info"); }
+    if (acesso.exige && r && r.status === 401 && sessaoAdmin() && !(r.dados && r.dados.erro === "acesso_negado")) { gravarSessao(""); mostrarEntrada("A sessão expirou. Entre de novo.", "info"); }
     return r;
   }
   async function iniciarAcesso() {
@@ -1556,14 +1562,24 @@
     let ok = true;
     if (!corpo.nome) { marcar("nome", "Informe o nome"); ok = false; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(corpo.email)) { marcar("email", "E-mail inválido"); ok = false; }
+    const codigo2fa = f.codigo2fa ? f.codigo2fa.value.replace(/\s/g, "") : "";
+    if (acesso.exige && !/^\d{6}$/.test(codigo2fa)) { marcar("codigo2fa", "Digite os 6 dígitos do app autenticador"); ok = false; }
     if (!ok) return;
-    if (!tokenAdmin()) { $("#chave-resultado").innerHTML = alertaHTML("Token de administrador necessário", "Informe o token em Administrador, no cabeçalho, para emitir chaves.", [], "aviso"); abrirModal("modal-admin"); return; }
+    if (!temAdmin()) {
+      $("#chave-resultado").innerHTML = acesso.exige
+        ? alertaHTML("Entre na plataforma", "Entre com a senha e o código do autenticador para emitir chaves.", [], "aviso")
+        : alertaHTML("Token de administrador necessário", "Informe o token em Administrador, no cabeçalho, para emitir chaves.", [], "aviso");
+      pedirAdmin();
+      return;
+    }
     const btn = $("#btn-gerar");
     btn.disabled = true;
     btn.innerHTML = '<span class="carregando"></span> Gerando…';
-    const r = conferirSessao(await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: cabAdmin() }));
+    const r = conferirSessao(await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: { ...cabAdmin(), ...(acesso.exige ? { "X-Codigo-2FA": codigo2fa } : {}) } }));
     btn.disabled = false;
     btn.textContent = "Gerar chave e enviar e-mail";
+    if (!r.ok && r.dados && r.dados.erro === "acesso_negado") { marcar("codigo2fa", r.dados.mensagem); return; }
+    if (r.status === 429) { marcar("codigo2fa", (r.dados && r.dados.mensagem) || "Muitas tentativas. Aguarde 5 min."); return; }
     if (!r.ok || !r.dados) {
       const det = detalhesErro(r.dados);
       det.forEach((d) => marcar(d.campo, d.mensagem));
@@ -1593,7 +1609,7 @@
   }
   async function carregarClientes() {
     const caixa = $("#tabela-clientes");
-    if (!tokenAdmin()) { caixa.innerHTML = '<p class="nota">Informe o token de administrador para listar os clientes.</p>'; return; }
+    if (!temAdmin()) { caixa.innerHTML = `<p class="nota">${acesso.exige ? "Entre com a senha e o código do autenticador" : "Informe o token de administrador"} para listar os clientes.</p>`; return; }
     const r = conferirSessao(await api("/v1/comercial/clientes", { headers: cabAdmin() }));
     if (!r.ok || !r.dados) { caixa.innerHTML = avisoRota(r, "O módulo comercial"); return; }
     const cs = lista(r.dados, "clientes", "itens");

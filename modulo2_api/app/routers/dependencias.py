@@ -16,6 +16,8 @@ from ..services.modelo import ServicoModelo
 # Aparecem no botão "Authorize" do Swagger (/docs).
 cabecalho_chave = APIKeyHeader(name="X-API-Key", auto_error=False, description="Chave do cliente (opcional no /predict).")
 cabecalho_admin = APIKeyHeader(name="X-Admin-Token", auto_error=False, description="Token do console administrativo.")
+cabecalho_codigo = APIKeyHeader(name="X-Codigo-2FA", auto_error=False,
+                                description="Código de 6 dígitos do app, exigido ao emitir chave dentro de uma sessão 2FA.")
 cabecalho_sessao = APIKeyHeader(name="X-Admin-Sessao", auto_error=False,
                                 description="Sessão aberta em /v1/acesso/entrar (senha + código 2FA).")
 
@@ -55,3 +57,15 @@ def exigir_admin(
         raise ConsoleNaoConfiguradoError("Defina AVALIADOR_ADMIN_TOKEN no arquivo .env para usar o console.")
     if not token or not secrets.compare_digest(token, esperado):
         raise AcessoNegadoError("Token de administrador ausente ou incorreto.")
+
+
+def confirmar_2fa(
+    request: Request,
+    sessao: str | None = Security(cabecalho_sessao),
+    codigo: str | None = Security(cabecalho_codigo),
+) -> None:
+    """Na sessão 2FA, a emissão de chave pede de novo o código do app; o token de administrador
+    (scripts e testes) segue sem essa etapa."""
+    acesso = obter_acesso(request)
+    if sessao is not None and acesso.exige_2fa():
+        acesso.confirmar_codigo(codigo)

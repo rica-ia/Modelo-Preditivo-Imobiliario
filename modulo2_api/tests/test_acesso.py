@@ -54,8 +54,17 @@ def test_entrar_200_e_sessao_aceita_no_console(cliente_2fa):
     assert len(sessao) >= 40 and resposta.json()["expira_em"]
     console = cliente.get("/v1/comercial/clientes", headers={"X-Admin-Sessao": sessao})
     assert console.status_code == 200
-    criada = cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE, headers={"X-Admin-Sessao": sessao})
+    # Na sessão 2FA, emitir chave pede o código do app de novo
+    sem_codigo = cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE, headers={"X-Admin-Sessao": sessao})
+    assert sem_codigo.status_code == 401 and sem_codigo.json()["erro"] == "acesso_negado"
+    errado = str((int(totp(segredo)) + 500_000) % 1_000_000).zfill(6)
+    assert cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE,
+                        headers={"X-Admin-Sessao": sessao, "X-Codigo-2FA": errado}).status_code == 401
+    criada = cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE,
+                          headers={"X-Admin-Sessao": sessao, "X-Codigo-2FA": totp(segredo)})
     assert criada.status_code == 201
+    # O token de administrador (scripts) segue sem a confirmação
+    assert cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE, headers={"X-Admin-Token": "token-de-teste"}).status_code == 201
     assert cliente.post("/v1/acesso/sair", headers={"X-Admin-Sessao": sessao}).status_code == 200
     assert cliente.get("/v1/comercial/clientes", headers={"X-Admin-Sessao": sessao}).status_code == 401
 

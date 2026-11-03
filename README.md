@@ -614,6 +614,8 @@ O console da plataforma pode exigir **senha + código de 6 dígitos de um app au
 
 Sessão inventada ou expirada nas rotas do console devolve 401 `nao_autorizado`, e o portal volta para a tela de entrada.
 
+Dentro da sessão 2FA, **emitir uma chave pede de novo o código do app** (cabeçalho `X-Codigo-2FA`, campo "Código do autenticador" na tela Comercial), com o mesmo contador de 5 falhas e bloqueio de 5 min; o token de administrador, usado por scripts e testes, segue sem essa etapa.
+
 O mesmo QR pode ser lido em mais de um celular: todos geram os mesmos códigos, porque partilham o segredo. A entrada de contingência entrega a sessão no fragmento da URL (`#entrar=...`), que o navegador não envia ao servidor, e o portal a apaga do endereço assim que a grava.
 
 <p align="center">

@@ -137,15 +137,31 @@ class ServicoAcesso:
             if not segredo or not senha_configurada():
                 raise CredenciaisInvalidasError("O acesso com senha e 2FA não está configurado neste servidor.")
             if not (senha_confere(senha) and codigo_confere(segredo, codigo.strip(), agora)):
-                self._falhas += 1
-                if self._falhas >= MAX_FALHAS:
-                    # A 5ª falha ainda responde 401; a partir da 6ª tentativa, 429 até o fim do bloqueio
-                    self._falhas, self._bloqueado_ate = 0, agora + BLOQUEIO_S
-                    raise CredenciaisInvalidasError("Senha ou código incorretos. O acesso ficou bloqueado por 5 min.")
-                restantes = MAX_FALHAS - self._falhas
-                raise CredenciaisInvalidasError(f"Senha ou código do autenticador incorretos. Restam {restantes} tentativa(s).")
+                self._registrar_falha(agora, "Senha ou código do autenticador incorretos")
             self._falhas = 0
         return self.abrir_sessao()
+
+    def confirmar_codigo(self, codigo: str | None) -> None:
+        """Confirmação com o código do app em ações sensíveis (emitir chave), dentro de uma sessão 2FA.
+        Usa o mesmo contador de falhas e bloqueio da entrada."""
+        agora = time.time()
+        with self._trava:
+            if agora < self._bloqueado_ate:
+                minutos = max(1, round((self._bloqueado_ate - agora) / 60))
+                raise MuitasTentativasError(f"Muitas tentativas incorretas. Tente de novo em {minutos} min.")
+            if not codigo_confere(segredo_configurado(), (codigo or "").strip(), agora):
+                self._registrar_falha(agora, "Código do autenticador incorreto")
+            self._falhas = 0
+
+    def _registrar_falha(self, agora: float, motivo: str) -> None:
+        """Chamado com a trava já adquirida; sempre levanta a exceção."""
+        self._falhas += 1
+        if self._falhas >= MAX_FALHAS:
+            # A 5ª falha ainda responde 401; a partir da 6ª tentativa, 429 até o fim do bloqueio
+            self._falhas, self._bloqueado_ate = 0, agora + BLOQUEIO_S
+            raise CredenciaisInvalidasError(f"{motivo}. O acesso ficou bloqueado por 5 min.")
+        restantes = MAX_FALHAS - self._falhas
+        raise CredenciaisInvalidasError(f"{motivo}. Restam {restantes} tentativa(s).")
 
     def abrir_sessao(self) -> dict:
         """Sessão nova de 8 h (usada após senha + código, ou pela entrada de contingência local)."""
