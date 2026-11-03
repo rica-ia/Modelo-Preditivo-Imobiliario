@@ -131,3 +131,15 @@ def test_plano_invalido_422_em_portugues(cliente):
                             json={"nome": "Plano", "email": "plano@exemplo.com", "plano": "ouro"})
     assert resposta.status_code == 422
     assert "Input should" not in resposta.text and "opção inválida" in resposta.text
+
+
+def test_email_profissional_com_logo_embutido_e_titular():
+    from modulo2_api.app.services.email import montar_email
+
+    msg = montar_email("Cliente", "cliente@exemplo.com", "aval_teste123456789", "basico", 1000)
+    tipos = [parte.get_content_type() for parte in msg.walk()]
+    assert tipos == ["multipart/alternative", "text/plain", "multipart/related", "text/html", "image/png"]
+    corpo = next(p for p in msg.walk() if p.get_content_type() == "text/html").get_content()
+    logo = next(p for p in msg.walk() if p.get_content_type() == "image/png")
+    assert f'cid:{logo["Content-ID"][1:-1]}' in corpo
+    assert "by Ricardo Pasquali dos Reis" in corpo
