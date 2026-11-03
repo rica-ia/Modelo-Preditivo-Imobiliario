@@ -137,3 +137,13 @@ def test_metodo_nao_permitido_405(cliente):
     resposta = cliente.get("/v1/predict")
     assert resposta.status_code == 405
     assert resposta.json()["erro"] == "metodo_nao_permitido"
+
+
+def test_corpo_nao_utf8_400_em_portugues(cliente):
+    resposta = cliente.post(
+        "/v1/predict", content="{\"cep\": \"98103\", \"nome\": \"é\"}".encode("latin-1"),
+        headers={"Content-Type": "application/json"},
+    )
+    assert resposta.status_code in (400, 422)
+    assert resposta.json()["erro"] in ("corpo_invalido", "dados_invalidos")
+    assert "There was an error" not in resposta.text
