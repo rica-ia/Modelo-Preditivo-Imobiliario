@@ -1,0 +1,255 @@
+{
+  "versao": "v2",
+  "algoritmo": "HistGradientBoosting Log monotônico",
+  "treinado_em": "2026-11-03T15:08:44+00:00",
+  "alvo": "price (USD)",
+  "data_referencia": "20150527T000000",
+  "divisao": {
+    "treino": 12971,
+    "validacao": 4318,
+    "teste": 4324,
+    "criterio": "GroupShuffleSplit por id (60/20/20), random_state 42"
+  },
+  "metricas": {
+    "validacao": {
+      "MAE": 62653.8215,
+      "MSE": 11645897341.4293,
+      "RMSE": 107916.1589,
+      "R2": 0.9106,
+      "MAPE": 0.1164
+    },
+    "teste": {
+      "MAE": 63907.8252,
+      "MSE": 13647554514.3279,
+      "RMSE": 116822.7483,
+      "R2": 0.9023,
+      "MAPE": 0.1199
+    }
+  },
+  "comparacao_validacao": {
+    "Baseline pela média": {
+      "MAE": 232544.9075,
+      "MSE": 130285273202.2966,
+      "RMSE": 360950.5135,
+      "R2": -0.0,
+      "MAPE": 0.5301
+    },
+    "Regressão Linear": {
+      "MAE": 95005.3072,
+      "MSE": 21617468827.2987,
+      "RMSE": 147028.8027,
+      "R2": 0.8341,
+      "MAPE": 0.1989
+    },
+    "HistGradientBoosting": {
+      "MAE": 64836.7372,
+      "MSE": 12467586339.4591,
+      "RMSE": 111658.3465,
+      "R2": 0.9043,
+      "MAPE": 0.123
+    },
+    "HistGradientBoosting Log": {
+      "MAE": 61208.5108,
+      "MSE": 10855335946.5298,
+      "RMSE": 104188.9435,
+      "R2": 0.9167,
+      "MAPE": 0.1141
+    },
+    "HistGradientBoosting Log monotônico": {
+      "MAE": 62653.8215,
+      "MSE": 11645897341.4293,
+      "RMSE": 107916.1589,
+      "R2": 0.9106,
+      "MAPE": 0.1164
+    }
+  },
+  "criterio_selecao": "menor RMSE na validação; o HGB Log monotônico é preferido se perder até 0.01 de R² para o HGB Log sem restrição",
+  "restricoes_monotonicas_crescentes": [
+    "sqft_living",
+    "grade",
+    "view",
+    "condition",
+    "waterfront",
+    "bathrooms",
+    "sqft_living15",
+    "foi_reformado"
+  ],
+  "baseline": {
+    "modelo": "Baseline pela média",
+    "teste": {
+      "MAE": 236448.207,
+      "MSE": 139711259836.0973,
+      "RMSE": 373779.6943,
+      "R2": -0.0003,
+      "MAPE": 0.5331
+    }
+  },
+  "importancia": [
+    {
+      "variavel": "Latitude",
+      "coluna": "lat",
+      "importancia": 0.4113
+    },
+    {
+      "variavel": "Área útil",
+      "coluna": "sqft_living",
+      "importancia": 0.3387
+    },
+    {
+      "variavel": "Padrão construtivo",
+      "coluna": "grade",
+      "importancia": 0.2439
+    },
+    {
+      "variavel": "Longitude",
+      "coluna": "long",
+      "importancia": 0.12
+    },
+    {
+      "variavel": "Área útil dos vizinhos",
+      "coluna": "sqft_living15",
+      "importancia": 0.0336
+    },
+    {
+      "variavel": "Vista",
+      "coluna": "view",
+      "importancia": 0.026
+    },
+    {
+      "variavel": "Área do terreno",
+      "coluna": "sqft_lot",
+      "importancia": 0.0221
+    },
+    {
+      "variavel": "CEP",
+      "coluna": "zipcode",
+      "importancia": 0.0186
+    },
+    {
+      "variavel": "Ano de construção",
+      "coluna": "yr_built",
+      "importancia": 0.0164
+    },
+    {
+      "variavel": "Frente para a água",
+      "coluna": "waterfront",
+      "importancia": 0.0158
+    },
+    {
+      "variavel": "Banheiros",
+      "coluna": "bathrooms",
+      "importancia": 0.0112
+    },
+    {
+      "variavel": "Área do porão",
+      "coluna": "sqft_basement",
+      "importancia": 0.0076
+    },
+    {
+      "variavel": "Condição",
+      "coluna": "condition",
+      "importancia": 0.0056
+    },
+    {
+      "variavel": "Andares",
+      "coluna": "floors",
+      "importancia": 0.0046
+    },
+    {
+      "variavel": "Data da venda",
+      "coluna": "date",
+      "importancia": 0.0027
+    },
+    {
+      "variavel": "Ano da reforma",
+      "coluna": "yr_renovated",
+      "importancia": 0.0027
+    },
+    {
+      "variavel": "Quartos",
+      "coluna": "bedrooms",
+      "importancia": 0.0005
+    },
+    {
+      "variavel": "Terreno dos vizinhos",
+      "coluna": "sqft_lot15",
+      "importancia": 0.0
+    }
+  ],
+  "faixa_erro": {
+    "p10": 0.8264,
+    "p90": 1.18
+  },
+  "ceps_conhecidos": [
+    "98001",
+    "98002",
+    "98003",
+    "98004",
+    "98005",
+    "98006",
+    "98007",
+    "98008",
+    "98010",
+    "98011",
+    "98014",
+    "98019",
+    "98022",
+    "98023",
+    "98024",
+    "98027",
+    "98028",
+    "98029",
+    "98030",
+    "98031",
+    "98032",
+    "98033",
+    "98034",
+    "98038",
+    "98039",
+    "98040",
+    "98042",
+    "98045",
+    "98052",
+    "98053",
+    "98055",
+    "98056",
+    "98058",
+    "98059",
+    "98065",
+    "98070",
+    "98072",
+    "98074",
+    "98075",
+    "98077",
+    "98092",
+    "98102",
+    "98103",
+    "98105",
+    "98106",
+    "98107",
+    "98108",
+    "98109",
+    "98112",
+    "98115",
+    "98116",
+    "98117",
+    "98118",
+    "98119",
+    "98122",
+    "98125",
+    "98126",
+    "98133",
+    "98136",
+    "98144",
+    "98146",
+    "98148",
+    "98155",
+    "98166",
+    "98168",
+    "98177",
+    "98178",
+    "98188",
+    "98198",
+    "98199"
+  ]
+}

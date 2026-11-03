@@ -1,0 +1,17 @@
+# Módulo 2 · API preditiva (Python 3.13): mínimo para subir a API e rodar os testes.
+# O ambiente completo do repositório (notebook, gráficos e MLflow) está em ../requirements.txt.
+# Pipeline de dados e modelo (mesmas versões do Módulo 1)
+pandas==2.2.3
+numpy==2.3.5
+scikit-learn==1.8.0
+joblib==1.5.3
+scipy==1.17.0
+# Serviço web
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.2
+# Testes automatizados da API
+httpx==0.28.1
+pytest==9.2.0
+# QR Code do segundo fator (2FA) no terminal
+qrcode==8.2

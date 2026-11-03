@@ -1,0 +1,562 @@
+[
+  {
+    "cep": "98001",
+    "latitude": 47.30902,
+    "longitude": -122.27065,
+    "vendas": 362,
+    "preco_mediano_usd": 260000.0,
+    "preco_m2_mediano_usd": 1585.26
+  },
+  {
+    "cep": "98002",
+    "latitude": 47.30878,
+    "longitude": -122.21336,
+    "vendas": 199,
+    "preco_mediano_usd": 235000.0,
+    "preco_m2_mediano_usd": 1584.21
+  },
+  {
+    "cep": "98003",
+    "latitude": 47.31574,
+    "longitude": -122.31005,
+    "vendas": 280,
+    "preco_mediano_usd": 267475.0,
+    "preco_m2_mediano_usd": 1666.46
+  },
+  {
+    "cep": "98004",
+    "latitude": 47.61618,
+    "longitude": -122.20519,
+    "vendas": 317,
+    "preco_mediano_usd": 1150000.0,
+    "preco_m2_mediano_usd": 4918.51
+  },
+  {
+    "cep": "98005",
+    "latitude": 47.61153,
+    "longitude": -122.16727,
+    "vendas": 168,
+    "preco_mediano_usd": 765475.0,
+    "preco_m2_mediano_usd": 3403.7
+  },
+  {
+    "cep": "98006",
+    "latitude": 47.55802,
+    "longitude": -122.14684,
+    "vendas": 498,
+    "preco_mediano_usd": 760184.5,
+    "preco_m2_mediano_usd": 3102.51
+  },
+  {
+    "cep": "98007",
+    "latitude": 47.61052,
+    "longitude": -122.14208,
+    "vendas": 141,
+    "preco_mediano_usd": 555000.0,
+    "preco_m2_mediano_usd": 3117.08
+  },
+  {
+    "cep": "98008",
+    "latitude": 47.61331,
+    "longitude": -122.11583,
+    "vendas": 283,
+    "preco_mediano_usd": 545000.0,
+    "preco_m2_mediano_usd": 3142.37
+  },
+  {
+    "cep": "98010",
+    "latitude": 47.33321,
+    "longitude": -121.99947,
+    "vendas": 100,
+    "preco_mediano_usd": 359999.5,
+    "preco_m2_mediano_usd": 2090.47
+  },
+  {
+    "cep": "98011",
+    "latitude": 47.75519,
+    "longitude": -122.20117,
+    "vendas": 195,
+    "preco_mediano_usd": 470000.0,
+    "preco_m2_mediano_usd": 2379.95
+  },
+  {
+    "cep": "98014",
+    "latitude": 47.67149,
+    "longitude": -121.84853,
+    "vendas": 124,
+    "preco_mediano_usd": 415000.0,
+    "preco_m2_mediano_usd": 2283.28
+  },
+  {
+    "cep": "98019",
+    "latitude": 47.7371,
+    "longitude": -121.95483,
+    "vendas": 190,
+    "preco_mediano_usd": 401250.0,
+    "preco_m2_mediano_usd": 2123.16
+  },
+  {
+    "cep": "98022",
+    "latitude": 47.21145,
+    "longitude": -121.99517,
+    "vendas": 234,
+    "preco_mediano_usd": 279500.0,
+    "preco_m2_mediano_usd": 1788.38
+  },
+  {
+    "cep": "98023",
+    "latitude": 47.30862,
+    "longitude": -122.36428,
+    "vendas": 499,
+    "preco_mediano_usd": 268450.0,
+    "preco_m2_mediano_usd": 1560.45
+  },
+  {
+    "cep": "98024",
+    "latitude": 47.55842,
+    "longitude": -121.90526,
+    "vendas": 81,
+    "preco_mediano_usd": 460000.0,
+    "preco_m2_mediano_usd": 2620.62
+  },
+  {
+    "cep": "98027",
+    "latitude": 47.52169,
+    "longitude": -122.04285,
+    "vendas": 412,
+    "preco_mediano_usd": 570500.0,
+    "preco_m2_mediano_usd": 2704.36
+  },
+  {
+    "cep": "98028",
+    "latitude": 47.75514,
+    "longitude": -122.24603,
+    "vendas": 283,
+    "preco_mediano_usd": 445000.0,
+    "preco_m2_mediano_usd": 2388.02
+  },
+  {
+    "cep": "98029",
+    "latitude": 47.55956,
+    "longitude": -122.00566,
+    "vendas": 321,
+    "preco_mediano_usd": 575000.0,
+    "preco_m2_mediano_usd": 2921.63
+  },
+  {
+    "cep": "98030",
+    "latitude": 47.36903,
+    "longitude": -122.19042,
+    "vendas": 256,
+    "preco_mediano_usd": 282255.0,
+    "preco_m2_mediano_usd": 1637.99
+  },
+  {
+    "cep": "98031",
+    "latitude": 47.40379,
+    "longitude": -122.18923,
+    "vendas": 274,
+    "preco_mediano_usd": 288200.0,
+    "preco_m2_mediano_usd": 1688.68
+  },
+  {
+    "cep": "98032",
+    "latitude": 47.37356,
+    "longitude": -122.27885,
+    "vendas": 125,
+    "preco_mediano_usd": 249000.0,
+    "preco_m2_mediano_usd": 1573.74
+  },
+  {
+    "cep": "98033",
+    "latitude": 47.68009,
+    "longitude": -122.18766,
+    "vendas": 432,
+    "preco_mediano_usd": 678350.0,
+    "preco_m2_mediano_usd": 3487.52
+  },
+  {
+    "cep": "98034",
+    "latitude": 47.72069,
+    "longitude": -122.20737,
+    "vendas": 545,
+    "preco_mediano_usd": 445950.0,
+    "preco_m2_mediano_usd": 2755.27
+  },
+  {
+    "cep": "98038",
+    "latitude": 47.3706,
+    "longitude": -122.03179,
+    "vendas": 590,
+    "preco_mediano_usd": 342000.0,
+    "preco_m2_mediano_usd": 1839.69
+  },
+  {
+    "cep": "98039",
+    "latitude": 47.62584,
+    "longitude": -122.23354,
+    "vendas": 50,
+    "preco_mediano_usd": 1892500.0,
+    "preco_m2_mediano_usd": 6083.39
+  },
+  {
+    "cep": "98040",
+    "latitude": 47.55985,
+    "longitude": -122.22559,
+    "vendas": 282,
+    "preco_mediano_usd": 993750.0,
+    "preco_m2_mediano_usd": 4051.22
+  },
+  {
+    "cep": "98042",
+    "latitude": 47.36567,
+    "longitude": -122.11545,
+    "vendas": 548,
+    "preco_mediano_usd": 292000.0,
+    "preco_m2_mediano_usd": 1714.1
+  },
+  {
+    "cep": "98045",
+    "latitude": 47.47336,
+    "longitude": -121.75904,
+    "vendas": 221,
+    "preco_mediano_usd": 399500.0,
+    "preco_m2_mediano_usd": 2264.62
+  },
+  {
+    "cep": "98052",
+    "latitude": 47.68054,
+    "longitude": -122.11928,
+    "vendas": 574,
+    "preco_mediano_usd": 615000.0,
+    "preco_m2_mediano_usd": 2956.59
+  },
+  {
+    "cep": "98053",
+    "latitude": 47.6799,
+    "longitude": -122.02282,
+    "vendas": 405,
+    "preco_mediano_usd": 635000.0,
+    "preco_m2_mediano_usd": 2891.91
+  },
+  {
+    "cep": "98055",
+    "latitude": 47.45867,
+    "longitude": -122.20276,
+    "vendas": 268,
+    "preco_mediano_usd": 294950.0,
+    "preco_m2_mediano_usd": 1871.84
+  },
+  {
+    "cep": "98056",
+    "latitude": 47.50966,
+    "longitude": -122.18278,
+    "vendas": 406,
+    "preco_mediano_usd": 380000.0,
+    "preco_m2_mediano_usd": 2205.23
+  },
+  {
+    "cep": "98058",
+    "latitude": 47.44608,
+    "longitude": -122.14614,
+    "vendas": 455,
+    "preco_mediano_usd": 335000.0,
+    "preco_m2_mediano_usd": 1862.99
+  },
+  {
+    "cep": "98059",
+    "latitude": 47.49274,
+    "longitude": -122.13905,
+    "vendas": 468,
+    "preco_mediano_usd": 435000.0,
+    "preco_m2_mediano_usd": 2118.09
+  },
+  {
+    "cep": "98065",
+    "latitude": 47.53173,
+    "longitude": -121.86193,
+    "vendas": 310,
+    "preco_mediano_usd": 500000.0,
+    "preco_m2_mediano_usd": 2221.46
+  },
+  {
+    "cep": "98070",
+    "latitude": 47.41742,
+    "longitude": -122.46382,
+    "vendas": 118,
+    "preco_mediano_usd": 463750.0,
+    "preco_m2_mediano_usd": 2716.89
+  },
+  {
+    "cep": "98072",
+    "latitude": 47.75102,
+    "longitude": -122.13197,
+    "vendas": 273,
+    "preco_mediano_usd": 515000.0,
+    "preco_m2_mediano_usd": 2603.11
+  },
+  {
+    "cep": "98074",
+    "latitude": 47.62408,
+    "longitude": -122.04478,
+    "vendas": 441,
+    "preco_mediano_usd": 642000.0,
+    "preco_m2_mediano_usd": 2748.58
+  },
+  {
+    "cep": "98075",
+    "latitude": 47.58749,
+    "longitude": -122.02252,
+    "vendas": 359,
+    "preco_mediano_usd": 739999.0,
+    "preco_m2_mediano_usd": 2699.85
+  },
+  {
+    "cep": "98077",
+    "latitude": 47.74592,
+    "longitude": -122.0612,
+    "vendas": 198,
+    "preco_mediano_usd": 652475.0,
+    "preco_m2_mediano_usd": 2607.22
+  },
+  {
+    "cep": "98092",
+    "latitude": 47.30184,
+    "longitude": -122.168,
+    "vendas": 351,
+    "preco_mediano_usd": 309780.0,
+    "preco_m2_mediano_usd": 1605.76
+  },
+  {
+    "cep": "98102",
+    "latitude": 47.63461,
+    "longitude": -122.32225,
+    "vendas": 105,
+    "preco_mediano_usd": 720000.0,
+    "preco_m2_mediano_usd": 4360.56
+  },
+  {
+    "cep": "98103",
+    "latitude": 47.67602,
+    "longitude": -122.34413,
+    "vendas": 602,
+    "preco_mediano_usd": 550000.0,
+    "preco_m2_mediano_usd": 3875.5
+  },
+  {
+    "cep": "98105",
+    "latitude": 47.66507,
+    "longitude": -122.29434,
+    "vendas": 229,
+    "preco_mediano_usd": 675000.0,
+    "preco_m2_mediano_usd": 4209.24
+  },
+  {
+    "cep": "98106",
+    "latitude": 47.5362,
+    "longitude": -122.35681,
+    "vendas": 335,
+    "preco_mediano_usd": 315000.0,
+    "preco_m2_mediano_usd": 2324.03
+  },
+  {
+    "cep": "98107",
+    "latitude": 47.66979,
+    "longitude": -122.37557,
+    "vendas": 266,
+    "preco_mediano_usd": 529950.0,
+    "preco_m2_mediano_usd": 4012.79
+  },
+  {
+    "cep": "98108",
+    "latitude": 47.54977,
+    "longitude": -122.30687,
+    "vendas": 186,
+    "preco_mediano_usd": 342500.0,
+    "preco_m2_mediano_usd": 2242.14
+  },
+  {
+    "cep": "98109",
+    "latitude": 47.6356,
+    "longitude": -122.35009,
+    "vendas": 109,
+    "preco_mediano_usd": 736000.0,
+    "preco_m2_mediano_usd": 4603.68
+  },
+  {
+    "cep": "98112",
+    "latitude": 47.62962,
+    "longitude": -122.29787,
+    "vendas": 269,
+    "preco_mediano_usd": 915000.0,
+    "preco_m2_mediano_usd": 4562.05
+  },
+  {
+    "cep": "98115",
+    "latitude": 47.68548,
+    "longitude": -122.30179,
+    "vendas": 583,
+    "preco_mediano_usd": 567000.0,
+    "preco_m2_mediano_usd": 3623.12
+  },
+  {
+    "cep": "98116",
+    "latitude": 47.57391,
+    "longitude": -122.39362,
+    "vendas": 330,
+    "preco_mediano_usd": 562750.0,
+    "preco_m2_mediano_usd": 3615.07
+  },
+  {
+    "cep": "98117",
+    "latitude": 47.68689,
+    "longitude": -122.37859,
+    "vendas": 553,
+    "preco_mediano_usd": 544000.0,
+    "preco_m2_mediano_usd": 3704.97
+  },
+  {
+    "cep": "98118",
+    "latitude": 47.5438,
+    "longitude": -122.27557,
+    "vendas": 508,
+    "preco_mediano_usd": 367500.0,
+    "preco_m2_mediano_usd": 2602.06
+  },
+  {
+    "cep": "98119",
+    "latitude": 47.64003,
+    "longitude": -122.36692,
+    "vendas": 184,
+    "preco_mediano_usd": 744975.0,
+    "preco_m2_mediano_usd": 4484.82
+  },
+  {
+    "cep": "98122",
+    "latitude": 47.61016,
+    "longitude": -122.29977,
+    "vendas": 290,
+    "preco_mediano_usd": 572000.0,
+    "preco_m2_mediano_usd": 3834.89
+  },
+  {
+    "cep": "98125",
+    "latitude": 47.71704,
+    "longitude": -122.30121,
+    "vendas": 410,
+    "preco_mediano_usd": 425000.0,
+    "preco_m2_mediano_usd": 2841.46
+  },
+  {
+    "cep": "98126",
+    "latitude": 47.54458,
+    "longitude": -122.37527,
+    "vendas": 354,
+    "preco_mediano_usd": 395750.0,
+    "preco_m2_mediano_usd": 2954.16
+  },
+  {
+    "cep": "98133",
+    "latitude": 47.73561,
+    "longitude": -122.34382,
+    "vendas": 494,
+    "preco_mediano_usd": 375000.0,
+    "preco_m2_mediano_usd": 2639.45
+  },
+  {
+    "cep": "98136",
+    "latitude": 47.53881,
+    "longitude": -122.38821,
+    "vendas": 263,
+    "preco_mediano_usd": 489950.0,
+    "preco_m2_mediano_usd": 3438.47
+  },
+  {
+    "cep": "98144",
+    "latitude": 47.58629,
+    "longitude": -122.29841,
+    "vendas": 343,
+    "preco_mediano_usd": 450000.0,
+    "preco_m2_mediano_usd": 3257.5
+  },
+  {
+    "cep": "98146",
+    "latitude": 47.50206,
+    "longitude": -122.35831,
+    "vendas": 288,
+    "preco_mediano_usd": 305000.0,
+    "preco_m2_mediano_usd": 2172.38
+  },
+  {
+    "cep": "98148",
+    "latitude": 47.43744,
+    "longitude": -122.32932,
+    "vendas": 57,
+    "preco_mediano_usd": 278000.0,
+    "preco_m2_mediano_usd": 1952.82
+  },
+  {
+    "cep": "98155",
+    "latitude": 47.75486,
+    "longitude": -122.30354,
+    "vendas": 446,
+    "preco_mediano_usd": 375000.0,
+    "preco_m2_mediano_usd": 2528.98
+  },
+  {
+    "cep": "98166",
+    "latitude": 47.45521,
+    "longitude": -122.3503,
+    "vendas": 254,
+    "preco_mediano_usd": 390000.0,
+    "preco_m2_mediano_usd": 2274.67
+  },
+  {
+    "cep": "98168",
+    "latitude": 47.4897,
+    "longitude": -122.30788,
+    "vendas": 269,
+    "preco_mediano_usd": 235000.0,
+    "preco_m2_mediano_usd": 1773.1
+  },
+  {
+    "cep": "98177",
+    "latitude": 47.74238,
+    "longitude": -122.36928,
+    "vendas": 255,
+    "preco_mediano_usd": 554000.0,
+    "preco_m2_mediano_usd": 2928.59
+  },
+  {
+    "cep": "98178",
+    "latitude": 47.49912,
+    "longitude": -122.24697,
+    "vendas": 262,
+    "preco_mediano_usd": 278277.0,
+    "preco_m2_mediano_usd": 1901.16
+  },
+  {
+    "cep": "98188",
+    "latitude": 47.44731,
+    "longitude": -122.28099,
+    "vendas": 136,
+    "preco_mediano_usd": 264000.0,
+    "preco_m2_mediano_usd": 1764.17
+  },
+  {
+    "cep": "98198",
+    "latitude": 47.39079,
+    "longitude": -122.31574,
+    "vendas": 280,
+    "preco_mediano_usd": 265000.0,
+    "preco_m2_mediano_usd": 1850.89
+  },
+  {
+    "cep": "98199",
+    "latitude": 47.6481,
+    "longitude": -122.39846,
+    "vendas": 317,
+    "preco_mediano_usd": 689800.0,
+    "preco_m2_mediano_usd": 3813.71
+  }
+]

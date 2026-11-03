@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="780" viewBox="0 0 1500 780" role="img" aria-labelledby="title desc">
+  <title id="title">Arquitetura em camadas da API do Módulo 2</title>
+  <desc id="desc">O cliente chama a API FastAPI; main.py registra lifespan, tratadores e roteadores; os schemas Pydantic validam o JSON; os routers delegam aos services, que aplicam regras de negócio e executam o pipeline joblib mantido em memória.</desc>
+  <defs>
+    <linearGradient id="header" x1="0" x2="1"><stop stop-color="#0b2036"/><stop offset="1" stop-color="#286879"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0b2036" flood-opacity=".13"/></filter>
+    <marker id="seta" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 14 7 0 14Z" fill="#21485f"/></marker>
+    <marker id="setaVerde" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 14 7 0 14Z" fill="#1baf7a"/></marker>
+    <style>
+      .heading{font:750 30px Inter,Segoe UI,Arial,sans-serif;fill:#fff}.subheading{font:400 15px Inter,Segoe UI,Arial,sans-serif;fill:#c7dce1}
+      .t{font:750 17px Inter,Segoe UI,Arial,sans-serif;fill:#102a3e}.tw{font:750 17px Inter,Segoe UI,Arial,sans-serif;fill:#fff}
+      .s{font:500 13px Inter,Segoe UI,Arial,sans-serif;fill:#52606d}.sw{font:500 13px Inter,Segoe UI,Arial,sans-serif;fill:#c7dce1}
+      .code{font:600 13px Consolas,Menlo,monospace;fill:#0f4c64}.tag{font:700 12px Inter,Segoe UI,Arial,sans-serif;fill:#fff}
+      .fluxo{fill:none;stroke:#21485f;stroke-width:3;marker-end:url(#seta)}.volta{fill:none;stroke:#1baf7a;stroke-width:3;stroke-dasharray:8 6;marker-end:url(#setaVerde)}
+    </style>
+  </defs>
+  <rect width="1500" height="780" rx="24" fill="#f6f9fb"/>
+  <rect width="1500" height="96" rx="24" fill="url(#header)"/><rect y="72" width="1500" height="24" fill="url(#header)"/>
+  <text x="54" y="43" class="heading">Arquitetura em camadas da API</text>
+  <text x="54" y="70" class="subheading">Protocolo HTTP, contrato de dados, regra de negócio e inferência ficam em módulos separados</text>
+
+  <!-- Clientes -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="150" width="250" height="300" rx="18" fill="#fff" stroke="#d5e1e8"/>
+  </g>
+  <text x="165" y="188" text-anchor="middle" class="t">Clientes</text>
+  <rect x="64" y="210" width="202" height="62" rx="12" fill="#eef6f8"/><text x="165" y="237" text-anchor="middle" class="t" style="font-size:15px">Portal web</text><text x="165" y="257" text-anchor="middle" class="s">GET /  ·  /assets</text>
+  <rect x="64" y="286" width="202" height="62" rx="12" fill="#eef6f8"/><text x="165" y="313" text-anchor="middle" class="t" style="font-size:15px">Swagger /docs</text><text x="165" y="333" text-anchor="middle" class="s">OpenAPI gerado</text>
+  <rect x="64" y="362" width="202" height="62" rx="12" fill="#eef6f8"/><text x="165" y="389" text-anchor="middle" class="t" style="font-size:15px">Aplicações externas</text><text x="165" y="409" text-anchor="middle" class="s">curl · Python · JSON</text>
+
+  <!-- main.py -->
+  <g filter="url(#shadow)"><rect x="350" y="150" width="300" height="300" rx="18" fill="#0f4c64"/></g>
+  <text x="500" y="190" text-anchor="middle" class="tw">main.py</text>
+  <text x="500" y="212" text-anchor="middle" class="sw">ponto de entrada (Uvicorn / ASGI)</text>
+  <rect x="374" y="232" width="252" height="50" rx="10" fill="#21485f"/><text x="500" y="262" text-anchor="middle" class="tw" style="font-size:14px">lifespan: carrega o modelo 1×</text>
+  <rect x="374" y="294" width="252" height="50" rx="10" fill="#21485f"/><text x="500" y="324" text-anchor="middle" class="tw" style="font-size:14px">erros.py: JSON pt-BR, 4xx e 5xx</text>
+  <rect x="374" y="356" width="252" height="50" rx="10" fill="#21485f"/><text x="500" y="386" text-anchor="middle" class="tw" style="font-size:14px">include_router × 7</text>
+
+  <!-- schemas -->
+  <g filter="url(#shadow)"><rect x="710" y="150" width="340" height="140" rx="18" fill="#fff" stroke="#d5e1e8"/></g>
+  <rect x="730" y="168" width="84" height="24" rx="12" fill="#e92063"/><text x="772" y="185" text-anchor="middle" class="tag">Fase 4</text>
+  <text x="830" y="186" class="t">schemas/</text>
+  <text x="730" y="218" class="code">ImovelEntrada · PrevisaoSaida</text>
+  <text x="730" y="240" class="code">LoteEntrada · SaudeSaida · ErroSaida</text>
+  <text x="730" y="266" class="s">Field(ge, le, pattern) · extra="forbid" → 422</text>
+
+  <!-- routers -->
+  <g filter="url(#shadow)"><rect x="710" y="310" width="340" height="168" rx="18" fill="#fff" stroke="#d5e1e8"/></g>
+  <rect x="730" y="328" width="84" height="24" rx="12" fill="#0f766e"/><text x="772" y="345" text-anchor="middle" class="tag">Fase 5</text>
+  <text x="830" y="346" class="t">routers/ (APIRouter)</text>
+  <text x="730" y="376" class="code">saude.py      GET  /health</text>
+  <text x="730" y="396" class="code">predicao.py   POST /v1/predict[/lote]</text>
+  <text x="730" y="416" class="code">modelo.py     GET  /v1/modelo · /v1/regioes</text><text x="730" y="436" class="code">comercial.py · relatorios.py</text><text x="730" y="456" class="code">avaliacoes.py · mapa3d.py</text>
+
+  <!-- services -->
+  <g filter="url(#shadow)"><rect x="1110" y="150" width="350" height="300" rx="18" fill="#fff" stroke="#d5e1e8"/></g>
+  <rect x="1130" y="168" width="84" height="24" rx="12" fill="#b08d57"/><text x="1172" y="185" text-anchor="middle" class="tag">Fase 2</text>
+  <text x="1230" y="186" class="t">services/modelo.py</text>
+  <text x="1130" y="222" class="s">ServicoModelo — sem dependência de HTTP</text>
+  <rect x="1130" y="236" width="310" height="44" rx="10" fill="#eef6f8"/><text x="1145" y="263" class="code">_validar_regras()  → 400</text>
+  <rect x="1130" y="290" width="310" height="44" rx="10" fill="#eef6f8"/><text x="1145" y="317" class="code">_para_colunas_do_modelo()  m²→sqft</text>
+  <rect x="1130" y="344" width="310" height="44" rx="10" fill="#eef6f8"/><text x="1145" y="371" class="code">prever()  pipeline.predict em RAM</text>
+  <text x="1130" y="420" class="s">faixa provável = preço × p10 / p90</text>
+
+  <!-- artefato -->
+  <g filter="url(#shadow)"><rect x="1110" y="510" width="350" height="200" rx="18" fill="#0b2036"/></g>
+  <rect x="1130" y="528" width="84" height="24" rx="12" fill="#1baf7a"/><text x="1172" y="545" text-anchor="middle" class="tag">Fase 1</text>
+  <text x="1230" y="546" class="tw">models/ (artefato v2)</text>
+  <text x="1130" y="584" class="sw">modelo_imobiliario_v2.joblib</text>
+  <text x="1130" y="606" class="sw">metricas_v2.json · regioes_v2.json</text>
+  <text x="1130" y="640" class="sw">Pipeline: atributos → imputação →</text>
+  <text x="1130" y="660" class="sw">one-hot + escala → HGB em log</text>
+  <text x="1130" y="690" class="sw">gerado por treinamento/treinar_modelo.py</text>
+
+  <!-- Fase 3 nota -->
+  <g filter="url(#shadow)"><rect x="350" y="510" width="700" height="200" rx="18" fill="#fff" stroke="#d5e1e8"/></g>
+  <rect x="370" y="528" width="84" height="24" rx="12" fill="#21485f"/><text x="412" y="545" text-anchor="middle" class="tag">Fase 3</text>
+  <text x="470" y="546" class="t">Ciclo de vida (lifespan)</text>
+  <text x="370" y="584" class="s">Na subida: ServicoModelo.carregar() executa joblib.load uma única vez e guarda o pipeline em app.state.</text>
+  <text x="370" y="608" class="s">Uma predição de aquecimento evita que a 1ª requisição real pague a inicialização (1,7 s → ~35 ms).</text>
+  <text x="370" y="632" class="s">As rotas só leem app.state.servico_modelo: nenhum acesso a disco por requisição.</text>
+  <text x="370" y="656" class="s">Prova automatizada: tests/test_ciclo_de_vida.py e test_predicoes_nao_releem_o_artefato.</text>
+  <text x="370" y="686" class="code">@asynccontextmanager  async def lifespan(app): ... yield ... descarregar()</text>
+
+  <!-- setas -->
+  <path class="fluxo" d="M290 300 H340"/>
+  <path class="fluxo" d="M650 220 H700"/>
+  <path class="fluxo" d="M650 380 H700"/>
+  <path class="fluxo" d="M1050 380 H1100"/>
+  <path class="fluxo" d="M1285 450 V500"/>
+  <path class="volta" d="M500 450 V500"/>
+  <text x="40" y="520" class="t">Legenda</text>
+  <path class="fluxo" d="M40 552 H110"/><text x="122" y="557" class="s">requisição</text>
+  <path class="volta" d="M40 590 H110"/><text x="122" y="595" class="s">inicialização</text>
+  <text x="40" y="640" class="s">Os routers não contêm</text>
+  <text x="40" y="660" class="s">regra de negócio nem</text>
+  <text x="40" y="680" class="s">leitura de arquivo.</text>
+</svg>

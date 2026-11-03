@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Avaliador Imobiliário">
+  <defs>
+    <linearGradient id="ai-grad" x1="10" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d9ccff"/>
+      <stop offset=".5" stop-color="#a685fa"/>
+      <stop offset="1" stop-color="#703bf7"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#1a1a1a"/>
+  <g fill="none" stroke="url(#ai-grad)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 31 32 16l18 15" stroke-width="3.6"/>
+    <path d="M19 28v18h26V28" stroke-width="3.2"/>
+    <path d="M24 41l6-6 4 3 6-7" stroke-width="2.6"/>
+  </g>
+  <circle cx="40" cy="31" r="2.6" fill="#ffffff"/>
+</svg>

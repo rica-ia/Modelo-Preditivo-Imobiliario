@@ -12,9 +12,19 @@ sample_data/
 venv/
 git_askpass.sh
 .git-credentials
-Controle_Git_Colab.ipynb
-notebook_operacional_colab.ipynb
 modelo_preditivo_imobiliario_publico.ipynb
-tempo_execucao_colab_tmp.ipynb
-GUIA-PRIVADO-VERSIONAMENTO-COLAB.html
-ROTEIRO-COMMITS-MODELO-PREDITIVO.html
+
+# Módulo 2 · configuração local e banco gerado
+.env
+modulo2_api/banco/*.db
+modulo2_api/banco/*.db-*
+modulo2_api/banco/emails/
+modulo2_api/banco/sessoes.json
+modulo2_api/banco/sessoes.tmp
+
+# Vídeos 360° gerados localmente (imagens do Google não são redistribuídas)
+modulo2_api/saida/
+
+# MLflow local (gerado por modulo2_api/ferramentas/registrar_mlflow.py)
+mlruns/
+mlartifacts/

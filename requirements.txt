@@ -8,3 +8,13 @@ scipy==1.17.0
 h3==4.5.0
 plotly==6.8.0
 jinja2==3.1.6
+# Módulo 2 · API preditiva
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.2
+httpx==0.28.1
+pytest==9.2.0
+# QR Code do segundo fator (2FA) no terminal
+qrcode==8.2
+# Rastreamento do experimento e Model Registry local (MLflow, opcional para a API)
+mlflow==3.17.2
