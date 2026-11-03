@@ -3,7 +3,8 @@
 
 Grava cada avaliação com a predição recalculada no servidor (o cliente nunca
 informa o preço), lista com filtros e paginação, exporta em CSV/JSON e monta o
-laudo HTML com comparáveis reais e referências de mercado do mesmo CEP e cidade.
+laudo HTML (ver `services/laudo.py`) com comparáveis reais, referências de mercado do mesmo CEP e
+cidade, endereço e comodidades do entorno.
 """
 
 import csv
@@ -11,13 +12,13 @@ import io
 import json
 import statistics
 from datetime import datetime
-from html import escape
 
 from ..schemas.imovel import ImovelEntrada
 from .banco import Banco, agora
 from .carga import classificar, mapa_de_cidades, rotulos_de_faixa
 from .comercial import ServicoComercial
 from .excecoes import NaoEncontradoError, RegraDeNegocioError
+from .laudo import montar_laudo
 from .modelo import ServicoModelo
 
 ORDENACOES = {
@@ -138,16 +139,27 @@ class ServicoAvaliacoes:
         return exportar_csv(linhas, COLUNAS_EXPORTACAO), "text/csv; charset=utf-8", f"avaliacoes_{carimbo}.csv"
 
     # ## Laudo HTML
-    def _referencias(self, cep: str, cidade: str) -> dict:
-        por_cep = [r["preco_m2_usd"] for r in self.banco.consultar(
-            "SELECT preco_m2_usd FROM vendas_historicas WHERE cep = ?", (cep,))]
-        por_cidade = [r["preco_m2_usd"] for r in self.banco.consultar(
-            "SELECT preco_m2_usd FROM vendas_historicas WHERE cidade = ?", (cidade,))]
+    def _referencias(self, cep: str, cidade: str, preco_m2: float | None = None) -> dict:
+        """Medianas e quartis do CEP e da cidade e o percentil do US$/m² do imóvel entre as vendas do CEP."""
+        do_cep = self.banco.consultar("SELECT preco_usd, preco_m2_usd FROM vendas_historicas WHERE cep = ?", (cep,))
+        da_cidade = self.banco.consultar("SELECT preco_usd, preco_m2_usd FROM vendas_historicas WHERE cidade = ?",
+                                         (cidade,))
+        m2_cep = sorted(r["preco_m2_usd"] for r in do_cep)
+        m2_cidade = [r["preco_m2_usd"] for r in da_cidade]
+
+        def quantil(valores: list[float], q: float) -> float | None:
+            return statistics.quantiles(valores, n=100, method="inclusive")[round(q * 100) - 1] if len(valores) > 1 else None
+
         return {
-            "cep": statistics.median(por_cep) if por_cep else None,
-            "cidade": statistics.median(por_cidade) if por_cidade else None,
-            "vendas_cep": len(por_cep),
-            "vendas_cidade": len(por_cidade),
+            "cep": statistics.median(m2_cep) if m2_cep else None,
+            "cidade": statistics.median(m2_cidade) if m2_cidade else None,
+            "vendas_cep": len(m2_cep),
+            "vendas_cidade": len(m2_cidade),
+            "preco_mediano_cep": statistics.median(r["preco_usd"] for r in do_cep) if do_cep else None,
+            "preco_mediano_cidade": statistics.median(r["preco_usd"] for r in da_cidade) if da_cidade else None,
+            "m2_p10": quantil(m2_cep, 0.10), "m2_p25": quantil(m2_cep, 0.25),
+            "m2_p75": quantil(m2_cep, 0.75), "m2_p90": quantil(m2_cep, 0.90),
+            "percentil_m2": (sum(v <= preco_m2 for v in m2_cep) / len(m2_cep)) if m2_cep and preco_m2 else None,
         }
 
     def comparaveis(self, avaliacao: dict, quantidade: int = 5) -> list[dict]:
@@ -169,13 +181,15 @@ class ServicoAvaliacoes:
 
         return sorted(vendas, key=distancia)[:quantidade]
 
-    def laudo_html(self, avaliacao_id: int) -> str:
+    def laudo_html(self, avaliacao_id: int, endereco=None, comodidades=None) -> str:
+        """Laudo completo; `endereco` e `comodidades` são os serviços do OpenStreetMap (opcionais, com cache)."""
         a = self.obter(avaliacao_id)
         imovel = a["imovel"]
-        ref = self._referencias(a["cep"], a["cidade"])
-        comparaveis = self.comparaveis(a)
-        metricas = self.servico.metricas.get("metricas", {}).get("teste", {})
-        return montar_laudo(a, imovel, ref, comparaveis, metricas, self.servico.metricas.get("algoritmo", ""))
+        ref = self._referencias(a["cep"], a["cidade"], a["preco_m2_usd"])
+        lat, lng = imovel["latitude"], imovel["longitude"]
+        local = endereco.endereco(lat, lng) if endereco else None
+        entorno = comodidades.comodidades(lat, lng) if comodidades else None
+        return montar_laudo(a, imovel, ref, self.comparaveis(a), self.servico.metricas, local, entorno)
 
 
 def exportar_csv(linhas: list[dict], colunas: list[str]) -> bytes:
@@ -186,120 +200,3 @@ def exportar_csv(linhas: list[dict], colunas: list[str]) -> bytes:
     for linha in linhas:
         escritor.writerow([_numero_br(linha.get(c)) for c in colunas])
     return ("﻿" + saida.getvalue()).encode("utf-8")
-
-
-def _usd(valor) -> str:
-    return "—" if valor is None else "US$ " + f"{valor:,.0f}".replace(",", ".")
-
-
-def montar_laudo(a: dict, imovel: dict, ref: dict, comparaveis: list[dict], metricas: dict, algoritmo: str) -> str:
-    e = escape
-    sim = lambda v: "Sim" if v else "Não"  # noqa: E731
-
-    def comparar(referencia):
-        if not referencia:
-            return "—"
-        delta = a["preco_m2_usd"] / referencia - 1
-        lado = "acima" if delta >= 0 else "abaixo"
-        percentual = f"{abs(delta):.1%}".replace(".", ",")
-        return f"{_usd(referencia)} · este imóvel está {percentual} {lado}"
-
-    linhas_comp = "".join(
-        f"<tr><td>{e(c['data_venda'])}</td><td>{_usd(c['preco_usd'])}</td><td>{c['quartos']}</td>"
-        f"<td>{c['banheiros']:g}</td><td>{c['area_util_m2']:.0f} m²</td><td>{c['padrao']}</td>"
-        f"<td>{c['ano_construcao']}</td><td>{_usd(c['preco_m2_usd'])}</td></tr>"
-        for c in comparaveis
-    ) or '<tr><td colspan="8">Sem vendas registradas neste CEP.</td></tr>'
-    preco_real = (
-        f"<div class='kpi'><span>Preço real de venda</span><b>{_usd(a['preco_real_usd'])}</b>"
-        f"<small>erro do modelo: {(a['preco_estimado_usd'] / a['preco_real_usd'] - 1):+.1%}</small></div>"
-        if a.get("preco_real_usd") else ""
-    )
-    return f"""<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Laudo de avaliação nº {a['id']} · Avaliador Imobiliário</title>
-<style>
-  :root {{ --tinta:#1d1d1f; --suave:#6e6e73; --linha:#e5e5ea; --marca:#7c5cff; }}
-  * {{ box-sizing:border-box }}
-  body {{ margin:0; font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--tinta); background:#f5f5f7 }}
-  .folha {{ max-width:820px; margin:24px auto; background:#fff; border-radius:18px; padding:40px; box-shadow:0 2px 16px rgba(0,0,0,.06) }}
-  header {{ display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--linha); padding-bottom:18px }}
-  header img {{ width:44px; height:44px }}
-  header h1 {{ font-size:20px; margin:0 }}
-  header p {{ margin:2px 0 0; color:var(--suave); font-size:13px }}
-  h2 {{ font-size:15px; text-transform:uppercase; letter-spacing:.06em; color:var(--suave); margin:28px 0 10px }}
-  .titulo {{ font-size:24px; margin:22px 0 4px }}
-  .kpis {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px }}
-  .kpi {{ border:1px solid var(--linha); border-radius:14px; padding:14px }}
-  .kpi span {{ display:block; color:var(--suave); font-size:12px }}
-  .kpi b {{ display:block; font-size:22px; margin-top:4px }}
-  .kpi small {{ color:var(--suave) }}
-  .destaque b {{ color:var(--marca); font-size:28px }}
-  table {{ width:100%; border-collapse:collapse; font-size:13px }}
-  th, td {{ text-align:left; padding:8px 6px; border-bottom:1px solid var(--linha) }}
-  th {{ color:var(--suave); font-weight:600 }}
-  dl {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:6px 18px; margin:0; font-size:14px }}
-  dt {{ color:var(--suave) }} dd {{ margin:0 0 6px; font-weight:600 }}
-  .aviso {{ background:#fff4e5; color:#8a4b00; border-radius:12px; padding:14px; font-size:13px; line-height:1.5 }}
-  .acoes {{ text-align:right; margin-bottom:12px }}
-  .acoes button {{ background:var(--marca); color:#fff; border:0; border-radius:999px; padding:10px 18px; font-size:14px; cursor:pointer }}
-  @media print {{
-    body {{ background:#fff }} .folha {{ box-shadow:none; margin:0; max-width:none; border-radius:0; padding:0 }}
-    .acoes {{ display:none }} h2 {{ break-after:avoid }} table, .kpis {{ break-inside:avoid }}
-    @page {{ size:A4; margin:16mm }}
-  }}
-</style></head>
-<body><div class="folha">
-  <div class="acoes"><button onclick="window.print()">Imprimir ou salvar em PDF</button></div>
-  <header><img src="/assets/logo.svg" alt="">
-    <div><h1>Avaliador Imobiliário</h1><p>Laudo de avaliação nº {a['id']} · emitido em {e(a['criado_em'][:16].replace('T', ' '))}</p></div>
-  </header>
-  <p class="titulo">{e(a['titulo'])}</p>
-  <p style="color:var(--suave);margin:0">Responsável: {e(a.get('responsavel') or '—')} · Origem: {e(a['origem'])} · {e(a['cidade'])}, CEP {e(a['cep'])}</p>
-
-  <h2>Valor estimado</h2>
-  <div class="kpis">
-    <div class="kpi destaque"><span>Preço estimado</span><b>{_usd(a['preco_estimado_usd'])}</b><small>{e(a['faixa_preco'])}</small></div>
-    <div class="kpi"><span>Faixa provável (80 %)</span><b>{_usd(a['faixa_min'])}</b><small>até {_usd(a['faixa_max'])}</small></div>
-    <div class="kpi"><span>Preço por m²</span><b>{_usd(a['preco_m2_usd'])}</b><small>área útil de {a['area_util_m2']:.0f} m²</small></div>
-    {preco_real}
-  </div>
-
-  <h2>Referência de mercado (vendas reais)</h2>
-  <dl>
-    <dt>Mediana do US$/m² no CEP {e(a['cep'])} ({ref['vendas_cep']} vendas)</dt><dd>{comparar(ref['cep'])}</dd>
-    <dt>Mediana do US$/m² em {e(a['cidade'])} ({ref['vendas_cidade']} vendas)</dt><dd>{comparar(ref['cidade'])}</dd>
-  </dl>
-
-  <h2>Dados do imóvel</h2>
-  <dl>
-    <dt>Quartos</dt><dd>{imovel['quartos']}</dd>
-    <dt>Banheiros</dt><dd>{imovel['banheiros']:g}</dd>
-    <dt>Área útil</dt><dd>{imovel['area_util_m2']:.0f} m²</dd>
-    <dt>Terreno</dt><dd>{imovel['area_terreno_m2']:.0f} m²</dd>
-    <dt>Andares</dt><dd>{imovel['andares']:g}</dd>
-    <dt>Porão</dt><dd>{imovel.get('area_porao_m2') or 0:.0f} m²</dd>
-    <dt>Padrão construtivo</dt><dd>{imovel['padrao_construtivo']} de 13</dd>
-    <dt>Conservação</dt><dd>{imovel['condicao']} de 5</dd>
-    <dt>Vista</dt><dd>{imovel['vista']} de 4</dd>
-    <dt>Frente para a água</dt><dd>{sim(imovel['frente_agua'])}</dd>
-    <dt>Ano de construção</dt><dd>{imovel['ano_construcao']}</dd>
-    <dt>Reforma</dt><dd>{imovel.get('ano_reforma') or 'Nunca reformado'}</dd>
-    <dt>Localização</dt><dd>{imovel['latitude']:.4f}, {imovel['longitude']:.4f}</dd>
-  </dl>
-
-  <h2>Comparáveis: 5 vendas mais parecidas no mesmo CEP</h2>
-  <table><thead><tr><th>Data</th><th>Preço</th><th>Quartos</th><th>Banheiros</th><th>Área</th><th>Padrão</th><th>Ano</th><th>US$/m²</th></tr></thead>
-  <tbody>{linhas_comp}</tbody></table>
-
-  <h2>Modelo</h2>
-  <dl>
-    <dt>Algoritmo</dt><dd>{e(algoritmo)} · versão {e(a['versao_modelo'])}</dd>
-    <dt>Desempenho no conjunto de teste</dt><dd>R² {metricas.get('R2', 0):.3f} · MAE {_usd(metricas.get('MAE'))} · MAPE {metricas.get('MAPE', 0):.1%}</dd>
-  </dl>
-
-  <h2>Aviso de uso</h2>
-  <p class="aviso">Estimativa estatística gerada por modelo de machine learning treinado com vendas de King County (WA)
-  entre mai/2014 e mai/2015, em dólares. Não substitui laudo técnico de avaliação assinado por profissional habilitado
-  (NBR 14653) nem vistoria do imóvel. A faixa provável cobre cerca de 80 % dos erros observados na validação.</p>
-</div></body></html>"""

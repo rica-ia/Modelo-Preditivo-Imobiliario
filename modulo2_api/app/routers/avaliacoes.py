@@ -5,7 +5,7 @@ Cria, lista com filtros, exporta e imprime laudos. A predição é sempre
 recalculada no servidor a partir do imóvel enviado.
 """
 
-from fastapi import APIRouter, Depends, Query, Response, Security
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, Response, Security
 from fastapi.responses import HTMLResponse
 
 from ..schemas.avaliacoes import AvaliacaoEntrada, AvaliacaoSaida, Formato, ListaAvaliacoesSaida, Ordenacao, Origem
@@ -42,10 +42,17 @@ def filtros_avaliacao(
 )
 def criar(
     dados: AvaliacaoEntrada,
+    request: Request,
+    tarefas: BackgroundTasks,
     chave: str | None = Security(cabecalho_chave),
     servico: ServicoAvaliacoes = Depends(obter_avaliacoes),
 ) -> AvaliacaoSaida:
-    return AvaliacaoSaida(**servico.criar(dados.titulo, dados.responsavel, dados.imovel, chave))
+    avaliacao = servico.criar(dados.titulo, dados.responsavel, dados.imovel, chave)
+    # Endereço e comodidades entram no cache em 2º plano: o laudo abre sem esperar o OpenStreetMap
+    for nome, metodo in (("endereco", "endereco"), ("comodidades", "comodidades")):
+        if (externo := getattr(request.app.state, nome, None)) is not None:
+            tarefas.add_task(getattr(externo, metodo), dados.imovel.latitude, dados.imovel.longitude)
+    return AvaliacaoSaida(**avaliacao)
 
 
 @router.get("", response_model=ListaAvaliacoesSaida, summary="Lista laudos com filtros, paginação e ordenação")
@@ -90,6 +97,13 @@ def obter(avaliacao_id: int, servico: ServicoAvaliacoes = Depends(obter_avaliaco
     response_class=HTMLResponse,
     responses={404: {"model": ErroSaida}},
     summary="Laudo HTML pronto para imprimir ou salvar em PDF",
+    description=(
+        "Laudo de avaliação mercadológica em oito seções: identificação com endereço completo, sumário executivo,"
+        " características, análise de mercado do CEP com comparáveis, comodidades do entorno com distâncias e"
+        " tempos (OpenStreetMap), metodologia e métricas do modelo, limitações e responsabilidade."
+    ),
 )
-def laudo(avaliacao_id: int, servico: ServicoAvaliacoes = Depends(obter_avaliacoes)) -> HTMLResponse:
-    return HTMLResponse(servico.laudo_html(avaliacao_id))
+def laudo(avaliacao_id: int, request: Request, servico: ServicoAvaliacoes = Depends(obter_avaliacoes)) -> HTMLResponse:
+    estado = request.app.state
+    return HTMLResponse(servico.laudo_html(avaliacao_id, getattr(estado, "endereco", None),
+                                           getattr(estado, "comodidades", None)))
