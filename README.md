@@ -155,6 +155,7 @@ modulo2_api/
 │   │   ├── mercado.py               #   relatórios de mercado a partir das vendas reais
 │   │   ├── comercial.py             #   emissão, validação, revogação e consumo das chaves
 │   │   ├── email.py                 #   e-mail de boas-vindas (SMTP ou arquivo .eml)
+│   │   ├── acesso.py                #   senha, código TOTP, sessões e bloqueio por tentativas
 │   │   └── relatorios.py            #   uso da API e documentação do esquema
 │   ├── routers/                     # Fase 5: APIRouter
 │   │   ├── saude.py                 #   GET /health
@@ -164,21 +165,24 @@ modulo2_api/
 │   │   ├── comercial.py             #   /v1/comercial/*
 │   │   ├── relatorios.py            #   /v1/relatorios/* (uso, esquema e mercado)
 │   │   ├── mapa3d.py                #   GET /v1/config/mapa3d (só acesso local)
-│   │   └── dependencias.py          #   injeção dos serviços, X-API-Key e token do console
+│   │   ├── acesso.py                #   /v1/acesso/* (entrada com 2FA)
+│   │   └── dependencias.py          #   injeção dos serviços, X-API-Key, token e sessão do console
 │   └── web/                         # portal servido em "/"
 │       ├── index.html               #   plataforma de gestão (menu lateral em três grupos)
 │       ├── visao3d.html             #   voo 360° com imagens fotorrealistas (opcional)
-│       └── assets/                  #   app.css, app.js, visao3d.js e logo.svg
+│       └── assets/                  #   app.css, app.js, visao3d.js, logo.svg e logo do e-mail
 ├── banco/
 │   ├── esquema.sql                  # 6 tabelas e índices do SQLite
 │   └── ceps_king_county.json        # cidade de cada CEP, usada nos relatórios de mercado
 ├── ferramentas/
-│   └── gerar_video_360.py           # vídeo MP4 local do voo 360° (opcional)
+│   ├── gerar_video_360.py           # vídeo MP4 local do voo 360° (opcional)
+│   └── configurar_2fa.py            # segredo TOTP no .env e QR Code do autenticador
 └── tests/
     ├── conftest.py                  # ambiente isolado dos testes (banco temporário)
     ├── test_ciclo_de_vida.py        # carga única do modelo
     ├── test_coerencia.py            # melhorias nunca reduzem o preço (monotonia)
     ├── test_comercial.py            # chaves, consumo, e-mail e relatórios de uso
+    ├── test_acesso.py               # TOTP do RFC 6238, sessões, bloqueio e API pública aberta
     ├── test_gestao.py               # carga, laudos, exportações, mercado e visão 3D
     └── test_endpoints.py            # 200 · 400 · 404 · 405 · 422 · 500 · 503
 ```
@@ -560,7 +564,7 @@ O módulo comercial transforma a API num serviço que pode ser oferecido a clien
 
 | Item | Como funciona |
 |---|---|
-| Planos | básico (1.000 predições por mês), profissional (10.000) e empresarial (100.000) |
+| Planos | básico (100 predições por mês), profissional (1.000) e empresarial (10.000) |
 | Formato da chave | prefixo `aval_`; só os 12 primeiros caracteres ficam visíveis no console |
 | Armazenamento | a chave é guardada **apenas como hash SHA-256**; o texto da chave só aparece na resposta de emissão e no e-mail enviado ao cliente |
 | Uso da chave | header `X-API-Key`, **opcional**, em `POST /v1/predict`, `/v1/predict/lote` e `/v1/avaliacoes`; sem o header as rotas continuam abertas ao portal e ao Swagger |
@@ -597,7 +601,7 @@ O console da plataforma pode exigir **senha + código de 6 dígitos de um app au
 | Segundo fator | TOTP (HMAC-SHA1, 6 dígitos, 30 s), com tolerância de ±1 janela para relógio adiantado ou atrasado; testado contra os vetores oficiais do RFC 6238 |
 | Proteção | comparação em tempo constante (`hmac.compare_digest`); 5 falhas seguidas bloqueiam novas tentativas por 5 minutos |
 | Sessão | token aleatório de 256 bits, guardado na memória da API só como hash SHA-256; expira em 8 h ou quando a API reinicia |
-| Opções do comando | `--novo` troca o segredo (o celular precisa ler o QR de novo); `--mostrar-qr` mostra o QR atual; `--testar` confere um código; `--mostrar-chave` exibe a chave para digitar no app, se preferir |
+| Opções do comando | `--novo` troca o segredo (o celular precisa ler o QR de novo); `--mostrar-qr` mostra o QR atual, compacto (2 × 2 pontos por caractere, cerca de 20 colunas); `--grande` desenha no formato padrão; `--testar` confere um código; `--mostrar-chave` exibe a chave para digitar no app, se preferir |
 | Sem configuração | com `AVALIADOR_TOTP_SEGREDO` vazio, o 2FA fica desligado e o console segue com o token de administrador; quem clona o repositório roda tudo sem configurar nada |
 | API pública | `POST /v1/predict`, `/v1/predict/lote` e a documentação `/docs` **continuam abertos**: o 2FA protege só o console administrativo |
 
@@ -783,6 +787,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | Uvicorn (`[standard]`) | 0.54.0 | servidor ASGI |
 | httpx | 0.28.1 | cliente HTTP do `TestClient` |
 | pytest | 9.2.0 | testes automatizados |
+| qrcode | 8.2 | QR Code do segundo fator no terminal (`configurar_2fa`) |
 | sqlite3, smtplib, hashlib | biblioteca padrão | banco de documentação, envio de e-mail e hash das chaves, sem dependência nova |
 
 **Portal web (carregado pelo navegador, sem instalação):**
@@ -804,7 +809,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 
 ## M2.18 Organização do trabalho e uso do GitHub
 
-**Planejamento antes do código.** O enunciado foi decomposto nas cinco fases técnicas, mais o portal e a documentação. Cada tarefa ganhou um *feature branch* próprio, criado a partir da `develop`, e a ordem seguiu as dependências: o modelo vem antes da estrutura; a estrutura, antes do ciclo de vida; o ciclo de vida, antes dos contratos; os contratos, antes dos endpoints e testes; depois vêm o portal, o ajuste monotônico do modelo, a primeira versão da documentação, a revisão final, a nova identidade do portal, o módulo comercial, a plataforma de gestão, a visão 3D fotorrealista e os ajustes da auditoria; a documentação final entra por último.
+**Planejamento antes do código.** O enunciado foi decomposto nas cinco fases técnicas, mais o portal e a documentação. Cada tarefa ganhou um *feature branch* próprio, criado a partir da `develop`, e a ordem seguiu as dependências: o modelo vem antes da estrutura; a estrutura, antes do ciclo de vida; o ciclo de vida, antes dos contratos; os contratos, antes dos endpoints e testes; depois vêm o portal, o ajuste monotônico do modelo, a primeira versão da documentação, a revisão final, a nova identidade do portal, o módulo comercial, a plataforma de gestão, a visão 3D fotorrealista, os ajustes da auditoria e a documentação final; por último entram o e-mail profissional da chave de API, o acesso ao console com senha e segundo fator e os novos limites dos planos. São 18 *feature branches* ao todo.
 
 <p align="center">
   <img src="assets/modulo2/fluxo_branches_m2.svg" alt="Fluxo de branches do Módulo 2: develop e um feature branch por fase" width="100%">
@@ -823,11 +828,14 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | 8 | `feature/m2-docs-readme` | primeira versão da documentação do Módulo 2, com diagramas e capturas |
 | 9 | `feature/m2-revisao-final` | padronizar 404 e 405 em português, com dois testes novos |
 | 10 | `feature/m2-portal-identidade` | nova identidade visual do portal, avaliação com mapa em destaque, satélite e painel do modelo |
-| 11 | `feature/m2-api-comercial` | chaves de API por cliente com envio por e-mail e banco SQLite com relatórios de uso |
+| 11 | `feature/m2-api-comercial` | chaves de API por cliente com envio por e-mail, registro das predições e relatórios de uso |
 | 12 | `feature/m2-portal-gestao` | plataforma de gestão: vendas reais no banco, laudos com exportação e impressão, relatórios de mercado e visão 3D |
 | 13 | `feature/m2-visao3d-fotorrealista` | voo 360° opcional com imagens fotorrealistas e gerador de vídeo local |
 | 14 | `feature/m2-ajustes-auditoria` | chave sempre oculta nas cópias de e-mail em disco, latência mediana nos relatórios e 422 em português para opção inválida |
 | 15 | `feature/m2-docs-final` | documentação final do Módulo 2, diagramas e capturas |
+| 16 | `feature/m2-email-profissional` | layout profissional do e-mail da chave de API, com logo embutido e assinatura do titular |
+| 17 | `feature/m2-acesso-2fa` | acesso ao console com senha e segundo fator TOTP, tela de entrada no portal e comando do QR Code |
+| 18 | `feature/m2-ajustes-finais` | limites mensais dos planos (básico 100, profissional 1.000 e empresarial 10.000 predições) , QR Code do 2FA compacto no terminal e documentação final (GitFlow, testes e capturas) |
 | — | `main` | versão final, com todo o código integrado |
 
 **Boas práticas adotadas:**
