@@ -14,3 +14,4 @@ os.environ["AVALIADOR_TOTP_SEGREDO"] = ""
 os.environ["AVALIADOR_SENHA_ACESSO"] = ""
 os.environ["AVALIADOR_SENHA_HASH"] = ""
 os.environ["AVALIADOR_GEOCODIFICAR"] = "0"
+os.environ["AVALIADOR_SESSOES"] = str(_PASTA / "sessoes.json")

@@ -79,7 +79,7 @@ O Módulo 1 terminou com um modelo de regressão validado (R² de 0,896 no teste
 | Contratos | entrada e saída em Pydantic com `Field` (tipos, faixas, padrões e descrições) e `extra="forbid"` |
 | Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de acesso com 2FA (`/v1/acesso/*`), de relatórios (`/v1/relatorios/*`) , da visão 3D (`/v1/config/mapa3d`) e do endereço completo por geocodificação reversa no OpenStreetMap (`GET /v1/endereco`, sem custo e com cache) |
 | Erros | 400, 404, 405, 422, 500 e 503 em JSON padronizado e em português; a API não cai |
-| Qualidade | 73 testes automatizados (`pytest` + `TestClient`) |
+| Qualidade | 74 testes automatizados (`pytest` + `TestClient`) |
 | Produto | plataforma web de gestão que consome a API: painel, nova avaliação com mapa e visão 3D, laudos com exportação, simulador, relatórios de mercado, mapa de valor, transparência do modelo, console comercial, documentação do banco e área do desenvolvedor |
 | Comercial e dados | chave de API por cliente com e-mail real ([M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail)) e banco SQLite com as 21.613 vendas reais, os laudos e o uso da API ([M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado)) |
 
@@ -593,14 +593,14 @@ O console da plataforma pode exigir **senha + código de 6 dígitos de um app au
    O comando grava `AVALIADOR_TOTP_SEGREDO` no `.env`, preservando as demais linhas, e desenha o QR Code no próprio terminal. Também salva uma cópia em SVG em `modulo2_api/saida/`, pasta fora do Git, para abrir em tela grande.
 2. No celular, ler o QR Code no app autenticador.
 3. Reiniciar a API e conferir o código com `python -m modulo2_api.ferramentas.configurar_2fa --testar`.
-4. No portal, a tela **Entrar na plataforma** pede a **Senha** e o **Código do autenticador**. Depois de entrar, a sessão vale 8 horas, fica só na aba do navegador e segue no cabeçalho `X-Admin-Sessao`; **Administrador → Sair** encerra a sessão.
+4. No portal, a tela **Entrar na plataforma** pede a **Senha** e o **Código do autenticador**. Depois de entrar, a sessão vale 8 horas, vale para todas as abas do portal neste navegador (inclusive a Visão 3D) e segue no cabeçalho `X-Admin-Sessao`; **Administrador → Sair** encerra a sessão.
 
 | Item | Como funciona |
 |---|---|
 | Senha | Própria, definida com `--senha` (digitada sem eco) e guardada no `.env` só como hash PBKDF2-SHA256 (`AVALIADOR_SENHA_HASH`, 200 mil iterações); sem ela, vale `AVALIADOR_SENHA_ACESSO` e, por fim, a senha de app do e-mail (`SMTP_SENHA_APP`) |
 | Segundo fator | TOTP (HMAC-SHA1, 6 dígitos, 30 s), com tolerância de ±1 janela para relógio adiantado ou atrasado; testado contra os vetores oficiais do RFC 6238 |
 | Proteção | comparação em tempo constante (`hmac.compare_digest`); 5 falhas seguidas bloqueiam novas tentativas por 5 minutos |
-| Sessão | token aleatório de 256 bits, guardado na memória da API só como hash SHA-256; expira em 8 h ou quando a API reinicia |
+| Sessão | token aleatório de 256 bits, guardado só como hash SHA-256, na memória da API e em `modulo2_api/banco/sessoes.json` (fora do Git), para sobreviver a um reinício; expira em 8 h ou no **Sair** |
 | Opções do comando | `--novo` troca o segredo (o celular precisa ler o QR de novo); `--senha` define a senha de acesso; `--mostrar-qr` mostra o QR atual, quadrado (meio-bloco: 1 × 2 pontos por caractere, 35 colunas × 18 linhas); `--testar` confere um código; `--mostrar-chave` exibe a chave para digitar no app, se preferir |
 | Sem configuração | com `AVALIADOR_TOTP_SEGREDO` vazio, o 2FA fica desligado e o console segue com o token de administrador; quem clona o repositório roda tudo sem configurar nada |
 | API pública | `POST /v1/predict`, `/v1/predict/lote` e a documentação `/docs` **continuam abertos**: o 2FA protege só o console administrativo |

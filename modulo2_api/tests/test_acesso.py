@@ -161,3 +161,14 @@ def test_entrada_so_com_senha_apenas_local(cliente_2fa):
         r = local.post("/v1/acesso/entrar-senha", json={"senha": SENHA})
         assert r.status_code == 200
         assert local.get("/v1/comercial/clientes", headers={"X-Admin-Sessao": r.json()["sessao"]}).status_code == 200
+
+
+def test_sessao_sobrevive_ao_reinicio(tmp_path):
+    arquivo = tmp_path / "sessoes.json"
+    primeira = ServicoAcesso(arquivo=arquivo)
+    sessao = primeira.abrir_sessao()["sessao"]
+    assert sessao not in arquivo.read_text(encoding="utf-8")  # só o hash vai para o disco
+    reiniciada = ServicoAcesso(arquivo=arquivo)
+    assert reiniciada.sessao_valida(sessao)
+    reiniciada.sair(sessao)
+    assert not ServicoAcesso(arquivo=arquivo).sessao_valida(sessao)

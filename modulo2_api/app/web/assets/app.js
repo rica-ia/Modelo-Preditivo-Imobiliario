@@ -1157,7 +1157,7 @@
     if (campoCodigo) campoCodigo.hidden = !acesso.exige;
     if (acesso.exige) {
       const tem2 = !!sessaoAdmin();
-      $("#admin-rotulo").textContent = tem2 ? "sessão 2FA ativa" : "sem sessão";
+      $("#admin-rotulo").textContent = tem2 ? "administrador · sessão ativa" : "administrador · sem sessão";
       $$(".btn-admin").forEach((b) => b.classList.toggle("ativo", tem2));
       $("#admin-token").hidden = true;
       $("#admin-2fa").hidden = false;
@@ -1167,7 +1167,7 @@
       return;
     }
     const tem = !!tokenAdmin();
-    $("#admin-rotulo").textContent = tem ? "token ativo" : "sem token";
+    $("#admin-rotulo").textContent = tem ? "administrador · token ativo" : "administrador · sem token";
     $$(".btn-admin").forEach((b) => b.classList.toggle("ativo", tem));
     const chip = $("#adm-estado");
     chip.textContent = tem ? "Token informado" : "Sem token";

@@ -25,6 +25,7 @@ from .config import (
     PASTA_WEB,
     VERSAO_API,
     caminho_banco,
+    caminho_sessoes,
 )
 from .erros import registrar_tratadores
 from .routers import acesso, avaliacoes, comercial, endereco, mapa3d, modelo, predicao, relatorios, saude
@@ -91,8 +92,8 @@ app.include_router(mapa3d.router)
 app.include_router(acesso.router)
 app.include_router(endereco.router)
 
-# Sessões do console com 2FA ficam em memória e zeram a cada reinício
-app.state.acesso = ServicoAcesso()
+# Sessões do console: hashes em memória e em banco/sessoes.json (fora do git), para sobreviver a reinícios
+app.state.acesso = ServicoAcesso(arquivo=caminho_sessoes())
 # Endereços já consultados no OpenStreetMap ficam em cache durante a execução
 app.state.endereco = ServicoEndereco()
 

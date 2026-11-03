@@ -11,7 +11,8 @@ Só biblioteca padrão, sem serviço externo nem custo:
   `python -m modulo2_api.ferramentas.configurar_2fa`). Sem ele, o 2FA fica desligado e
   o console continua usando só o token de administrador;
 - 5 falhas seguidas bloqueiam novas tentativas por 5 minutos;
-- a sessão é um token aleatório válido por 8 horas, guardado na memória só como hash.
+- a sessão é um token aleatório válido por 8 horas, guardado só como hash, na memória e num
+  arquivo local fora do git (`banco/sessoes.json`), para sobreviver a um reinício da API.
 
 A API pública de predição (`/v1/predict`) continua aberta: o 2FA protege apenas o
 console administrativo.
@@ -20,10 +21,14 @@ console administrativo.
 import base64
 import hashlib
 import hmac
+import json
+import os
 import secrets
 import struct
 import threading
 import time
+
+from pathlib import Path
 
 from ..config import obter
 from .excecoes import CredenciaisInvalidasError, MuitasTentativasError
@@ -115,13 +120,36 @@ def _hash(valor: str) -> str:
 
 
 class ServicoAcesso:
-    """Tentativas, bloqueio e sessões do console, em memória (zeram ao reiniciar a API)."""
+    """Tentativas e bloqueio em memória; sessões em memória e, com `arquivo`, também em disco
+    (só os hashes), para que reiniciar a API não derrube quem já entrou."""
 
-    def __init__(self):
+    def __init__(self, arquivo: Path | None = None):
         self._trava = threading.Lock()
         self._falhas = 0
         self._bloqueado_ate = 0.0
-        self._sessoes: dict[str, float] = {}  # hash da sessão -> expiração (epoch)
+        self._arquivo = arquivo
+        self._sessoes: dict[str, float] = self._ler_sessoes()  # hash da sessão -> expiração (epoch)
+
+    def _ler_sessoes(self) -> dict[str, float]:
+        if not self._arquivo or not self._arquivo.exists():
+            return {}
+        try:
+            agora = time.time()
+            return {h: float(t) for h, t in json.loads(self._arquivo.read_text(encoding="utf-8")).items() if float(t) > agora}
+        except (OSError, ValueError, AttributeError):
+            return {}
+
+    def _gravar_sessoes(self) -> None:
+        """Chamado com a trava adquirida; grava de forma atômica (arquivo temporário + troca)."""
+        if not self._arquivo:
+            return
+        try:
+            self._arquivo.parent.mkdir(parents=True, exist_ok=True)
+            temporario = self._arquivo.with_suffix(".tmp")
+            temporario.write_text(json.dumps(self._sessoes), encoding="utf-8")
+            os.replace(temporario, self._arquivo)
+        except OSError:
+            pass  # sem disco, as sessões seguem só na memória
 
     @staticmethod
     def exige_2fa() -> bool:
@@ -183,6 +211,7 @@ class ServicoAcesso:
         with self._trava:
             self._sessoes = {h: t for h, t in self._sessoes.items() if t > agora}
             self._sessoes[_hash(sessao)] = expira
+            self._gravar_sessoes()
         return {"sessao": sessao, "expira_em": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(expira))}
 
     def sessao_valida(self, sessao: str | None) -> bool:
@@ -194,6 +223,7 @@ class ServicoAcesso:
                 return False
             if expira <= time.time():
                 self._sessoes.pop(_hash(sessao), None)
+                self._gravar_sessoes()
                 return False
             return True
 
@@ -201,3 +231,4 @@ class ServicoAcesso:
         if sessao:
             with self._trava:
                 self._sessoes.pop(_hash(sessao), None)
+                self._gravar_sessoes()
