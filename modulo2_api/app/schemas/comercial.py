@@ -69,6 +69,7 @@ class ClienteSaida(BaseModel):
 class RevogacaoSaida(BaseModel):
     chave_id: int
     revogada_em: str
+    email: EnvioEmailSaida | None = Field(None, description="Aviso de revogação enviado ao cliente; nulo se a chave já estava revogada.")
 
 
 class TrocaPlanoEntrada(BaseModel):
