@@ -1045,7 +1045,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 
 ## M2.18 Organização do trabalho e uso do GitHub
 
-**Planejamento antes do código.** O enunciado foi decomposto nas cinco fases técnicas, mais o portal e a documentação. Cada tarefa ganhou um *feature branch* próprio, criado a partir da `develop`, e a ordem seguiu as dependências: o modelo vem antes da estrutura; a estrutura, antes do ciclo de vida; o ciclo de vida, antes dos contratos; os contratos, antes dos endpoints e testes; depois vêm o portal, o ajuste monotônico do modelo, a primeira versão da documentação, a revisão final, a nova identidade do portal, o módulo comercial, a plataforma de gestão, a visão 3D fotorrealista, os ajustes da auditoria e a documentação final; por último entram o e-mail profissional da chave de API, o acesso ao console com senha e segundo fator e os novos limites dos planos. São 18 *feature branches* ao todo.
+**Planejamento antes do código.** O enunciado foi decomposto nas cinco fases técnicas, mais o portal e a documentação. Cada tarefa ganhou um *feature branch* próprio, criado a partir da `develop`, e a ordem seguiu as dependências: o modelo vem antes da estrutura; a estrutura, antes do ciclo de vida; o ciclo de vida, antes dos contratos; os contratos, antes dos endpoints e testes; depois vêm o portal, o ajuste monotônico do modelo, a primeira versão da documentação, a revisão final, a nova identidade do portal, o módulo comercial, a plataforma de gestão, a visão 3D fotorrealista, os ajustes da auditoria e a documentação final; por último entram o e-mail profissional da chave de API, o acesso ao console com senha e segundo fator e os novos limites dos planos; fecham a sequência a senha em hash com as entradas de contingência e o endereço completo, a gestão comercial com o laudo profissional e a administração do banco, e a serialização do artefato em três vias (`.joblib`, SQLite e MLflow). São 21 *feature branches* ao todo.
 
 <p align="center">
   <img src="assets/modulo2/fluxo_branches_m2.svg" alt="Fluxo de branches do Módulo 2: develop e um feature branch por fase" width="100%">
@@ -1071,7 +1071,10 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | 15 | `feature/m2-docs-final` | documentação final do Módulo 2, diagramas e capturas |
 | 16 | `feature/m2-email-profissional` | layout profissional do e-mail da chave de API, com logo embutido e assinatura do titular |
 | 17 | `feature/m2-acesso-2fa` | acesso ao console com senha e segundo fator TOTP, tela de entrada no portal e comando do QR Code |
-| 18 | `feature/m2-ajustes-finais` | limites mensais dos planos (básico 100, profissional 1.000 e empresarial 10.000 predições) , QR Code do 2FA compacto no terminal, gestão comercial com faturamento, laudo profissional com as comodidades do entorno, dados de exemplo sintéticos, administração do banco, registro do artefato no SQLite e no MLflow local e documentação final (GitFlow, testes e capturas) |
+| 18 | `feature/m2-ajustes-finais` | limites mensais dos planos (básico 100, profissional 1.000 e empresarial 10.000 predições), QR Code do 2FA compacto no terminal e documentação do GitFlow, do 2FA e dos testes |
+| 19 | `feature/m2-acesso-contingencia` | senha da conta só como hash PBKDF2, entradas locais de contingência (só senha ou sem senha), sessão que sobrevive ao reinício, tela cheia nos mapas, satélite acima das formas, endereço completo pelo OpenStreetMap e ficha recolhível na Visão 3D |
+| 20 | `feature/m2-gestao-comercial` | gestão comercial (preços, troca de plano, suspensão, troca de chave, faturamento e histórico), laudo profissional com as comodidades do entorno, dados de exemplo sintéticos e administração do banco, com as telas do portal |
+| 21 | `feature/m2-serializacao-mlflow` | cópia do artefato como BLOB no SQLite com verificação de integridade, registro no MLflow local com alias de produção, cartão do MLflow em Desenvolvedores, `requirements.txt` completo e documentação final |
 | — | `main` | versão final, com todo o código integrado |
 
 **Boas práticas adotadas:**
