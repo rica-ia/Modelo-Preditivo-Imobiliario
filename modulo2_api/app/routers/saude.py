@@ -11,5 +11,11 @@ router = APIRouter(tags=["Monitoramento"])
 
 @router.get("/health", summary="Verifica se a API e o modelo estão disponíveis")
 def health(request: Request) -> dict:
-    servico = getattr(request.app.state, "servico_modelo", None)
-    return {"status": "ok", "modelo_carregado": bool(servico and servico.carregado)}
+    servico = request.app.state.servico_modelo
+    return {
+        "status": "ok",
+        "modelo_carregado": servico.carregado,
+        "versao_modelo": servico.versao,
+        "carregado_em": servico.carregado_em.isoformat() if servico.carregado_em else None,
+        "uptime_s": servico.uptime_s,
+    }
