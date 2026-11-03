@@ -95,3 +95,11 @@ app.mount("/assets", StaticFiles(directory=PASTA_WEB / "assets", check_dir=False
 def portal():
     pagina = PASTA_WEB / "index.html"
     return FileResponse(pagina) if pagina.exists() else RedirectResponse("/docs")
+
+
+@app.get("/visao3d", include_in_schema=False)
+@app.get("/visao3d.html", include_in_schema=False)
+def visao3d():
+    """Voo 360° fotorrealista; sem chave no .env, a página cai na visão 3D do MapLibre."""
+    pagina = PASTA_WEB / "visao3d.html"
+    return FileResponse(pagina) if pagina.exists() else RedirectResponse("/")
