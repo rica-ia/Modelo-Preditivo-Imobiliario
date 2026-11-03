@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .config import ARQUIVO_METRICAS, ARQUIVO_MODELO, ARQUIVO_REGIOES, VERSAO_API
+from .erros import registrar_tratadores
 from .routers import saude
 from .services.modelo import ServicoModelo
 
@@ -43,4 +44,5 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+registrar_tratadores(app)
 app.include_router(saude.router)
