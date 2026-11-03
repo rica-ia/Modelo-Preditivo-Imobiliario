@@ -1,8 +1,9 @@
 """
 # Banco SQLite de documentação
 
-Guarda clientes, chaves de API (só o hash), o histórico de predições e os
-e-mails enviados. Cada operação abre e fecha a própria conexão: simples, segura
+Guarda clientes, chaves de API (só o hash), o histórico de predições, os
+e-mails enviados e as faturas. Linhas com `sintetico = 1` (em `clientes` e
+`avaliacoes`) são a carga de exemplo de `services/sinteticos.py`, removível à parte. Cada operação abre e fecha a própria conexão: simples, segura
 entre threads do servidor e suficiente para o volume de uma amostra.
 """
 
@@ -20,6 +21,7 @@ DESCRICOES = {
         "empresa": "Empresa do cliente (opcional).",
         "plano": "Plano contratado: basico, profissional ou empresarial.",
         "criado_em": "Data e hora do cadastro.",
+        "sintetico": "1 se o cliente é dado sintético de exemplo (fictício), 0 se é real.",
     },
     "chaves": {
         "_tabela": "Chaves de API emitidas. A chave em si nunca é gravada, só o hash SHA-256.",
@@ -30,6 +32,16 @@ DESCRICOES = {
         "limite_mensal": "Predições permitidas por mês no plano.",
         "criada_em": "Data e hora da emissão.",
         "revogada_em": "Data e hora da revogação (vazio se ativa).",
+        "suspensa_em": "Data e hora da suspensão temporária (vazio se liberada).",
+    },
+    "eventos_comerciais": {
+        "_tabela": "Trilha de auditoria do console comercial.",
+        "id": "Identificador do evento.",
+        "cliente_id": "Cliente afetado.",
+        "chave_id": "Chave afetada (vazio em edição de cadastro).",
+        "tipo": "emissao, troca_plano, suspensao, reativacao, rotacao, revogacao ou edicao.",
+        "detalhe": "Resumo legível da mudança (por exemplo, basico → profissional).",
+        "criado_em": "Data e hora do evento.",
     },
     "predicoes": {
         "_tabela": "Histórico de cada predição atendida ou recusada por regra de negócio.",
@@ -53,6 +65,20 @@ DESCRICOES = {
         "status": "Resultado do envio.",
         "criado_em": "Data e hora do envio.",
         "arquivo": "Cópia .eml usada na pré-visualização.",
+    },
+    "faturas": {
+        "_tabela": "Faturas mensais de cada cliente (na carga de exemplo, faturamento fictício).",
+        "id": "Identificador da fatura.",
+        "cliente_id": "Cliente faturado.",
+        "chave_id": "Chave de API cobrada.",
+        "competencia": "Mês de referência, no formato AAAA-MM.",
+        "plano": "Plano vigente na competência.",
+        "valor_usd": "Valor da mensalidade, em dólares (preço do plano).",
+        "predicoes": "Predições atendidas (HTTP 200) na competência.",
+        "status": "paga, em_aberto, vencida ou cancelada.",
+        "emitida_em": "Data e hora da emissão.",
+        "vencimento": "Data de vencimento.",
+        "paga_em": "Data e hora do pagamento (vazio se não paga).",
     },
     "vendas_historicas": {
         "_tabela": "Vendas reais de King County (mai/2014 a mai/2015), limpas pelas regras do Módulo 1.",
@@ -102,6 +128,7 @@ DESCRICOES = {
         "preco_real_usd": "Preço real de venda (só na amostra da base).",
         "versao_modelo": "Versão do modelo usada.",
         "latencia_ms": "Tempo de inferência.",
+        "sintetico": "1 se o laudo é dado sintético de exemplo (fictício), 0 se é real.",
     },
 }
 
@@ -130,6 +157,17 @@ class Banco:
     def migrar(self) -> None:
         self.caminho.parent.mkdir(parents=True, exist_ok=True)
         with self.conexao() as con:
+            # Bancos criados antes da suspensão de chaves ganham a coluna nova (o CREATE IF NOT EXISTS não altera tabelas)
+            if con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'chaves'").fetchone():
+                colunas = {c["name"] for c in con.execute("PRAGMA table_info(chaves)").fetchall()}
+                if "suspensa_em" not in colunas:
+                    con.execute("ALTER TABLE chaves ADD COLUMN suspensa_em TEXT")
+            # A marca de dado sintético (carga de exemplo) chega do mesmo jeito a clientes e avaliações
+            for tabela in ("clientes", "avaliacoes"):
+                if con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (tabela,)).fetchone():
+                    colunas = {c["name"] for c in con.execute(f"PRAGMA table_info({tabela})").fetchall()}
+                    if "sintetico" not in colunas:
+                        con.execute(f"ALTER TABLE {tabela} ADD COLUMN sintetico INTEGER NOT NULL DEFAULT 0")
             con.executescript(self.esquema.read_text(encoding="utf-8"))
 
     def executar(self, sql: str, parametros: tuple = ()) -> int:

@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS clientes (
     email      TEXT NOT NULL,
     empresa    TEXT,
     plano      TEXT NOT NULL CHECK (plano IN ('basico', 'profissional', 'empresarial')),
-    criado_em  TEXT NOT NULL
+    criado_em  TEXT NOT NULL,
+    sintetico  INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS chaves (
@@ -17,8 +18,22 @@ CREATE TABLE IF NOT EXISTS chaves (
     hash_sha256    TEXT NOT NULL UNIQUE,
     limite_mensal  INTEGER NOT NULL,
     criada_em      TEXT NOT NULL,
-    revogada_em    TEXT
+    revogada_em    TEXT,
+    suspensa_em    TEXT
 );
+
+-- Trilha de auditoria do console comercial: cada emissão, troca de plano, suspensão,
+-- reativação, troca de chave, revogação e edição de cadastro.
+CREATE TABLE IF NOT EXISTS eventos_comerciais (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id  INTEGER NOT NULL REFERENCES clientes (id),
+    chave_id    INTEGER REFERENCES chaves (id),
+    tipo        TEXT NOT NULL CHECK (tipo IN ('emissao', 'troca_plano', 'suspensao', 'reativacao', 'rotacao', 'revogacao', 'edicao')),
+    detalhe     TEXT,
+    criado_em   TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_eventos_cliente ON eventos_comerciais (cliente_id, criado_em);
 
 CREATE TABLE IF NOT EXISTS predicoes (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +57,25 @@ CREATE TABLE IF NOT EXISTS envios_email (
     criado_em     TEXT NOT NULL,
     arquivo       TEXT
 );
+
+-- Faturamento mensal por cliente (uma fatura por competência). Na carga de exemplo,
+-- as faturas são fictícias e pertencem a clientes com sintetico = 1.
+CREATE TABLE IF NOT EXISTS faturas (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id   INTEGER NOT NULL REFERENCES clientes (id),
+    chave_id     INTEGER REFERENCES chaves (id),
+    competencia  TEXT NOT NULL,              -- 'AAAA-MM'
+    plano        TEXT NOT NULL,
+    valor_usd    REAL NOT NULL,
+    predicoes    INTEGER NOT NULL DEFAULT 0,
+    status       TEXT NOT NULL CHECK (status IN ('paga', 'em_aberto', 'vencida', 'cancelada')),
+    emitida_em   TEXT NOT NULL,
+    vencimento   TEXT NOT NULL,
+    paga_em      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_faturas_cliente_competencia ON faturas (cliente_id, competencia);
+CREATE INDEX IF NOT EXISTS idx_faturas_status ON faturas (status);
 
 CREATE INDEX IF NOT EXISTS idx_predicoes_chave_data ON predicoes (chave_id, criado_em);
 CREATE INDEX IF NOT EXISTS idx_predicoes_data ON predicoes (criado_em);
@@ -104,7 +138,8 @@ CREATE TABLE IF NOT EXISTS avaliacoes (
     faixa_preco         TEXT NOT NULL,
     preco_real_usd      REAL,
     versao_modelo       TEXT NOT NULL,
-    latencia_ms         REAL NOT NULL
+    latencia_ms         REAL NOT NULL,
+    sintetico           INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_avaliacoes_cep ON avaliacoes (cep);

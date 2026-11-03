@@ -39,3 +39,7 @@ class CredenciaisInvalidasError(PermissionError):
 
 class MuitasTentativasError(RuntimeError):
     """Falhas seguidas no acesso com 2FA: bloqueio temporário (vira HTTP 429)."""
+
+
+class ChaveSuspensaError(PermissionError):
+    """Chave suspensa temporariamente pelo administrador (vira HTTP 403)."""

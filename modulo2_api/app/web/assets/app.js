@@ -257,7 +257,7 @@
       mapa: initMapa, modelo: initModelo, comercial: initComercial, banco: initBanco, dev: initDev, sobre: initInicio,
     }[alvo];
     if (!inicializadas.has(alvo)) { inicializadas.add(alvo); init && init(); }
-    else ({ painel: atualizarPainel, banco: atualizarUso, avaliacoes: carregarAvaliacoes, comercial: carregarClientes }[alvo] || (() => {}))();
+    else ({ painel: atualizarPainel, banco: () => { atualizarUso(); if (window.TelaBanco) window.TelaBanco.atualizar(); }, avaliacoes: carregarAvaliacoes, comercial: carregarClientes }[alvo] || (() => {}))();
     setTimeout(() => { mapas.forEach((r) => r.m.resize()); arrumarPins(); }, 60);
   }
   window.addEventListener("hashchange", rotear);
@@ -503,8 +503,33 @@
         <div class="res-item"><small>Resposta da API</small><b>${d.latencia_ms !== undefined ? num(d.latencia_ms, 1) + " ms" : "—"}</b></div>
       </div>
       ${blocoConfianca()}
+      <div class="entorno" id="res-entorno"><div class="res-rotulo">Entorno · 1,5 km</div><p class="nota">Consultando escolas, saúde, mercados e transporte no OpenStreetMap…</p></div>
       <p class="ref">${esc(d.referencia_mercado || "")}</p>`;
     mostrarEndereco($("#res-endereco"), payload.latitude, payload.longitude, (e) => e.endereco);
+    mostrarEntorno($("#res-entorno"), payload.latitude, payload.longitude);
+  }
+  // ---------------------------------------------------------------- entorno (comodidades do OpenStreetMap)
+  const entornos = new Map();
+  function mostrarEntorno(el, lat, lng) {
+    if (!el) return;
+    const k = chaveCoord(lat, lng);
+    el.dataset.coord = k;
+    if (!entornos.has(k)) {
+      entornos.set(k, api(`/v1/comodidades?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`)
+        .then((r) => (r.ok && r.dados && r.dados.disponivel ? r.dados : (entornos.delete(k), null)))
+        .catch(() => (entornos.delete(k), null)));
+    }
+    entornos.get(k).then((c) => {
+      if (el.dataset.coord !== k) return;
+      if (!c) { el.innerHTML = `<div class="res-rotulo">Entorno · 1,5 km</div><p class="nota">O OpenStreetMap não respondeu agora; o laudo traz o entorno quando for emitido de novo.</p>`; return; }
+      const ix = c.indice_conveniencia;
+      const linhas = c.categorias.map((cat) => {
+        const p = cat.mais_proximos[0];
+        return `<li><span>${esc(cat.nome)} <em>${num(cat.quantidade)}</em></span><b>${p ? `${esc(p.nome)} · ${num(p.distancia_m)} m · ${num(p.a_pe_min)} min a pé` : "nenhum no raio"}</b></li>`;
+      }).join("");
+      el.innerHTML = `<div class="res-rotulo">Entorno · ${num(c.raio_m / 1000, 1)} km${ix ? ` <span class="chip" title="${esc(ix.explicacao)}">conveniência ${ix.valor}/100 · ${esc(ix.classificacao)}</span>` : ""}</div>
+        <ul class="entorno-lista">${linhas}</ul><p class="nota">${esc(c.fonte)}</p>`;
+    });
   }
 
   // ---------------------------------------------------------------- mapa da avaliação
@@ -1130,9 +1155,10 @@
     if (inicializadas.has("avaliacoes")) carregarAvaliacoes();
   });
   function abrirModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input"); if (f) setTimeout(() => f.focus(), 30); }
-  function fecharModal(m) { m.hidden = true; if (m.id === "modal") $("#modal-iframe").srcdoc = ""; }
+  function fecharModal(m) { m.hidden = true; if (m.id === "modal") $("#modal-iframe").srcdoc = ""; if (m.id === "modal-cliente") limparGestao(); }
   $$(".modal").forEach((m) => m.addEventListener("click", (ev) => { if (ev.target === m || ev.target.closest("[data-fechar-modal]") || ev.target.id === "modal-fechar") fecharModal(m); }));
-  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") $$(".modal:not([hidden])").forEach(fecharModal); });
+  // Esc fecha só a janela de cima (o e-mail aberto de dentro da gestão do cliente fecha antes dela)
+  document.addEventListener("keydown", (ev) => { if (ev.key !== "Escape") return; const abertos = $$(".modal:not([hidden])"); if (abertos.length) fecharModal(abertos[abertos.length - 1]); });
   document.addEventListener("click", (ev) => { if (ev.target.closest("[data-abrir-admin]")) abrirModal("modal-admin"); });
   function garantirOpcao(sel, v) { if (![...sel.options].some((o) => o.value === String(v))) sel.add(new Option(String(v), String(v))); }
 
@@ -1215,6 +1241,7 @@
     btn.textContent = "Entrar";
     if (r.ok && r.dados && r.dados.sessao) {
       gravarSessao(r.dados.sessao);
+      if (inicializadas.has("banco") && window.TelaBanco) window.TelaBanco.atualizar();
       esconderEntrada();
       toast("Acesso liberado por 8 horas");
       if (inicializadas.has("comercial")) carregarClientes();
@@ -1571,7 +1598,28 @@
     atualizarAdmin();
     $("#form-chave").addEventListener("submit", gerarChave);
     $("#btn-clientes").addEventListener("click", carregarClientes);
-    $("#tabela-clientes").addEventListener("click", revogarChave);
+    $("#tabela-clientes").addEventListener("click", (ev) => {
+      const b = ev.target.closest("[data-gerenciar]");
+      if (b) abrirCliente(b.dataset.gerenciar);
+    });
+    $("#faturamento").addEventListener("click", (ev) => {
+      const b = ev.target.closest("[data-abrir-cliente]");
+      if (b) abrirCliente(b.dataset.abrirCliente, "consumo");
+    });
+    $("#cli-busca").addEventListener("input", desenharClientes);
+    $("#cli-situacao").addEventListener("change", desenharClientes);
+    $("#cli-plano").addEventListener("change", desenharClientes);
+    $("#gc-abas").addEventListener("click", (ev) => {
+      const b = ev.target.closest("[data-aba]");
+      if (b) { gestao.aba = b.dataset.aba; gestao.painel = null; desenharGestao(); }
+    });
+    $("#gc-corpo").addEventListener("click", acaoGestao);
+    $("#gc-corpo").addEventListener("submit", (ev) => { ev.preventDefault(); if (ev.target.id === "gc-form-dados") salvarDados(ev.target); });
+    $("#gc-corpo").addEventListener("input", (ev) => {
+      if (ev.target.id !== "gc-conf-prefixo") return;
+      const b = $("[data-acao='revogar-confirmar']", $("#gc-corpo"));
+      if (b) b.disabled = ev.target.value.trim() !== b.dataset.prefixo;
+    });
     $("#btn-uso").addEventListener("click", verUso);
     $("#btn-avaliar-chave").addEventListener("click", avaliarComChave);
     $("#chave-resultado").addEventListener("click", async (ev) => {
@@ -1624,7 +1672,7 @@
       : em.modo === "arquivo" ? '<span class="selo-email arquivo">✉ E-mail salvo localmente (SMTP não configurado)</span>'
         : `<span class="selo-email">${esc(em.mensagem || "E-mail não enviado")}</span>`;
     $("#chave-resultado").innerHTML = `
-      <div class="res-topo"><div><h3 class="res-titulo">Chave emitida</h3><p class="res-local">Cliente #${esc(d.cliente_id)} · chave #${esc(d.chave_id)} · plano ${esc(d.plano)}</p></div><span class="chip ok">${num(d.limite_mensal)}/mês</span></div>
+      <div class="res-topo"><div><h3 class="res-titulo">Chave emitida</h3><p class="res-local">Cliente #${esc(d.cliente_id)} · chave #${esc(d.chave_id)} · plano ${esc(NOME_PLANO[d.plano] || d.plano)}</p></div><span class="chip ok">${num(d.limite_mensal)}/mês · ${d.preco_mensal_usd != null ? usd.format(d.preco_mensal_usd) : ""}</span></div>
       <p class="guarde">⚠ Guarde agora: esta chave não será mostrada de novo. O banco guarda só o hash.</p>
       <div class="chave-caixa"><code id="chave-texto">${esc(d.chave)}</code><button type="button" class="btn-mini" data-copiar-chave>Copiar</button></div>
       ${selo}
@@ -1639,37 +1687,520 @@
     $("#modal-iframe").srcdoc = r.dados;
     abrirModal("modal");
   }
+  const NOME_PLANO = { basico: "Básico", profissional: "Profissional", empresarial: "Empresarial" };
+  const ORDEM_PLANO = ["basico", "profissional", "empresarial"];
+  // Valores do módulo comercial com centavos, no padrão do portal (US$ 1.490,00)
+  const usd2 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const moeda = (v) => (v === null || v === undefined || v === "" || isNaN(Number(v)) ? "—" : usd2.format(Number(v)));
+  const diaCurto = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || "")); return m ? `${m[3]}/${m[2]}` : String(s || ""); };
+  // Catálogo de reserva (o mesmo de services/planos.py) enquanto GET /v1/comercial/planos não responde
+  const PLANOS_PADRAO = [
+    { plano: "basico", nome: "Básico", limite_mensal: 100, preco_mensal_usd: 29, preco_por_predicao_usd: 0.29 },
+    { plano: "profissional", nome: "Profissional", limite_mensal: 1000, preco_mensal_usd: 199, preco_por_predicao_usd: 0.199 },
+    { plano: "empresarial", nome: "Empresarial", limite_mensal: 10000, preco_mensal_usd: 1490, preco_por_predicao_usd: 0.149 },
+  ];
+  let planosCatalogo = null;
+  async function carregarPlanos() {
+    if (planosCatalogo) return planosCatalogo;
+    const r = await api("/v1/comercial/planos");
+    const l = r.ok ? lista(r.dados, "planos", "itens") : [];
+    planosCatalogo = l.length ? l.map((p) => ({ ...p, plano: campo(p, "plano", "codigo", "id") })) : PLANOS_PADRAO;
+    return planosCatalogo;
+  }
+  const planoDo = (codigo) => (planosCatalogo || PLANOS_PADRAO).find((p) => p.plano === codigo) || PLANOS_PADRAO.find((p) => p.plano === codigo) || null;
+  const nomePlano = (codigo) => NOME_PLANO[codigo] || (planoDo(codigo) || {}).nome || codigo || "—";
+
+  // Situação da chave: ativa (cobra e responde), suspensa (pausa reversível), revogada (definitiva)
+  const SITUACOES = { ativa: ["ativa", "ok"], suspensa: ["suspensa", "aviso"], revogada: ["revogada", "ruim"] };
+  function situacaoDe(c) {
+    const s = String(campo(c, "situacao") || "").toLowerCase();
+    if (SITUACOES[s]) return s;
+    return campo(c, "ativa") === false || campo(c, "revogada_em") ? "revogada" : "ativa";
+  }
+  const chipSituacao = (s) => { const [t, cl] = SITUACOES[s] || [s || "—", ""]; return `<span class="chip ${cl}">${esc(t)}</span>`; };
+  /** Fração do limite do mês já consumida: uso ÷ limite; `consumo_pct` (0–100) só como reserva. */
+  function fracConsumo(o) {
+    const uso = Number(campo(o, "uso_mes")) || 0, lim = Number(campo(o, "limite_mensal")) || 0;
+    if (lim > 0) return uso / lim;
+    const p = Number(campo(o, "consumo_pct"));
+    return isFinite(p) ? (p > 1 ? p / 100 : p) : 0;
+  }
+  const barraConsumo = (fr) => `<div class="barra barra-uso"><i class="${fr >= 1 ? "cheio" : fr >= 0.8 ? "alto" : ""}" style="width:${Math.max(2, Math.min(1, fr) * 100)}%"></i></div>`;
+  function seloEmail(em, destino) {
+    em = em || {};
+    return em.modo === "smtp" ? `<span class="selo-email smtp">✓ E-mail enviado para ${esc(em.destinatario || destino || "")}</span>`
+      : em.modo === "arquivo" ? '<span class="selo-email arquivo">✉ E-mail salvo localmente (SMTP não configurado)</span>'
+        : `<span class="selo-email">${esc(em.mensagem || "E-mail não enviado")}</span>`;
+  }
+
+  // ---- faturamento (faixa do topo)
+  const comercial = { clientes: [], fat: null };
+  /** Reserva quando GET /v1/comercial/faturamento não responde: os mesmos números a partir da lista. */
+  function faturamentoLocal(cs) {
+    const ativas = cs.filter((c) => situacaoDe(c) === "ativa");
+    const soma = (l, k) => l.reduce((s, c) => s + (Number(c[k]) || 0), 0);
+    const receita = soma(ativas, "preco_mensal_usd");
+    return {
+      local: true,
+      receita_mensal_usd: receita,
+      receita_anual_prevista_usd: receita * 12,
+      ticket_medio_usd: ativas.length ? receita / ativas.length : 0,
+      chaves_ativas: ativas.length,
+      chaves_suspensas: cs.filter((c) => situacaoDe(c) === "suspensa").length,
+      chaves_revogadas: cs.filter((c) => situacaoDe(c) === "revogada").length,
+      predicoes_mes: soma(cs, "uso_mes"),
+      por_plano: ORDEM_PLANO.map((p) => {
+        const l = ativas.filter((c) => c.plano === p);
+        return { plano: p, nome: NOME_PLANO[p], chaves_ativas: l.length, receita_mensal_usd: soma(l, "preco_mensal_usd"), predicoes_mes: soma(cs.filter((c) => c.plano === p), "uso_mes") };
+      }),
+      perto_do_limite: ativas.filter((c) => fracConsumo(c) >= 0.8).map((c) => ({ ...c, consumo_pct: fracConsumo(c) * 100 })).sort((a, b) => b.consumo_pct - a.consumo_pct),
+    };
+  }
+  function faturamentoHTML(f) {
+    const n = (k) => Number(campo(f, k)) || 0;
+    const pp = lista(f.por_plano);
+    const maxRec = Math.max(1, ...pp.map((p) => Number(p.receita_mensal_usd) || 0));
+    const perto = lista(f.perto_do_limite).slice().sort((a, b) => fracConsumo(b) - fracConsumo(a));
+    const planos = pp.length ? pp.map((p) => {
+      const rec = Number(p.receita_mensal_usd) || 0, nk = Number(p.chaves_ativas) || 0;
+      return `<li><div class="fp-topo"><b>${esc(p.nome || nomePlano(p.plano))}</b><span>${moeda(rec)}<small>/mês</small></span></div>
+        <div class="fp-barra"><i class="fp-${esc(p.plano)}" style="width:${rec ? Math.max(3, (rec / maxRec) * 100) : 0}%"></i></div>
+        <small class="nota">${num(nk)} ${nk === 1 ? "chave ativa" : "chaves ativas"} · ${num(p.predicoes_mes)} predições no mês</small></li>`;
+    }).join("") : '<li class="nota">Sem chaves ativas.</li>';
+    const alerta = perto.length ? `<ul class="limite-lista">${perto.map((c) => {
+      const fr = fracConsumo(c);
+      return `<li><button type="button" class="limite-item" data-abrir-cliente="${esc(c.cliente_id)}" title="Gerenciar ${esc(c.nome || "")}">
+        <span class="li-nome"><b>${esc(c.nome || "Cliente #" + c.cliente_id)}</b><small>${esc(nomePlano(c.plano))} · ${num(c.uso_mes)} de ${num(c.limite_mensal)}</small></span>
+        <span class="li-pct ${fr >= 1 ? "cheio" : ""}">${num(fr * 100, 0)} %</span>${barraConsumo(fr)}</button></li>`;
+    }).join("")}</ul>` : '<p class="nota fat-ok">✓ Nenhum cliente com 80 % ou mais do limite do plano.</p>';
+    return `<div class="kpis fat-kpis">
+        <div class="stat fat-mrr"><strong>${moeda(n("receita_mensal_usd"))}</strong><span>Receita mensal (MRR)</span><em>só chaves ativas</em></div>
+        <div class="stat"><strong>${moeda(n("receita_anual_prevista_usd"))}</strong><span>Receita anual prevista</span><em>MRR × 12</em></div>
+        <div class="stat"><strong>${moeda(n("ticket_medio_usd"))}</strong><span>Ticket médio</span><em>mensalidade média</em></div>
+        <div class="stat"><strong>${num(n("chaves_ativas"))}</strong><span>Chaves ativas</span><em><i class="pt aviso"></i>${num(n("chaves_suspensas"))} suspensas · <i class="pt ruim"></i>${num(n("chaves_revogadas"))} revogadas</em></div>
+        <div class="stat"><strong>${num(n("predicoes_mes"))}</strong><span>Predições no mês</span><em>todas as chaves</em></div>
+      </div>${cartoesFaturas(f.faturas)}
+      <div class="fat-grade">
+        <div class="cartao"><h3 class="cartao-titulo">Receita por plano</h3><ul class="fat-planos">${planos}</ul></div>
+        <div class="cartao${perto.length ? " fat-alerta" : ""}"><h3 class="cartao-titulo">${perto.length ? `⚠ ${num(perto.length)} ${perto.length === 1 ? "cliente perto" : "clientes perto"} do limite` : "Consumo dos planos"}</h3>
+          ${perto.length ? '<p class="nota">80 % ou mais do limite do mês. Clique para abrir o cliente e avaliar um upgrade.</p>' : ""}${alerta}</div>
+      </div>${f.local ? '<p class="nota fat-nota">Números calculados no portal a partir da lista de clientes: a rota de faturamento não respondeu.</p>' : ""}`;
+  }
+
+  // ---- faturas (cobrança das mensalidades)
+  const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const competencia = (s) => { const m = /^(\d{4})-(\d{2})/.exec(String(s || "")); return m ? `${MESES[Number(m[2]) - 1] || m[2]}/${m[1]}` : String(s || "—"); };
+  const dataCurta = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || "")); return m ? `${m[3]}/${m[2]}/${m[1]}` : dataHora(v); };
+  const STATUS_FATURA = { paga: ["paga", "ok"], em_aberto: ["em aberto", "aviso"], vencida: ["vencida", "ruim"], cancelada: ["cancelada", "neutro"] };
+  const chipFatura = (s) => { const [t, cl] = STATUS_FATURA[s] || [String(s || "—").replace(/_/g, " "), "neutro"]; return `<span class="chip ${cl}">${esc(t)}</span>`; };
+  /** Cartões de cobrança da faixa de faturamento; somem se o backend ainda não manda o bloco `faturas`. */
+  function cartoesFaturas(fx) {
+    if (!fx || typeof fx !== "object" || Array.isArray(fx)) return "";
+    const v = (k) => Number(fx[k]) || 0, qv = v("qtd_vencidas");
+    return `<div class="kpis fat-kpis fat-cobranca">
+        <div class="stat cob-ok"><strong>${moeda(v("recebido_mes_usd"))}</strong><span>Recebido no mês</span><em>faturas pagas</em></div>
+        <div class="stat cob-aberto"><strong>${moeda(v("em_aberto_usd"))}</strong><span>Em aberto</span><em>a vencer</em></div>
+        <div class="stat cob-vencido${qv ? " alerta-on" : ""}"><strong>${moeda(v("vencido_usd"))}</strong><span>Vencido</span><em>${qv ? `${num(qv)} ${qv === 1 ? "fatura vencida" : "faturas vencidas"}` : "nenhuma fatura vencida"}</em></div>
+      </div>`;
+  }
+
+  // ---- tabela de clientes
   async function carregarClientes() {
     const caixa = $("#tabela-clientes");
-    if (!temAdmin()) { caixa.innerHTML = `<p class="nota">${acesso.exige ? "Entre com a senha e o código do autenticador" : "Informe o token de administrador"} para listar os clientes.</p>`; return; }
-    const r = conferirSessao(await api("/v1/comercial/clientes", { headers: cabAdmin() }));
-    if (!r.ok || !r.dados) { caixa.innerHTML = avisoRota(r, "O módulo comercial"); return; }
-    const cs = lista(r.dados, "clientes", "itens");
-    caixa.innerHTML = cs.length ? `<table class="tabela"><thead><tr><th>Cliente</th><th>Prefixo</th><th>Plano</th><th>Uso no mês</th><th>Situação</th><th>Criada em</th><th></th></tr></thead><tbody>${cs.map((c) => {
-      const uso = Number(campo(c, "uso_mes")) || 0, lim = Number(campo(c, "limite_mensal")) || 0, frac = lim ? Math.min(1, uso / lim) : 0;
-      const ativa = campo(c, "ativa") !== false && !campo(c, "revogada_em");
-      const chave = campo(c, "chave_id", "id");
-      return `<tr><td><b>${esc(campo(c, "nome") || "—")}</b><br><small class="nota">${esc(campo(c, "email") || "")}${campo(c, "empresa") ? " · " + esc(c.empresa) : ""}</small></td>
-        <td><code>${esc(campo(c, "prefixo") || "—")}</code></td><td>${esc(campo(c, "plano") || "—")}</td>
-        <td><div class="uso"><small>${num(uso)} de ${num(lim)}</small><div class="barra"><i class="${frac > 0.8 ? "alto" : ""}" style="width:${Math.max(2, frac * 100)}%"></i></div></div></td>
-        <td><span class="chip ${ativa ? "ok" : "ruim"}">${ativa ? "ativa" : "revogada"}</span></td><td>${dataHora(campo(c, "criado_em", "criada_em"))}</td>
-        <td>${ativa && chave != null ? `<button type="button" class="btn-mini btn-perigo" data-revogar="${esc(chave)}">Revogar</button>` : ""}</td></tr>`;
-    }).join("")}</tbody></table>` : '<p class="nota">Nenhum cliente cadastrado ainda.</p>';
-  }
-  async function revogarChave(ev) {
-    const b = ev.target.closest("[data-revogar]");
-    if (!b) return;
-    if (!b.classList.contains("confirmar")) {
-      b.classList.add("confirmar");
-      b.textContent = "Confirmar revogação";
-      setTimeout(() => { if (b.isConnected) { b.classList.remove("confirmar"); b.textContent = "Revogar"; } }, 4000);
+    if (!temAdmin()) {
+      caixa.innerHTML = `<p class="nota">${acesso.exige ? "Entre com a senha e o código do autenticador" : "Informe o token de administrador"} para listar os clientes.</p>`;
+      $("#faturamento").innerHTML = "";
+      $("#cli-contagem").textContent = "";
       return;
     }
+    const [r, rf] = await Promise.all([
+      api("/v1/comercial/clientes", { headers: cabAdmin() }),
+      api("/v1/comercial/faturamento", { headers: cabAdmin() }),
+    ]);
+    conferirSessao(r);
+    if (!r.ok || !r.dados) { caixa.innerHTML = avisoRota(r, "O módulo comercial"); $("#faturamento").innerHTML = ""; return; }
+    comercial.clientes = lista(r.dados, "clientes", "itens");
+    comercial.fat = rf.ok && rf.dados && typeof rf.dados === "object" && !Array.isArray(rf.dados) ? rf.dados : faturamentoLocal(comercial.clientes);
+    $("#faturamento").innerHTML = faturamentoHTML(comercial.fat);
+    desenharClientes();
+  }
+  function desenharClientes() {
+    const caixa = $("#tabela-clientes"), cs = comercial.clientes;
+    if (!temAdmin()) return;
+    const q = normalizar($("#cli-busca").value), s = $("#cli-situacao").value, p = $("#cli-plano").value;
+    const vis = cs.filter((c) => (!s || situacaoDe(c) === s) && (!p || campo(c, "plano") === p)
+      && (!q || normalizar(`${c.nome || ""} ${c.email || ""} ${c.empresa || ""} ${c.prefixo || ""}`).includes(q)));
+    $("#cli-contagem").textContent = !cs.length ? "" : vis.length === cs.length ? `${num(cs.length)} ${cs.length === 1 ? "chave" : "chaves"}` : `${num(vis.length)} de ${num(cs.length)} chaves`;
+    if (!cs.length) { caixa.innerHTML = '<p class="nota">Nenhum cliente cadastrado ainda.</p>'; return; }
+    if (!vis.length) { caixa.innerHTML = '<p class="nota">Nenhum cliente com esses filtros.</p>'; return; }
+    caixa.innerHTML = `<table class="tabela tabela-clientes"><thead><tr><th>Cliente</th><th>Prefixo</th><th>Plano</th><th class="num">Mensalidade</th><th>Uso no mês</th><th>Situação</th><th>Criada em</th><th></th></tr></thead><tbody>${vis.map((c) => {
+      const uso = Number(campo(c, "uso_mes")) || 0, lim = Number(campo(c, "limite_mensal")) || 0, fr = fracConsumo(c), sit = situacaoDe(c);
+      const id = campo(c, "cliente_id");
+      return `<tr class="sit-${sit}"><td><b>${esc(campo(c, "nome") || "—")}</b><br><small class="nota">${esc(campo(c, "email") || "")}${campo(c, "empresa") ? " · " + esc(c.empresa) : ""}</small></td>
+        <td><code>${esc(campo(c, "prefixo") || "—")}</code></td><td>${esc(nomePlano(campo(c, "plano")))}</td>
+        <td class="num">${moeda(c.preco_mensal_usd)}</td>
+        <td><div class="uso"><small>${num(uso)} de ${num(lim)} · ${num(fr * 100, 0)} %</small>${barraConsumo(fr)}</div></td>
+        <td>${chipSituacao(sit)}</td><td>${dataHora(campo(c, "criado_em", "criada_em"))}</td>
+        <td>${id != null ? `<button type="button" class="btn-mini btn-gerenciar" data-gerenciar="${esc(id)}">Gerenciar</button>` : ""}</td></tr>`;
+    }).join("")}</tbody></table>`;
+  }
+
+  // ---- janela "Gerenciar cliente"
+  const gestao = { id: null, d: null, aba: "dados", painel: null, novaChave: null, ocupado: false };
+  function limparGestao() {
+    Object.assign(gestao, { id: null, d: null, painel: null, novaChave: null, ocupado: false });
+    $("#gc-corpo").innerHTML = "";
+    $("#gc-aviso").innerHTML = "";
+  }
+  async function abrirCliente(id, aba) {
+    if (id === null || id === undefined || id === "") return;
+    Object.assign(gestao, { id, d: null, aba: aba || "dados", painel: null, novaChave: null, ocupado: false });
+    $("#gc-topo").innerHTML = `<h3 class="cartao-titulo" id="gc-titulo">Cliente #${esc(id)}</h3>`;
+    $("#gc-aviso").innerHTML = "";
+    $("#gc-corpo").innerHTML = '<p class="nota"><span class="carregando"></span> Carregando a ficha do cliente…</p>';
+    marcarAbas();
+    $("#modal-cliente").hidden = false;
+    await Promise.all([carregarPlanos(), carregarDetalhe()]);
+    const fechar = $("#modal-cliente [data-fechar-modal]");
+    if (fechar && !$("#modal-cliente").hidden) fechar.focus();
+  }
+  async function carregarDetalhe() {
+    const id = gestao.id;
+    if (id === null) return;
+    const r = conferirSessao(await api(`/v1/comercial/clientes/${encodeURIComponent(id)}`, { headers: cabAdmin() }));
+    if (String(gestao.id) !== String(id)) return;
+    if (!r.ok || !r.dados) {
+      $("#gc-corpo").innerHTML = r.status === 404 && r.dados && r.dados.mensagem ? alertaHTML("Cliente não encontrado", r.dados.mensagem, [], "aviso") : avisoRota(r, "A ficha do cliente");
+      return;
+    }
+    gestao.d = r.dados;
+    desenharGestao();
+  }
+  const recarregarTudo = () => Promise.all([carregarDetalhe(), carregarClientes()]);
+  const chavesDo = (d) => lista(d && d.chaves).map((k) => ({ ...k, situacao: situacaoDe(k) }));
+  const maisRecente = (a, b) => String(b.criada_em || b.criado_em || "").localeCompare(String(a.criada_em || a.criado_em || "")) || (Number(b.chave_id) || 0) - (Number(a.chave_id) || 0);
+  /** Chave que responde pelo cliente: a mais recente não revogada (ou a última, se todas foram revogadas). */
+  function chavePrincipal(d) {
+    const ks = chavesDo(d).sort(maisRecente);
+    return ks.find((k) => k.situacao !== "revogada") || ks[0] || null;
+  }
+  function marcarAbas() {
+    const d = gestao.d, nk = d ? lista(d.chaves).length : 0;
+    const pend = d ? lista(d.faturas).filter((f) => f.status === "em_aberto" || f.status === "vencida").length : 0;
+    const cont = { historico: d ? lista(d.eventos).length : 0, emails: d ? lista(d.emails).length : 0, chave: nk > 1 ? nk : 0, faturas: pend };
+    $$("#gc-abas [data-aba]").forEach((b) => {
+      const sel = b.dataset.aba === gestao.aba;
+      b.classList.toggle("ativa", sel);
+      b.setAttribute("aria-selected", String(sel));
+      let s = b.querySelector("small");
+      const n = cont[b.dataset.aba];
+      if (n) { if (!s) { s = document.createElement("small"); b.appendChild(s); } s.textContent = String(n); } else if (s) s.remove();
+    });
+  }
+  function desenharGestao() {
+    const d = gestao.d;
+    marcarAbas();
+    if (!d) return;
+    const k = chavePrincipal(d), sit = k ? k.situacao : "revogada";
+    const plano = (k && k.plano) || d.plano;
+    const preco = k && k.preco_mensal_usd !== null && k.preco_mensal_usd !== undefined ? k.preco_mensal_usd : d.preco_mensal_usd;
+    $("#gc-topo").innerHTML = `<div class="gc-id"><span class="gc-avatar" aria-hidden="true">${esc(String(d.nome || "?").trim().charAt(0).toUpperCase())}</span><div>
+        <h3 class="cartao-titulo" id="gc-titulo">${esc(d.nome || "Cliente #" + d.cliente_id)}</h3>
+        <p class="nota">${d.empresa ? `<b>${esc(d.empresa)}</b> · ` : ""}${esc(d.email || "")} · cliente #${esc(d.cliente_id)} desde ${dataHora(d.criado_em)}</p></div></div>
+      <div class="gc-selos"><span class="chip">${esc(nomePlano(plano))} · ${moeda(preco)}/mês</span>${chipSituacao(sit)}</div>`;
+    const abas = { dados: abaDados, plano: abaPlano, chave: abaChave, consumo: abaConsumo, faturas: abaFaturas, historico: abaHistorico, emails: abaEmails };
+    $("#gc-corpo").innerHTML = (abas[gestao.aba] || abaDados)(d, k);
+  }
+  function erroGestao(r, padrao) {
+    const msg = r.status === 0 ? "API indisponível. Confira se o servidor está no ar."
+      : (r.dados && (r.dados.mensagem || (typeof r.dados.detail === "string" ? r.dados.detail : ""))) || `${padrao} (${r.status}).`;
+    const titulo = r.status === 400 ? "Regra de negócio" : r.status === 404 ? "Não encontrado" : r.status === 422 ? "Dados inválidos" : padrao;
+    $("#gc-aviso").innerHTML = alertaHTML(titulo, msg, detalhesErro(r.dados), "aviso");
+    toast(msg);
+  }
+  /** Executa uma ação da gestão: botão ocupado, erro do backend visível, recarga de ficha, tabela e faturamento. */
+  async function executar(b, rotulo, chamada, sucesso, falha) {
+    if (gestao.ocupado) return;
+    gestao.ocupado = true;
+    const txt = b.innerHTML;
     b.disabled = true;
-    const r = conferirSessao(await api(`/v1/comercial/chaves/${encodeURIComponent(b.dataset.revogar)}/revogar`, { metodo: "POST", headers: cabAdmin() }));
-    if (!r.ok) { toast(r.status === 404 ? "Chave não encontrada ou rota inativa" : `Não foi possível revogar (${r.status})`); b.disabled = false; return; }
-    toast("Chave revogada: as próximas chamadas com ela recebem 403");
-    carregarClientes();
+    b.innerHTML = `<span class="carregando"></span> ${esc(rotulo)}`;
+    $("#gc-aviso").innerHTML = "";
+    const r = conferirSessao(await chamada());
+    gestao.ocupado = false;
+    if (!r.ok) {
+      if (b.isConnected) { b.disabled = false; b.innerHTML = txt; }
+      if (!(falha && falha(r))) erroGestao(r, "Não foi possível concluir");
+      return;
+    }
+    gestao.painel = null;
+    sucesso(r.dados || {});
+    await recarregarTudo();
+  }
+
+  function abaDados(d) {
+    const ks = chavesDo(d);
+    return `<form id="gc-form-dados" class="gc-secao" novalidate>
+      <h4 class="gc-sub">Dados do cliente</h4>
+      <div class="campos-2">
+        <div class="campo"><label for="gc-nome">Nome</label><input id="gc-nome" name="nome" type="text" maxlength="120" autocomplete="off" value="${esc(d.nome || "")}"><small class="erro" data-erro="nome"></small></div>
+        <div class="campo"><label for="gc-email">E-mail</label><input id="gc-email" name="email" type="email" maxlength="160" autocomplete="off" value="${esc(d.email || "")}"><small class="erro" data-erro="email"></small></div>
+      </div>
+      <div class="campo"><label for="gc-empresa">Empresa <span class="nota">opcional</span></label><input id="gc-empresa" name="empresa" type="text" maxlength="120" autocomplete="off" value="${esc(d.empresa || "")}"><small class="erro" data-erro="empresa"></small></div>
+      <div class="acoes"><button type="submit" class="btn btn-pri" id="gc-salvar">Salvar alterações</button></div>
+      <dl class="lista-dados gc-resumo"><dt>Cliente</dt><dd>#${esc(d.cliente_id)} · cadastrado em ${dataHora(d.criado_em)}</dd>
+        <dt>Plano</dt><dd>${esc(d.plano_nome || nomePlano(d.plano))} · ${moeda(d.preco_mensal_usd)}/mês · ${num(d.limite_mensal)} predições/mês</dd>
+        <dt>Chaves</dt><dd>${num(ks.length)} no total · ${num(ks.filter((k) => k.situacao === "ativa").length)} ativa(s) · ${num(ks.filter((k) => k.situacao === "suspensa").length)} suspensa(s)</dd></dl>
+    </form>`;
+  }
+  async function salvarDados(f) {
+    const el = f.elements;
+    $$(".erro", f).forEach((e) => { e.textContent = ""; });
+    $$(".campo.invalido", f).forEach((c) => c.classList.remove("invalido"));
+    const marcar = (c, m) => { const e = $(`.erro[data-erro="${c}"]`, f); if (e) { e.textContent = m; const cc = e.closest(".campo"); if (cc) cc.classList.add("invalido"); } };
+    const novo = { nome: el.nome.value.trim(), email: el.email.value.trim(), empresa: el.empresa.value.trim() || null };
+    let ok = true;
+    if (!novo.nome) { marcar("nome", "Informe o nome"); ok = false; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(novo.email)) { marcar("email", "E-mail inválido"); ok = false; }
+    if (!ok) return;
+    const d = gestao.d || {}, corpo = {};
+    ["nome", "email", "empresa"].forEach((k) => { if ((novo[k] || null) !== (d[k] || null)) corpo[k] = novo[k]; });
+    if (!Object.keys(corpo).length) { toast("Nenhuma alteração para salvar"); return; }
+    await executar($("#gc-salvar"), "Salvando…",
+      () => api(`/v1/comercial/clientes/${encodeURIComponent(gestao.id)}`, { metodo: "PATCH", corpo, headers: cabAdmin() }),
+      () => toast("Dados do cliente atualizados"),
+      (r) => { detalhesErro(r.dados).forEach((x) => marcar(x.campo, x.mensagem)); return false; });
+  }
+
+  function abaPlano(d, k) {
+    const cat = planosCatalogo || PLANOS_PADRAO;
+    const atual = (k && k.plano) || d.plano;
+    const pode = !!k && k.situacao !== "revogada";
+    const p = gestao.painel && gestao.painel.tipo === "plano" ? gestao.painel : null;
+    let conf = "";
+    if (p && k) {
+      const de = planoDo(atual) || {}, para = planoDo(p.plano) || {};
+      const dif = (Number(para.preco_mensal_usd) || 0) - (Number(de.preco_mensal_usd) || 0);
+      const up = dif > 0 || (dif === 0 && (Number(para.limite_mensal) || 0) > (Number(de.limite_mensal) || 0));
+      const uso = Number(k.uso_mes) || 0, sinalD = dif >= 0 ? "+" : "−";
+      conf = `<div class="confirmar-caixa ${up ? "sobe" : "desce"}" id="gc-confirmar">
+        <h4>${up ? "↑ Upgrade" : "↓ Downgrade"}: ${esc(nomePlano(atual))} → ${esc(nomePlano(p.plano))}</h4>
+        <dl class="lista-dados"><dt>Mensalidade</dt><dd>${moeda(de.preco_mensal_usd)} → <b>${moeda(para.preco_mensal_usd)}</b> <span class="${dif >= 0 ? "pos" : "neg"}">(${sinalD}${moeda(Math.abs(dif))}/mês)</span></dd>
+          <dt>Receita anual</dt><dd class="${dif >= 0 ? "pos" : "neg"}">${sinalD}${moeda(Math.abs(dif * 12))}/ano</dd>
+          <dt>Limite</dt><dd>${num(de.limite_mensal)} → <b>${num(para.limite_mensal)}</b> predições por mês</dd>
+          <dt>Chave</dt><dd><code>${esc(k.prefixo || "#" + k.chave_id)}</code> · a mesma chave continua valendo</dd></dl>
+        ${!up && uso > (Number(para.limite_mensal) || 0) ? `<p class="guarde">⚠ O uso deste mês (${num(uso)}) já passa do novo limite: as próximas chamadas recebem 429 até o mês virar.</p>` : ""}
+        <div class="acoes"><button type="button" class="btn btn-pri" data-acao="plano-confirmar" data-plano="${esc(p.plano)}">Confirmar ${up ? "upgrade" : "downgrade"}</button><button type="button" class="btn btn-borda" data-acao="cancelar">Cancelar</button></div></div>`;
+    }
+    const cards = cat.map((pl) => {
+      const eh = pl.plano === atual, nome = pl.nome || nomePlano(pl.plano);
+      return `<div class="plano-card${eh ? " atual" : ""}${p && p.plano === pl.plano ? " escolhido" : ""}"><small>${esc(nome)}</small><b>${num(pl.limite_mensal)}</b><i>predições por mês</i>
+        <em>${moeda(pl.preco_mensal_usd)}<small>/mês</small></em><u>${moeda(pl.preco_por_predicao_usd)} por predição</u>
+        ${eh ? '<span class="chip ok">Plano atual</span>' : `<button type="button" class="btn-mini" data-acao="plano" data-plano="${esc(pl.plano)}"${pode ? "" : " disabled"}>Mudar para ${esc(nome)}</button>`}</div>`;
+    }).join("");
+    return `<div class="gc-secao"><h4 class="gc-sub">Plano ${k ? `da chave <code>${esc(k.prefixo || "#" + k.chave_id)}</code>` : ""}</h4>
+      ${pode ? "" : '<p class="nota">Sem chave ativa ou suspensa: emita uma nova chave para escolher o plano.</p>'}
+      <div class="planos-gc">${cards}</div>${conf}</div>`;
+  }
+
+  function painelChave(c) {
+    const p = gestao.painel && String(gestao.painel.chave) === String(c.chave_id) ? gestao.painel : null;
+    if (!p) return "";
+    const id = esc(c.chave_id);
+    if (p.tipo === "suspender") return `<div class="confirmar-caixa desce">
+      <h4>Suspender a chave <code>${esc(c.prefixo || "#" + c.chave_id)}</code></h4>
+      <p class="nota">As chamadas com ela passam a receber 403 e a mensalidade sai da receita até a reativação. A chave não muda.</p>
+      <div class="campo"><label for="gc-motivo">Motivo <span class="nota">opcional, fica no histórico</span></label><input id="gc-motivo" type="text" maxlength="200" autocomplete="off" placeholder="Ex.: pagamento em atraso"></div>
+      <div class="acoes"><button type="button" class="btn btn-pri" data-acao="suspender-confirmar" data-chave="${id}">Confirmar suspensão</button><button type="button" class="btn btn-borda" data-acao="cancelar">Cancelar</button></div></div>`;
+    if (p.tipo === "trocar") return `<div class="confirmar-caixa">
+      <h4>Trocar a chave <code>${esc(c.prefixo || "#" + c.chave_id)}</code></h4>
+      <p class="nota">Uma chave nova é emitida no mesmo plano e enviada ao cliente por e-mail; a atual deixa de funcionar. A nova aparece aqui <b>uma única vez</b>.</p>
+      ${acesso.exige ? `<div class="campo"><label for="gc-senha">Senha da conta <span class="nota">confirma a troca</span></label><input id="gc-senha" type="password" autocomplete="current-password" maxlength="128"><small class="erro" data-erro="gc-senha"></small></div>` : '<p class="nota">Com o token de administrador a troca não pede a senha da conta.</p>'}
+      <div class="acoes"><button type="button" class="btn btn-pri" data-acao="trocar-confirmar" data-chave="${id}">Emitir a nova chave</button><button type="button" class="btn btn-borda" data-acao="cancelar">Cancelar</button></div></div>`;
+    if (p.tipo === "revogar") {
+      const alvo = c.prefixo || "REVOGAR";
+      return `<div class="confirmar-caixa perigo">
+      <h4>Revogar a chave definitivamente</h4>
+      <p class="nota">A revogação <b>não pode ser desfeita</b>: as próximas chamadas recebem 403 e a mensalidade sai da receita. Para suspender por um tempo, use Suspender.</p>
+      <div class="campo"><label for="gc-conf-prefixo">Digite <code>${esc(alvo)}</code> para confirmar</label><input id="gc-conf-prefixo" type="text" autocomplete="off" spellcheck="false"></div>
+      <div class="acoes"><button type="button" class="btn btn-perigo-forte" data-acao="revogar-confirmar" data-chave="${id}" data-prefixo="${esc(alvo)}" disabled>Revogar definitivamente</button><button type="button" class="btn btn-borda" data-acao="cancelar">Cancelar</button></div></div>`;
+    }
+    return "";
+  }
+  function novaChaveHTML(x) {
+    const em = x.email || {};
+    return `<div class="nova-chave">
+      <div class="res-topo"><div><h4 class="gc-sub">Nova chave emitida</h4><p class="nota">Chave #${esc(x.chave_id)}${x.chave_anterior_id != null ? ` substitui a #${esc(x.chave_anterior_id)}` : ""} · plano ${esc(nomePlano(x.plano))}</p></div>
+        <span class="chip ok">${num(x.limite_mensal)}/mês · ${moeda(x.preco_mensal_usd)}</span></div>
+      <p class="guarde">⚠ Guarde agora: esta chave não será mostrada de novo. O banco guarda só o hash.</p>
+      <div class="chave-caixa"><code>${esc(x.chave)}</code><button type="button" class="btn-mini" data-acao="copiar-chave">Copiar</button></div>
+      ${seloEmail(em, (gestao.d || {}).email)}
+      <div class="acoes nc-acoes">${em.envio_id != null ? `<button type="button" class="btn-mini" data-acao="ver-email" data-envio="${esc(em.envio_id)}">Ver e-mail</button>` : ""}<button type="button" class="btn-mini" data-acao="esconder-chave">Já guardei, esconder</button></div></div>`;
+  }
+  function abaChave(d) {
+    const ks = chavesDo(d).sort((a, b) => (a.situacao === "revogada") - (b.situacao === "revogada") || maisRecente(a, b));
+    const itens = ks.map((c) => {
+      const fr = fracConsumo(c), id = esc(c.chave_id), s = c.situacao;
+      const botoes = s === "revogada" ? '<span class="nota">Revogada: não aceita mais chamadas.</span>'
+        : `${s === "ativa" ? `<button type="button" class="btn-mini" data-acao="suspender" data-chave="${id}">Suspender</button>` : `<button type="button" class="btn-mini btn-ok" data-acao="reativar" data-chave="${id}">Reativar</button>`}
+          <button type="button" class="btn-mini" data-acao="trocar" data-chave="${id}">Trocar chave</button>
+          <button type="button" class="btn-mini btn-perigo" data-acao="revogar" data-chave="${id}">Revogar</button>`;
+      return `<article class="chave-item sit-${s}">
+        <div class="ci-topo"><div><code class="ci-prefixo">${esc(c.prefixo || "—")}</code><small class="nota">chave #${id} · criada em ${dataHora(c.criada_em || c.criado_em)}</small></div>${chipSituacao(s)}</div>
+        <dl class="lista-dados"><dt>Plano</dt><dd>${esc(nomePlano(c.plano))} · ${moeda(c.preco_mensal_usd)}/mês</dd>
+          <dt>Uso no mês</dt><dd><div class="uso"><small>${num(c.uso_mes)} de ${num(c.limite_mensal)} · ${num(fr * 100, 0)} %</small>${barraConsumo(fr)}</div></dd></dl>
+        <div class="acoes ci-acoes">${botoes}</div>${painelChave(c)}</article>`;
+    }).join("");
+    return `<div class="gc-secao">${gestao.novaChave ? novaChaveHTML(gestao.novaChave) : ""}<h4 class="gc-sub">Chaves do cliente</h4>${itens || '<p class="nota">Nenhuma chave emitida.</p>'}</div>`;
+  }
+
+  function abaConsumo(d, k) {
+    const base = Number(d.limite_mensal) ? d : k || d;
+    const uso = Number(base.uso_mes) || 0, lim = Number(base.limite_mensal) || 0, fr = fracConsumo(base), rest = Math.max(0, lim - uso);
+    const dias = lista(d.uso_por_dia).map((x) => ({ dia: campo(x, "dia", "data"), total: Number(campo(x, "total", "quantidade")) || 0 }));
+    const max = Math.max(1, ...dias.map((x) => x.total)), tot = dias.reduce((s, x) => s + x.total, 0);
+    const passo = Math.max(1, Math.ceil(dias.length / 10));
+    const preco = Number(k && k.preco_mensal_usd != null ? k.preco_mensal_usd : d.preco_mensal_usd) || 0;
+    const barras = dias.length ? `<div class="dias" role="img" aria-label="Predições por dia">${dias.map((x, i) => `<div class="dia" title="${esc(diaCurto(x.dia))}: ${num(x.total)} predições">
+        <b>${x.total ? num(x.total) : ""}</b><i style="height:${x.total ? Math.max(3, (x.total / max) * 100) : 0}%"></i><small>${i % passo === 0 || i === dias.length - 1 ? esc(diaCurto(x.dia)) : ""}</small></div>`).join("")}</div>`
+      : '<p class="nota">Nenhuma predição registrada no período.</p>';
+    const aviso = fr >= 1 ? "Limite atingido: novas chamadas recebem 429 até o próximo mês ou um upgrade."
+      : fr >= 0.8 ? `Restam ${num(rest)} predições: bom momento para oferecer upgrade.` : `Restam ${num(rest)} predições neste mês.`;
+    return `<div class="gc-secao">
+      <h4 class="gc-sub">Consumo do mês</h4>
+      <div class="consumo-mes ${fr >= 1 ? "cheio" : fr >= 0.8 ? "alto" : ""}"><div class="cm-num"><b>${num(uso)}</b><span>de ${num(lim)} predições · ${num(fr * 100, 0)} % do limite</span></div>${barraConsumo(fr)}<small class="nota">${aviso}</small></div>
+      <div class="kpis gc-kpis">
+        <div class="stat"><strong>${num(tot)}</strong><span>predições no período</span></div>
+        <div class="stat"><strong>${num(dias.length ? tot / dias.length : 0, 1)}</strong><span>média por dia</span></div>
+        <div class="stat"><strong>${num(dias.length ? Math.max(...dias.map((x) => x.total)) : 0)}</strong><span>pico diário</span></div>
+        <div class="stat"><strong>${uso ? moeda(preco / uso) : "—"}</strong><span>custo efetivo por predição</span></div>
+      </div>
+      <h4 class="gc-sub">Uso por dia</h4>${barras}</div>`;
+  }
+
+  function abaFaturas(d) {
+    if (!Array.isArray(d.faturas)) return '<div class="gc-secao"><p class="nota">As faturas deste cliente ainda não estão disponíveis nesta versão da API.</p></div>';
+    const fs = d.faturas.slice().sort((a, b) => String(b.competencia || "").localeCompare(String(a.competencia || "")) || (Number(b.id) || 0) - (Number(a.id) || 0));
+    if (!fs.length) return '<div class="gc-secao"><p class="nota">Nenhuma fatura emitida para este cliente.</p></div>';
+    const soma = (st) => fs.filter((f) => f.status === st).reduce((s, f) => s + (Number(f.valor_usd) || 0), 0);
+    const p = gestao.painel && gestao.painel.tipo === "baixa" ? gestao.painel : null;
+    const linhas = fs.map((f) => {
+      const pode = f.status === "em_aberto" || f.status === "vencida", conf = p && String(p.fatura) === String(f.id);
+      const acao = !pode ? "" : conf
+        ? `<span class="baixa-conf"><button type="button" class="btn-mini btn-ok" data-acao="baixa-confirmar" data-fatura="${esc(f.id)}">Confirmar baixa de ${moeda(f.valor_usd)}</button><button type="button" class="btn-mini" data-acao="cancelar">Cancelar</button></span>`
+        : `<button type="button" class="btn-mini" data-acao="baixa" data-fatura="${esc(f.id)}">Dar baixa</button>`;
+      return `<tr class="fat-${esc(f.status || "")}"><td><b>${esc(competencia(f.competencia))}</b><br><small class="nota">fatura #${esc(f.id)}</small></td>
+        <td>${esc(nomePlano(f.plano))}</td><td class="num">${num(f.predicoes)}</td><td class="num"><b>${moeda(f.valor_usd)}</b></td>
+        <td>${f.vencimento ? dataCurta(f.vencimento) : "—"}</td><td>${chipFatura(f.status)}${f.paga_em ? `<br><small class="nota">paga em ${dataCurta(f.paga_em)}</small>` : ""}</td><td class="fat-acao">${acao}</td></tr>`;
+    }).join("");
+    return `<div class="gc-secao"><h4 class="gc-sub">Faturas do cliente</h4>
+      <div class="kpis gc-kpis gc-fat">
+        <div class="stat"><strong class="pos">${moeda(soma("paga"))}</strong><span>pago</span></div>
+        <div class="stat"><strong>${moeda(soma("em_aberto"))}</strong><span>em aberto</span></div>
+        <div class="stat"><strong class="${soma("vencida") ? "neg" : ""}">${moeda(soma("vencida"))}</strong><span>vencido</span></div>
+        <div class="stat"><strong>${num(fs.length)}</strong><span>faturas</span></div>
+      </div>
+      <div class="tabela-wrap"><table class="tabela tabela-faturas"><thead><tr><th>Competência</th><th>Plano</th><th class="num">Predições</th><th class="num">Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div></div>`;
+  }
+
+  const EVENTOS = {
+    emissao: ["⚿", "Chave emitida", "ok"], troca_plano: ["⇅", "Troca de plano", ""], suspensao: ["❚❚", "Chave suspensa", "aviso"],
+    reativacao: ["▶", "Chave reativada", "ok"], rotacao: ["↻", "Chave trocada", ""], revogacao: ["✕", "Chave revogada", "ruim"], edicao: ["✎", "Dados editados", ""],
+  };
+  function abaHistorico(d) {
+    const ev = lista(d.eventos).slice().sort((a, b) => String(b.criado_em || "").localeCompare(String(a.criado_em || "")));
+    if (!ev.length) return '<div class="gc-secao"><p class="nota">Nenhum evento registrado para este cliente.</p></div>';
+    return `<div class="gc-secao"><h4 class="gc-sub">Linha do tempo</h4><ol class="linha-tempo">${ev.map((e) => {
+      const [ic, nome, cl] = EVENTOS[e.tipo] || ["•", e.tipo || "Evento", ""];
+      return `<li class="${cl}"><span class="lt-ic" aria-hidden="true">${ic}</span><div class="lt-txt"><div class="lt-topo"><b>${esc(nome)}</b>${e.chave_id != null ? `<small class="nota">chave #${esc(e.chave_id)}</small>` : ""}<time datetime="${esc(e.criado_em || "")}">${dataHora(e.criado_em)}</time></div>${e.detalhe ? `<p>${esc(e.detalhe)}</p>` : ""}</div></li>`;
+    }).join("")}</ol></div>`;
+  }
+  const MODO_EMAIL = { smtp: "enviado por SMTP", arquivo: "salvo localmente" };
+  function abaEmails(d) {
+    const es = lista(d.emails).slice().sort((a, b) => String(b.criado_em || "").localeCompare(String(a.criado_em || "")));
+    if (!es.length) return '<div class="gc-secao"><p class="nota">Nenhum e-mail enviado a este cliente.</p></div>';
+    return `<div class="gc-secao"><h4 class="gc-sub">E-mails enviados</h4><ul class="lista-emails">${es.map((e) => `<li>
+      <div class="le-txt"><b>${esc(e.assunto || "E-mail")}</b><small class="nota">${dataHora(e.criado_em)}${e.envio_id != null ? ` · envio #${esc(e.envio_id)}` : ""}</small></div>
+      <span class="selo-email ${e.modo === "smtp" ? "smtp" : e.modo === "arquivo" ? "arquivo" : ""}">${esc(MODO_EMAIL[e.modo] || e.modo || "—")}${e.status ? " · " + esc(e.status) : ""}</span>
+      ${e.envio_id != null ? `<button type="button" class="btn-mini" data-acao="ver-email" data-envio="${esc(e.envio_id)}">Ver e-mail</button>` : ""}</li>`).join("")}</ul></div>`;
+  }
+
+  async function acaoGestao(ev) {
+    const b = ev.target.closest("[data-acao]");
+    if (!b || b.disabled || !gestao.d) return;
+    const a = b.dataset.acao, chave = b.dataset.chave, cid = encodeURIComponent(chave || "");
+    const abrirPainel = (painel, foco) => {
+      gestao.painel = painel;
+      $("#gc-aviso").innerHTML = "";
+      desenharGestao();
+      const caixa = $("#gc-confirmar") || $(".confirmar-caixa", $("#gc-corpo"));
+      if (caixa) caixa.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const f = foco && $(foco);
+      if (f) setTimeout(() => f.focus(), 30);
+    };
+    if (a === "cancelar") { gestao.painel = null; desenharGestao(); return; }
+    if (a === "plano") { const k = chavePrincipal(gestao.d); abrirPainel({ tipo: "plano", plano: b.dataset.plano, chave: k && k.chave_id }); return; }
+    if (a === "suspender") { abrirPainel({ tipo: a, chave }, "#gc-motivo"); return; }
+    if (a === "trocar") { abrirPainel({ tipo: a, chave }, "#gc-senha"); return; }
+    if (a === "revogar") { abrirPainel({ tipo: a, chave }, "#gc-conf-prefixo"); return; }
+    if (a === "baixa") { gestao.painel = { tipo: "baixa", fatura: b.dataset.fatura }; $("#gc-aviso").innerHTML = ""; desenharGestao(); return; }
+    if (a === "baixa-confirmar") {
+      await executar(b, "Dando baixa…",
+        () => api(`/v1/admin/banco/faturas/${encodeURIComponent(b.dataset.fatura)}`, { metodo: "PATCH", corpo: { status: "paga" }, headers: cabAdmin() }),
+        () => toast(`Baixa registrada: fatura #${b.dataset.fatura} paga`));
+      return;
+    }
+    if (a === "ver-email") { verEmail(b.dataset.envio); return; }
+    if (a === "esconder-chave") { gestao.novaChave = null; desenharGestao(); return; }
+    if (a === "copiar-chave") {
+      try { await navigator.clipboard.writeText((gestao.novaChave && gestao.novaChave.chave) || ""); toast("Chave copiada"); } catch (e) { toast("Não foi possível copiar automaticamente"); }
+      return;
+    }
+    if (a === "plano-confirmar") {
+      const p = gestao.painel || {}, plano = b.dataset.plano;
+      await executar(b, "Mudando o plano…",
+        () => api(`/v1/comercial/chaves/${encodeURIComponent(p.chave)}/plano`, { metodo: "PATCH", corpo: { plano }, headers: cabAdmin() }),
+        (x) => toast(`${x.movimento === "downgrade" ? "Downgrade" : "Upgrade"} para ${nomePlano(x.plano || plano)}: ${moeda(x.preco_mensal_usd)}/mês, ${num(x.limite_mensal)} predições`));
+      return;
+    }
+    if (a === "suspender-confirmar") {
+      const motivo = (($("#gc-motivo") || {}).value || "").trim();
+      await executar(b, "Suspendendo…",
+        () => api(`/v1/comercial/chaves/${cid}/suspender`, { metodo: "POST", corpo: motivo ? { motivo } : {}, headers: cabAdmin() }),
+        () => toast("Chave suspensa: as chamadas com ela recebem 403 até a reativação"));
+      return;
+    }
+    if (a === "reativar") {
+      await executar(b, "Reativando…",
+        () => api(`/v1/comercial/chaves/${cid}/reativar`, { metodo: "POST", headers: cabAdmin() }),
+        () => toast("Chave reativada: volta a responder e a cobrar"));
+      return;
+    }
+    if (a === "trocar-confirmar") {
+      const campoSenha = $("#gc-senha"), senha = campoSenha ? campoSenha.value : "";
+      const erroSenha = (m) => { const e = $('.erro[data-erro="gc-senha"]', $("#gc-corpo")); if (e) { e.textContent = m; e.closest(".campo").classList.add("invalido"); } };
+      if (acesso.exige && !senha) { erroSenha("Digite a senha da conta para confirmar"); return; }
+      await executar(b, "Emitindo…",
+        () => api(`/v1/comercial/chaves/${cid}/rotacionar`, { metodo: "POST", headers: { ...cabAdmin(), ...(acesso.exige ? { "X-Senha-Conta": senha } : {}) } }),
+        (x) => { gestao.novaChave = x; gestao.aba = "chave"; toast("Chave trocada: guarde a nova chave agora"); },
+        (r) => {
+          if ((r.status === 401 || r.status === 403 || r.status === 429) && campoSenha && r.dados && (r.dados.erro === "acesso_negado" || r.status === 429)) {
+            campoSenha.value = "";
+            erroSenha(r.dados.mensagem || "Senha da conta incorreta");
+            toast(r.dados.mensagem || "Senha da conta incorreta");
+            return true;
+          }
+          return false;
+        });
+      return;
+    }
+    if (a === "revogar-confirmar") {
+      const conf = $("#gc-conf-prefixo");
+      if (!conf || conf.value.trim() !== b.dataset.prefixo) return;
+      await executar(b, "Revogando…",
+        () => api(`/v1/comercial/chaves/${cid}/revogar`, { metodo: "POST", headers: cabAdmin() }),
+        () => toast("Chave revogada: as próximas chamadas com ela recebem 403"));
+    }
   }
   const ERROS_CHAVE = {
     401: ["Chave inválida", "A chave não existe ou foi digitada errada (chave_invalida)."],
@@ -1804,6 +2335,7 @@
   function initBanco() {
     atualizarUso();
     carregarEsquema();
+    if (window.TelaBanco) window.TelaBanco.iniciar($('.view[data-view="banco"]'));
     setInterval(() => { if (visivel("banco")) atualizarUso(); }, 10000);
   }
 

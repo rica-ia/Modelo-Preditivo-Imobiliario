@@ -17,10 +17,9 @@ from email.utils import formataddr, make_msgid
 from pathlib import Path
 
 from ..config import PASTA_WEB, obter
+from .planos import NOMES_PLANOS, PRECOS_USD, formatar_usd
 
 log = logging.getLogger("avaliador")
-
-NOMES_PLANOS = {"basico": "Básico", "profissional": "Profissional", "empresarial": "Empresarial"}
 
 
 def _url_base() -> str:
@@ -31,6 +30,7 @@ def montar_email(nome: str, destinatario: str, chave: str, plano: str, limite: i
     base = _url_base()
     plano_nome = NOMES_PLANOS.get(plano, plano)
     limite_txt = f"{limite:,}".replace(",", ".")
+    preco_txt = f"{formatar_usd(PRECOS_USD[plano])} por mês" if plano in PRECOS_USD else "—"
     curl = (
         f'curl -X POST {base}/v1/predict \\\n'
         f'  -H "Content-Type: application/json" \\\n'
@@ -53,7 +53,7 @@ def montar_email(nome: str, destinatario: str, chave: str, plano: str, limite: i
 Sua chave de API do Avaliador Imobiliário está pronta.
 
 Chave: {chave}
-Plano: {plano_nome} · até {limite_txt} predições por mês
+Plano: {plano_nome} · até {limite_txt} predições por mês · {preco_txt}
 
 Como usar
 1. Envie a chave no cabeçalho X-API-Key de cada requisição.
@@ -106,6 +106,7 @@ by Ricardo Pasquali dos Reis
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#3a3a3c;border-collapse:collapse">
       <tr><td style="padding:9px 0;border-bottom:1px solid #ececf0;color:#6e6e73">Plano</td><td align="right" style="padding:9px 0;border-bottom:1px solid #ececf0;font-weight:700;color:#141414">{e(plano_nome)}</td></tr>
       <tr><td style="padding:9px 0;border-bottom:1px solid #ececf0;color:#6e6e73">Limite mensal</td><td align="right" style="padding:9px 0;border-bottom:1px solid #ececf0;font-weight:700;color:#141414">{limite_txt} predições</td></tr>
+      <tr><td style="padding:9px 0;border-bottom:1px solid #ececf0;color:#6e6e73">Valor mensal</td><td align="right" style="padding:9px 0;border-bottom:1px solid #ececf0;font-weight:700;color:#141414">{preco_txt}</td></tr>
       <tr><td style="padding:9px 0;border-bottom:1px solid #ececf0;color:#6e6e73">Emitida em</td><td align="right" style="padding:9px 0;border-bottom:1px solid #ececf0;color:#141414">{emitida}</td></tr>
       <tr><td style="padding:9px 0;color:#6e6e73">Cobertura</td><td align="right" style="padding:9px 0;color:#141414">King County (WA) · modelo v2</td></tr>
     </table>
