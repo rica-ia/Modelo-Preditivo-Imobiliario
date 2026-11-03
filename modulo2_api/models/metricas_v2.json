@@ -1,7 +1,7 @@
 {
   "versao": "v2",
-  "algoritmo": "HistGradientBoosting Log",
-  "treinado_em": "2026-11-03T14:44:49+00:00",
+  "algoritmo": "HistGradientBoosting Log monotônico",
+  "treinado_em": "2026-11-03T15:08:44+00:00",
   "alvo": "price (USD)",
   "data_referencia": "20150527T000000",
   "divisao": {
@@ -12,18 +12,18 @@
   },
   "metricas": {
     "validacao": {
-      "MAE": 61208.5108,
-      "MSE": 10855335946.5298,
-      "RMSE": 104188.9435,
-      "R2": 0.9167,
-      "MAPE": 0.1141
+      "MAE": 62653.8215,
+      "MSE": 11645897341.4293,
+      "RMSE": 107916.1589,
+      "R2": 0.9106,
+      "MAPE": 0.1164
     },
     "teste": {
-      "MAE": 64322.5326,
-      "MSE": 14267026389.7006,
-      "RMSE": 119444.6583,
-      "R2": 0.8979,
-      "MAPE": 0.1197
+      "MAE": 63907.8252,
+      "MSE": 13647554514.3279,
+      "RMSE": 116822.7483,
+      "R2": 0.9023,
+      "MAPE": 0.1199
     }
   },
   "comparacao_validacao": {
@@ -54,8 +54,26 @@
       "RMSE": 104188.9435,
       "R2": 0.9167,
       "MAPE": 0.1141
+    },
+    "HistGradientBoosting Log monotônico": {
+      "MAE": 62653.8215,
+      "MSE": 11645897341.4293,
+      "RMSE": 107916.1589,
+      "R2": 0.9106,
+      "MAPE": 0.1164
     }
   },
+  "criterio_selecao": "menor RMSE na validação; o HGB Log monotônico é preferido se perder até 0.01 de R² para o HGB Log sem restrição",
+  "restricoes_monotonicas_crescentes": [
+    "sqft_living",
+    "grade",
+    "view",
+    "condition",
+    "waterfront",
+    "bathrooms",
+    "sqft_living15",
+    "foi_reformado"
+  ],
   "baseline": {
     "modelo": "Baseline pela média",
     "teste": {
@@ -70,67 +88,77 @@
     {
       "variavel": "Latitude",
       "coluna": "lat",
-      "importancia": 0.4205
+      "importancia": 0.4113
     },
     {
       "variavel": "Área útil",
       "coluna": "sqft_living",
-      "importancia": 0.3604
+      "importancia": 0.3387
     },
     {
       "variavel": "Padrão construtivo",
       "coluna": "grade",
-      "importancia": 0.233
+      "importancia": 0.2439
     },
     {
       "variavel": "Longitude",
       "coluna": "long",
-      "importancia": 0.1187
+      "importancia": 0.12
     },
     {
       "variavel": "Área útil dos vizinhos",
       "coluna": "sqft_living15",
-      "importancia": 0.0346
-    },
-    {
-      "variavel": "Área do terreno",
-      "coluna": "sqft_lot",
-      "importancia": 0.03
+      "importancia": 0.0336
     },
     {
       "variavel": "Vista",
       "coluna": "view",
-      "importancia": 0.02
+      "importancia": 0.026
     },
     {
-      "variavel": "Frente para a água",
-      "coluna": "waterfront",
-      "importancia": 0.0169
+      "variavel": "Área do terreno",
+      "coluna": "sqft_lot",
+      "importancia": 0.0221
     },
     {
       "variavel": "CEP",
       "coluna": "zipcode",
-      "importancia": 0.0167
+      "importancia": 0.0186
     },
     {
       "variavel": "Ano de construção",
       "coluna": "yr_built",
-      "importancia": 0.0163
+      "importancia": 0.0164
+    },
+    {
+      "variavel": "Frente para a água",
+      "coluna": "waterfront",
+      "importancia": 0.0158
     },
     {
       "variavel": "Banheiros",
       "coluna": "bathrooms",
-      "importancia": 0.0102
-    },
-    {
-      "variavel": "Condição",
-      "coluna": "condition",
-      "importancia": 0.0067
+      "importancia": 0.0112
     },
     {
       "variavel": "Área do porão",
       "coluna": "sqft_basement",
-      "importancia": 0.0042
+      "importancia": 0.0076
+    },
+    {
+      "variavel": "Condição",
+      "coluna": "condition",
+      "importancia": 0.0056
+    },
+    {
+      "variavel": "Andares",
+      "coluna": "floors",
+      "importancia": 0.0046
+    },
+    {
+      "variavel": "Data da venda",
+      "coluna": "date",
+      "importancia": 0.0027
     },
     {
       "variavel": "Ano da reforma",
@@ -138,29 +166,19 @@
       "importancia": 0.0027
     },
     {
-      "variavel": "Data da venda",
-      "coluna": "date",
-      "importancia": 0.0022
-    },
-    {
-      "variavel": "Andares",
-      "coluna": "floors",
-      "importancia": 0.0011
+      "variavel": "Quartos",
+      "coluna": "bedrooms",
+      "importancia": 0.0005
     },
     {
       "variavel": "Terreno dos vizinhos",
       "coluna": "sqft_lot15",
       "importancia": 0.0
-    },
-    {
-      "variavel": "Quartos",
-      "coluna": "bedrooms",
-      "importancia": -0.0008
     }
   ],
   "faixa_erro": {
-    "p10": 0.8342,
-    "p90": 1.1801
+    "p10": 0.8264,
+    "p90": 1.18
   },
   "ceps_conhecidos": [
     "98001",
