@@ -77,7 +77,7 @@ O Módulo 1 terminou com um modelo de regressão validado (R² de 0,896 no teste
 | API | FastAPI organizada em `schemas/`, `services/`, `routers/` e `main.py` |
 | Ciclo de vida | modelo lido do disco **uma única vez**, no `lifespan`, e mantido na memória RAM |
 | Contratos | entrada e saída em Pydantic com `Field` (tipos, faixas, padrões e descrições) e `extra="forbid"` |
-| Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de acesso com 2FA (`/v1/acesso/*`), de relatórios (`/v1/relatorios/*`) , da visão 3D (`/v1/config/mapa3d`) e do endereço completo por geocodificação reversa no OpenStreetMap (`GET /v1/endereco`, sem custo e com cache) |
+| Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de acesso com 2FA (`/v1/acesso/*`), de relatórios (`/v1/relatorios/*`), da visão 3D (`/v1/config/mapa3d`) e do endereço completo por geocodificação reversa no OpenStreetMap (`GET /v1/endereco`, sem custo e com cache) |
 | Erros | 400, 404, 405, 422, 500 e 503 em JSON padronizado e em português; a API não cai |
 | Qualidade | 74 testes automatizados (`pytest` + `TestClient`) |
 | Produto | plataforma web de gestão que consome a API: painel, nova avaliação com mapa e visão 3D, laudos com exportação, simulador, relatórios de mercado, mapa de valor, transparência do modelo, console comercial, documentação do banco e área do desenvolvedor |
@@ -432,7 +432,8 @@ O portal mostra como o modelo seria usado no dia a dia de uma empresa de avalia�
 
 **Tecnologia e identidade.** HTML, CSS e JavaScript puros, sem etapa de *build*:
 
-- mapas em **MapLibre GL JS 4.7.1**, com mapa base vetorial do **OpenFreeMap**, camada de satélite **Esri World Imagery** e prédios em 3D, tudo sem chave de acesso;
+- mapas em **MapLibre GL JS 4.7.1**, com mapa base vetorial do **OpenFreeMap**, camada de satélite **Esri World Imagery** (acima das formas do mapa base e abaixo só dos rótulos de ruas), prédios em 3D e botão de **tela cheia** em todos os mapas, tudo sem chave de acesso;
+- **endereço completo** de cada ponto (número, rua, bairro, cidade e CEP) por geocodificação reversa no **OpenStreetMap (Nominatim)**, sem chave e sem custo, pela rota `GET /v1/endereco`, com cache e no máximo uma consulta por segundo;
 - gráficos em **Chart.js 4.4.1**;
 - identidade escura (fundo `#141414`, destaque violeta `#703BF7`, fonte Urbanist), com tema **Escuro**, **Claro** ou **Auto** (segue o sistema operacional), salvo no navegador;
 - layout responsivo até 375 px de largura, sem rolagem lateral; no celular, o menu lateral vira gaveta;
@@ -443,13 +444,13 @@ O portal mostra como o modelo seria usado no dia a dia de uma empresa de avalia�
 | Grupo | Tela | O que faz | Endpoints |
 |---|---|---|---|
 | Operação | Painel | indicadores de gestão (avaliações salvas, vendas históricas, clientes, chaves ativas, predições do dia e latência mediana), predições por dia, últimas avaliações e atalhos | `/v1/relatorios/resumo`, `/v1/avaliacoes` |
-| Operação | Nova avaliação | mapa em destaque com os preços medianos dos 70 CEPs, camadas **Preços / Mapa de valor / Ambos**, fundo **Mapa / Satélite** e **Visão 3D**; painel lateral com valor, faixa provável, US$/m² contra a mediana do CEP, tempo de resposta e confiança do modelo; botão **Salvar e gerar laudo** | `/v1/predict`, `/v1/avaliacoes`, `/v1/regioes` |
+| Operação | Nova avaliação | mapa em destaque com os preços medianos dos 70 CEPs, camadas **Preços / Mapa de valor / Ambos**, fundo **Mapa / Satélite**, **tela cheia** e **Visão 3D**; chip com a rua do ponto e endereço completo no resultado; painel lateral com valor, faixa provável, US$/m² contra a mediana do CEP, tempo de resposta e confiança do modelo; botão **Salvar e gerar laudo** | `/v1/predict`, `/v1/avaliacoes`, `/v1/regioes`, `/v1/endereco` |
 | Operação | Avaliações | histórico de laudos do portal, da API e da amostra da base, com filtros (título, cidade, CEP, quartos, origem, faixa e valores), ordenação, paginação, detalhe com mapa e exportação **CSV** ou **JSON** | `/v1/avaliacoes`, `/v1/avaliacoes/exportar` |
 | Operação | Simulador | cinco cenários em cartões (reforma, banheiro extra, +20 % de área, padrão +1 e vista +1) numa única chamada em lote, com gráfico e tabela; um clique aplica o cenário à avaliação | `/v1/predict/lote` |
 | Análise | Relatórios de mercado | mediana, média e intervalo p25–p75 das **21.613 vendas reais**, por quartos, cidade/bairro, CEP, faixa de preço, padrão construtivo ou ano da venda, com filtros, exportação CSV ou JSON e impressão | `/v1/relatorios/mercado`, `/v1/relatorios/mercado/exportar` |
 | Análise | Mapa de valor | camada de CEPs com cor pelo US$/m² e raio pelo número de vendas, ligada a um ranking em barras | `/v1/regioes`, `/v1/predict` |
 | Análise | Modelo | R² do teste, MAPE, MAE, RMSE, redução sobre o baseline, latência medida ao vivo, validação × teste × baseline e importância das variáveis | `/v1/modelo` |
-| Administração | Comercial | console de chaves de API: emissão por plano com **e-mail real** ao cliente, pré-visualização do e-mail, lista de clientes com consumo do mês, revogação e testador de chave | `/v1/comercial/*` |
+| Administração | Comercial | console de chaves de API: emissão por plano, confirmada pela senha da conta, com **e-mail real** ao cliente, pré-visualização do e-mail, lista de clientes com consumo do mês, revogação e testador de chave | `/v1/comercial/*` |
 | Administração | Banco de dados | uso da API (por dia, por origem e por status HTTP), últimas predições e documentação viva das 6 tabelas, com colunas, índices, relações e contagem de linhas | `/v1/relatorios/resumo`, `/v1/relatorios/predicoes`, `/v1/relatorios/esquema` |
 | Administração | Desenvolvedores | exemplos em curl e Python, endpoints, códigos HTTP e corpo JSON de exemplo | — |
 
@@ -457,17 +458,17 @@ O portal mostra como o modelo seria usado no dia a dia de uma empresa de avalia�
 
 | Ação do usuário | Resposta da interface |
 |---|---|
-| Clicar num *pin* de preço ou em qualquer ponto do mapa em **Nova avaliação** | o imóvel é posicionado ali, o CEP mais próximo é escolhido e a avaliação aparece na hora, num *popup* e no painel lateral |
+| Clicar num *pin* de preço ou em qualquer ponto do mapa em **Nova avaliação** | o imóvel é posicionado ali, o CEP mais próximo é escolhido e a avaliação aparece na hora, num *popup* e no painel lateral, com a rua no chip do mapa e o endereço completo no resultado |
 | Clicar em **Salvar e gerar laudo** | o servidor recalcula o preço (o cliente não envia valor), grava o laudo e oferece **Abrir laudo** e **Ver na lista** |
 | Abrir um laudo | página HTML pronta para imprimir ou salvar em PDF, com valor, faixa, US$/m², referência de mercado do CEP e da cidade, dados do imóvel, as 5 vendas comparáveis mais parecidas do mesmo CEP e o aviso de uso |
 | Ligar a **Visão 3D** | o mapa inclina, os prédios do OpenFreeMap sobem em volume e a câmera faz um voo orbital; há também **Satélite 3D** e **Parar voo** |
 | Clicar num cartão do **Simulador** | o cenário é aplicado ao formulário e marcado como "Aplicado à avaliação" |
 | Clicar num círculo ou numa barra do **Mapa de valor** | o círculo e a barra do ranking se destacam juntos, e o mapa voa até o CEP |
 | Clicar numa variável da importância em **Modelo** | o portal leva ao campo correspondente do formulário |
-| Emitir uma chave em **Comercial** | a chave aparece uma única vez (mascarada nas capturas), o e-mail é enviado e o cliente entra na lista com o consumo zerado |
+| Emitir uma chave em **Comercial** | o portal pede a senha da conta no próprio formulário; a chave aparece uma única vez (mascarada nas capturas), o e-mail é enviado e o cliente entra na lista com o consumo zerado |
 | Enviar dados incoerentes | as mensagens 400 e 422 da API aparecem campo a campo |
 
-**Visão 3D fotorrealista (opcional).** Além da visão 3D do MapLibre, que funciona sem chave, a página `/visao3d` faz um **voo de 360° em volta do imóvel** sobre o Google Photorealistic 3D Tiles, no CesiumJS 1.122, com o valor estimado e a faixa sobrepostos e o crédito "Imagens © Google" sempre visível. Os controles são **Iniciar voo 360°**, **Pausar**, **Gravar vídeo** (`.webm`) e **Voltar ao portal**; no portal, o botão **Voo fotorrealista** aparece no mapa da avaliação e no detalhe do laudo.
+**Visão 3D fotorrealista (opcional).** Além da visão 3D do MapLibre, que funciona sem chave, a página `/visao3d` faz um **voo de 360° em volta do imóvel** sobre o Google Photorealistic 3D Tiles, no CesiumJS 1.122, com o valor estimado e a faixa sobrepostos e o crédito "Imagens © Google" sempre visível. A ficha do imóvel mostra o endereço completo e tem uma seta para recolher e expandir. Os controles são **Iniciar voo 360°**, **Pausar**, **Gravar vídeo** (`.webm`) e **Voltar ao portal**, que volta já com a sessão aberta; no portal, o botão **Voo fotorrealista** aparece no mapa da avaliação e no detalhe do laudo.
 
 - Funciona **só com uma chave própria do Google** em `GOOGLE_MAPS_API_KEY`, no `.env` local; a chave **não vem no repositório** e `GET /v1/config/mapa3d` só a entrega a acessos de `127.0.0.1`.
 - Sem a chave, a página cai automaticamente na visão 3D do MapLibre.
@@ -593,7 +594,18 @@ O console da plataforma pode exigir **senha + código de 6 dígitos de um app au
    O comando grava `AVALIADOR_TOTP_SEGREDO` no `.env`, preservando as demais linhas, e desenha o QR Code no próprio terminal. Também salva uma cópia em SVG em `modulo2_api/saida/`, pasta fora do Git, para abrir em tela grande.
 2. No celular, ler o QR Code no app autenticador.
 3. Reiniciar a API e conferir o código com `python -m modulo2_api.ferramentas.configurar_2fa --testar`.
-4. No portal, a tela **Entrar na plataforma** pede a **Senha** e o **Código do autenticador**. Depois de entrar, a sessão vale 8 horas, vale para todas as abas do portal neste navegador (inclusive a Visão 3D) e segue no cabeçalho `X-Admin-Sessao`; **Administrador → Sair** encerra a sessão.
+4. Definir a senha da conta, digitada sem aparecer e gravada só como hash: `python -m modulo2_api.ferramentas.configurar_2fa --senha`.
+5. No portal, a tela **Entrar na plataforma** pede a **Senha** e o **Código do autenticador**, mascarado. Depois de entrar, a sessão vale 8 horas, vale para todas as abas do portal neste navegador (inclusive a Visão 3D) e segue no cabeçalho `X-Admin-Sessao`; o cabeçalho mostra o administrador (**Ricardo Pasquali dos Reis**), e **Sair** encerra a sessão.
+
+**Três formas de entrar**
+
+| Forma | Como | Onde vale |
+|---|---|---|
+| Senha + código do app (padrão) | tela **Entrar na plataforma** → `POST /v1/acesso/entrar` | qualquer acesso ao portal |
+| Só a senha da conta | senha digitada no terminal → `POST /v1/acesso/entrar-senha` | só chamadas de 127.0.0.1 |
+| Sem senha (contingência) | token de administrador do `.env` local → `POST /v1/acesso/entrar-local` | só chamadas de 127.0.0.1 |
+
+As duas entradas locais entregam a sessão ao navegador pelo fragmento `#entrar=...`. Um segundo celular pode receber o mesmo segredo com `configurar_2fa --mostrar-qr`, sem invalidar o primeiro.
 
 | Item | Como funciona |
 |---|---|
@@ -937,6 +949,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | Inspiração do layout do portal | template **Estatein**, de Produce UI | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 | Mapa base vetorial | OpenFreeMap e OpenMapTiles, com dados © colaboradores do OpenStreetMap | dados sob [ODbL](https://opendatacommons.org/licenses/odbl/) |
 | Imagens de satélite | Esri World Imagery (Esri, Maxar, Earthstar Geographics) | termos de uso da Esri |
+| Endereços (geocodificação reversa) | Nominatim, com dados © colaboradores do OpenStreetMap | dados sob [ODbL](https://opendatacommons.org/licenses/odbl/); [política de uso](https://operations.osmfoundation.org/policies/nominatim/) respeitada (identificação, 1 consulta/s e cache) |
 | Biblioteca de mapas | MapLibre GL JS 4.7.1 | BSD-3-Clause |
 | Biblioteca de gráficos | Chart.js 4.4.1 | MIT |
 | Visão 3D fotorrealista (opcional) | CesiumJS 1.122.0 | Apache-2.0 |
