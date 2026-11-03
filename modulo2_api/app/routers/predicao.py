@@ -50,7 +50,8 @@ def _atender(
                 "cep": imovel.cep,
                 "area_util_m2": imovel.area_util_m2,
                 "preco_estimado_usd": previsoes[i].preco_estimado_usd if previsoes else None,
-                "latencia_ms": previsoes[i].latencia_ms if previsoes else None,
+                # No lote, a inferência é uma só: o banco guarda a fração de cada imóvel
+                "latencia_ms": round(previsoes[i].latencia_ms / len(imoveis), 2) if previsoes else None,
                 "status_http": status,
             }
             for i, imovel in enumerate(imoveis)
