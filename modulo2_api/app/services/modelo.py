@@ -12,7 +12,7 @@ memória RAM; nenhuma requisição lê o disco.
 ## Regras de negócio (Fase 5)
 Dados que passam no Pydantic, mas são incoerentes (porão maior que a área útil,
 reforma antes da construção ou depois da base, CEP fora da região de treino),
-geram `RegraDeNegocioError`, que o main.py traduz em HTTP 400.
+geram `RegraDeNegocioError`, que o erros.py traduz em HTTP 400.
 """
 
 import json
