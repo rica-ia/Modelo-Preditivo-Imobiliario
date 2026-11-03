@@ -5,24 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Avaliador Imobiliário</title>
   <meta name="description" content="Avaliação instantânea de imóveis por modelo preditivo servido em API REST.">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="dark light">
   <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/assets/app.css?v=7">
+  <link rel="stylesheet" href="/assets/app.css?v=10">
   <script>
     // Aplica o tema salvo antes da pintura para evitar o "piscar" de cores.
     try {
       var t = localStorage.getItem("ai-tema");
-      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      if (t !== "auto") document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
     } catch (e) {}
   </script>
 </head>
 <body>
+  <div class="faixa-topo">✦ Avalie qualquer imóvel de King County em milissegundos — <a href="#dev">conheça a API</a></div>
+
   <header class="topo">
     <div class="topo-linha">
       <a class="marca" href="#inicio" aria-label="Avaliador Imobiliário, início">
-        <img src="/assets/logo.svg" alt="" width="32" height="32">
-        <span>Avaliador<b>Imobiliário</b></span>
+        <span class="marca-ic"><img src="/assets/logo.svg" alt="" width="22" height="22"></span>
+        <span>Avaliador <span class="marca-extra">Imobiliário</span></span>
       </a>
       <nav class="nav" aria-label="Módulos">
         <a href="#inicio" data-nav="inicio">Início</a>
@@ -32,10 +37,13 @@
         <a href="#modelo" data-nav="modelo">Modelo</a>
         <a href="#dev" data-nav="dev">Desenvolvedores</a>
       </nav>
-      <div class="tema" role="radiogroup" aria-label="Tema">
-        <button type="button" data-tema="auto" title="Automático" aria-label="Tema automático">◐</button>
-        <button type="button" data-tema="light" title="Claro" aria-label="Tema claro">☀</button>
-        <button type="button" data-tema="dark" title="Escuro" aria-label="Tema escuro">☾</button>
+      <div class="topo-acoes">
+        <div class="tema" role="radiogroup" aria-label="Tema">
+          <button type="button" data-tema="dark">Escuro</button>
+          <button type="button" data-tema="light">Claro</button>
+          <button type="button" data-tema="auto">Auto</button>
+        </div>
+        <a class="btn btn-borda btn-doc" href="/docs" target="_blank" rel="noopener">Documentação</a>
       </div>
     </div>
   </header>
@@ -46,160 +54,199 @@
       <div class="hero">
         <div class="hero-texto">
           <span class="selo" id="selo-saude"><i></i><span>Verificando a API…</span></span>
-          <h1>O preço justo de um imóvel,<br><span class="grad">em milissegundos.</span></h1>
-          <p class="lead">Modelo de gradient boosting treinado com 21 mil vendas reais de King County (WA), servido como API REST com validação estrita de dados. Informe as características, receba o valor estimado e a faixa provável.</p>
+          <h1>Descubra o <em>preço justo</em> de um imóvel antes de negociar.</h1>
+          <p class="lead">Um modelo de gradient boosting treinado com vendas reais de King County (WA), servido como API REST com validação estrita de dados. Informe as características e receba o valor estimado com a faixa provável.</p>
           <div class="acoes">
+            <a class="btn btn-borda" href="#modelo">Como o modelo funciona</a>
             <a class="btn btn-pri" href="#avaliar">Avaliar um imóvel</a>
-            <a class="btn btn-sec" href="/docs" target="_blank" rel="noopener">Documentação da API</a>
+          </div>
+          <div class="stats">
+            <div class="stat"><strong id="st-vendas">—</strong><span>vendas analisadas</span></div>
+            <div class="stat"><strong id="st-ceps">—</strong><span>CEPs cobertos</span></div>
+            <div class="stat"><strong id="st-r2">—</strong><span>R² no teste</span></div>
+            <div class="stat"><strong id="st-lat">—</strong><span>por avaliação</span></div>
           </div>
         </div>
-        <div class="hero-kpis">
-          <div class="kpi"><small>R² no teste</small><strong id="kpi-r2">—</strong><span>variância do preço explicada</span></div>
-          <div class="kpi"><small>Erro percentual médio</small><strong id="kpi-mape">—</strong><span>MAPE no conjunto de teste</span></div>
-          <div class="kpi"><small>Versão do modelo</small><strong id="kpi-versao">—</strong><span id="kpi-algoritmo">carregado uma única vez na memória</span></div>
-          <div class="kpi"><small>Tempo no ar</small><strong id="kpi-uptime">—</strong><span>desde a inicialização da API</span></div>
+        <div class="hero-img">
+          <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=70" alt="Residência contemporânea iluminada ao entardecer" loading="eager">
+          <div class="selo-giro" aria-hidden="true">
+            <svg viewBox="0 0 120 120"><defs><path id="circ" d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs><text><textPath href="#circ">AVALIAÇÃO · PREÇO JUSTO · AVALIAÇÃO · PREÇO JUSTO ·</textPath></text></svg>
+            <span>↗</span>
+          </div>
+          <div class="hero-cartao" id="hero-cartao">
+            <small>Valor estimado · CEP <b id="hero-cep">98103</b></small>
+            <strong id="hero-preco">—</strong>
+            <span id="hero-faixa">calculando pela API…</span>
+          </div>
         </div>
       </div>
 
+      <div class="features">
+        <a class="feature" href="#avaliar"><span class="f-ic">⌂</span><h3>Avaliar no mapa</h3><p>Clique em qualquer ponto e receba o valor na hora.</p><i>↗</i></a>
+        <a class="feature" href="#simulador"><span class="f-ic">⇅</span><h3>Simular melhorias</h3><p>Reforma, área, padrão e vista: quanto cada uma vale.</p><i>↗</i></a>
+        <a class="feature" href="#mapa"><span class="f-ic">◎</span><h3>Mapa de valor</h3><p>US$/m² mediano dos 70 CEPs, ligado ao ranking.</p><i>↗</i></a>
+        <a class="feature" href="#modelo"><span class="f-ic">∑</span><h3>Transparência</h3><p>Métricas de validação e teste e o que move o preço.</p><i>↗</i></a>
+      </div>
+
+      <div class="secao-titulo">
+        <div><span class="estrelas">✦✦✦</span><h2>Uma API pronta para integrar</h2><p>Os mesmos endpoints que alimentam este portal estão documentados no Swagger e podem ser consumidos por qualquer aplicação.</p></div>
+        <a class="btn btn-borda" href="#dev">Ver exemplos</a>
+      </div>
       <div class="grade-3">
-        <a class="atalho" href="#avaliar"><span class="ic">⌂</span><h3>Avaliar imóvel</h3><p>Formulário guiado, localização no mapa e resultado com faixa de erro.</p></a>
-        <a class="atalho" href="#simulador"><span class="ic">⇅</span><h3>Simulador de cenários</h3><p>Quanto vale reformar, ampliar ou melhorar o padrão do imóvel.</p></a>
-        <a class="atalho" href="#mapa"><span class="ic">◎</span><h3>Mapa de valor</h3><p>Preço mediano do metro quadrado por CEP em toda a região.</p></a>
-        <a class="atalho" href="#modelo"><span class="ic">∑</span><h3>Transparência do modelo</h3><p>Métricas de validação e teste, comparação com o baseline e variáveis-chave.</p></a>
-        <a class="atalho" href="#dev"><span class="ic">{ }</span><h3>Para desenvolvedores</h3><p>Contrato JSON, exemplos em curl e Python e códigos HTTP.</p></a>
-        <a class="atalho" href="/docs" target="_blank" rel="noopener"><span class="ic">↗</span><h3>Swagger interativo</h3><p>Teste os endpoints /health e /v1/predict direto no navegador.</p></a>
+        <div class="cartao mini"><span class="metodo get">GET</span><h3>/health</h3><p>Confirma que o serviço está no ar e que o modelo está na memória RAM.</p></div>
+        <div class="cartao mini"><span class="metodo post">POST</span><h3>/v1/predict</h3><p>Recebe o JSON validado pelo Pydantic e devolve preço, faixa e US$/m².</p></div>
+        <div class="cartao mini"><span class="metodo post">POST</span><h3>/v1/predict/lote</h3><p>Até 20 imóveis numa chamada: a base do simulador de cenários.</p></div>
       </div>
     </section>
 
-    <!-- ===================== AVALIAR ===================== -->
-    <section class="view" data-view="avaliar" hidden>
-      <div class="titulo-view">
-        <h2>Avaliar imóvel</h2>
-        <p>Preencha as características. Clique no mapa para posicionar o imóvel; o CEP mais próximo é escolhido automaticamente.</p>
-      </div>
+    <!-- ===================== AVALIAR (mapa primeiro) ===================== -->
+    <section class="view view-cheia" data-view="avaliar" hidden>
       <div class="layout-avaliar">
-        <form id="form-imovel" class="cartao form" novalidate>
-          <fieldset>
-            <legend>Estrutura</legend>
-            <div class="campos-2">
-              <div class="campo"><label for="f-quartos">Quartos</label>
-                <div class="stepper"><button type="button" data-step="-1" data-alvo="quartos">−</button><input id="f-quartos" name="quartos" type="number" min="0" max="15" step="1" value="3" inputmode="numeric"><button type="button" data-step="1" data-alvo="quartos">+</button></div>
-                <small class="erro" data-erro="quartos"></small></div>
-              <div class="campo"><label for="f-banheiros">Banheiros</label>
-                <div class="stepper"><button type="button" data-step="-0.25" data-alvo="banheiros">−</button><input id="f-banheiros" name="banheiros" type="number" min="0" max="10" step="0.25" value="2" inputmode="decimal"><button type="button" data-step="0.25" data-alvo="banheiros">+</button></div>
-                <small class="erro" data-erro="banheiros"></small></div>
-            </div>
-            <div class="campo"><label for="f-area">Área útil <output data-out="area_util_m2"></output></label>
-              <input id="f-area" name="area_util_m2" type="range" min="25" max="1000" step="5" value="170">
-              <small class="erro" data-erro="area_util_m2"></small></div>
-            <div class="campo"><label for="f-terreno">Área do terreno <output data-out="area_terreno_m2"></output></label>
-              <input id="f-terreno" name="area_terreno_m2" type="range" min="50" max="5000" step="10" value="700">
-              <small class="erro" data-erro="area_terreno_m2"></small></div>
-            <div class="campos-2">
-              <div class="campo"><label for="f-andares">Andares</label>
-                <select id="f-andares" name="andares"><option>1</option><option>1.5</option><option>2</option><option>2.5</option><option>3</option><option>3.5</option></select>
-                <small class="erro" data-erro="andares"></small></div>
-              <div class="campo"><label for="f-porao">Porão (m²)</label>
-                <input id="f-porao" name="area_porao_m2" type="number" min="0" max="500" step="5" value="0" inputmode="numeric">
-                <small class="erro" data-erro="area_porao_m2"></small></div>
-            </div>
-            <div class="campos-2">
-              <div class="campo"><label for="f-construcao">Ano de construção</label>
-                <input id="f-construcao" name="ano_construcao" type="number" min="1900" max="2015" step="1" value="1990" inputmode="numeric">
-                <small class="erro" data-erro="ano_construcao"></small></div>
-              <div class="campo"><label for="f-reforma">Ano da reforma</label>
-                <input id="f-reforma" name="ano_reforma" type="number" min="1900" max="2015" step="1" placeholder="Sem reforma" inputmode="numeric">
-                <small class="erro" data-erro="ano_reforma"></small></div>
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>Qualidade</legend>
-            <div class="campo"><label for="f-padrao">Padrão construtivo <output data-out="padrao_construtivo"></output></label>
-              <input id="f-padrao" name="padrao_construtivo" type="range" min="1" max="13" step="1" value="7">
-              <div class="escala"><span>Básico</span><span>Médio</span><span>Luxo</span></div>
-              <small class="erro" data-erro="padrao_construtivo"></small></div>
-            <div class="campo"><span class="rotulo">Conservação</span>
-              <div class="seg" data-grupo="condicao">
-                <label><input type="radio" name="condicao" value="1"><span>1</span></label>
-                <label><input type="radio" name="condicao" value="2"><span>2</span></label>
-                <label><input type="radio" name="condicao" value="3" checked><span>3</span></label>
-                <label><input type="radio" name="condicao" value="4"><span>4</span></label>
-                <label><input type="radio" name="condicao" value="5"><span>5</span></label>
-              </div>
-              <small class="erro" data-erro="condicao"></small></div>
-            <div class="campo"><span class="rotulo">Qualidade da vista</span>
-              <div class="seg" data-grupo="vista">
-                <label><input type="radio" name="vista" value="0" checked><span>Nenhuma</span></label>
-                <label><input type="radio" name="vista" value="1"><span>1</span></label>
-                <label><input type="radio" name="vista" value="2"><span>2</span></label>
-                <label><input type="radio" name="vista" value="3"><span>3</span></label>
-                <label><input type="radio" name="vista" value="4"><span>4</span></label>
-              </div>
-              <small class="erro" data-erro="vista"></small></div>
-            <div class="campo linha-switch"><label for="f-agua">Frente para a água</label>
-              <label class="switch"><input id="f-agua" name="frente_agua" type="checkbox"><span></span></label></div>
-          </fieldset>
-
-          <fieldset>
-            <legend>Localização</legend>
-            <div class="campo"><label for="f-cep">CEP (zipcode)</label>
-              <select id="f-cep" name="cep"><option value="98103">98103</option></select>
-              <small class="erro" data-erro="cep"></small></div>
-            <div class="campos-2">
-              <div class="campo"><label for="f-lat">Latitude</label>
-                <input id="f-lat" name="latitude" type="number" min="47.15" max="47.78" step="0.0001" value="47.67" inputmode="decimal">
-                <small class="erro" data-erro="latitude"></small></div>
-              <div class="campo"><label for="f-lon">Longitude</label>
-                <input id="f-lon" name="longitude" type="number" min="-122.52" max="-121.31" step="0.0001" value="-122.34" inputmode="decimal">
-                <small class="erro" data-erro="longitude"></small></div>
-            </div>
-          </fieldset>
-
-          <div class="form-acoes">
-            <button type="submit" class="btn btn-pri" id="btn-avaliar">Avaliar imóvel</button>
-            <button type="button" class="btn btn-sec" id="btn-padrao">Restaurar exemplo</button>
-          </div>
-        </form>
-
-        <div class="coluna-dir">
-          <div class="cartao mapa-cartao"><div id="mapa-avaliar" class="mapa" aria-label="Mapa para posicionar o imóvel"></div>
-            <p class="dica">Clique no mapa para mover o imóvel e avaliar na hora.</p></div>
-          <div class="cartao resultado" id="resultado" aria-live="polite">
-            <div class="vazio" id="resultado-vazio">
-              <span class="ic-grande">⌂</span>
-              <p>O valor estimado aparece aqui depois da avaliação.</p>
+        <div class="mapa-area">
+          <div id="mapa-avaliar" class="mapa" aria-label="Mapa para posicionar o imóvel"></div>
+          <div class="chips-mapa" id="chips-imovel"></div>
+          <div class="controles-mapa">
+            <div class="seg-mapa" data-controle="camada" role="group" aria-label="Camadas">
+              <button type="button" data-v="precos">Preços</button>
+              <button type="button" data-v="valor">Mapa de valor</button>
+              <button type="button" data-v="ambos" class="ativo">Ambos</button>
             </div>
           </div>
+          <div class="seg-mapa base-mapa" data-controle="base" data-mapa="avaliar" role="group" aria-label="Fundo do mapa">
+            <button type="button" data-v="mapa" class="ativo">Mapa</button>
+            <button type="button" data-v="satelite">Satélite</button>
+          </div>
+          <div class="legenda-flutuante" id="legenda-avaliar"></div>
+          <p class="dica-mapa">Clique no mapa ou num preço para avaliar naquele ponto</p>
         </div>
+
+        <aside class="painel" aria-label="Avaliação do imóvel">
+          <div class="painel-alca" aria-hidden="true"></div>
+          <div class="cartao resultado" id="resultado" aria-live="polite">
+            <div class="vazio"><span class="ic-grande">⌂</span><p>Clique no mapa ou em <b>Avaliar imóvel</b> para ver o valor estimado.</p></div>
+          </div>
+
+          <form id="form-imovel" class="cartao form" novalidate>
+            <details open>
+              <summary><span>Estrutura</span><small id="resumo-estrutura"></small></summary>
+              <div class="campos-2">
+                <div class="campo"><label for="f-quartos">Quartos</label>
+                  <div class="stepper"><button type="button" data-step="-1" data-alvo="quartos" aria-label="Menos um quarto">−</button><input id="f-quartos" name="quartos" type="number" min="0" max="15" step="1" value="3" inputmode="numeric"><button type="button" data-step="1" data-alvo="quartos" aria-label="Mais um quarto">+</button></div>
+                  <small class="erro" data-erro="quartos"></small></div>
+                <div class="campo"><label for="f-banheiros">Banheiros</label>
+                  <div class="stepper"><button type="button" data-step="-0.25" data-alvo="banheiros" aria-label="Menos banheiro">−</button><input id="f-banheiros" name="banheiros" type="number" min="0" max="10" step="0.25" value="2" inputmode="decimal"><button type="button" data-step="0.25" data-alvo="banheiros" aria-label="Mais banheiro">+</button></div>
+                  <small class="erro" data-erro="banheiros"></small></div>
+              </div>
+              <div class="campo"><label for="f-area">Área útil <output data-out="area_util_m2"></output></label>
+                <input id="f-area" name="area_util_m2" type="range" min="25" max="1000" step="5" value="170">
+                <small class="erro" data-erro="area_util_m2"></small></div>
+              <div class="campo"><label for="f-terreno">Área do terreno <output data-out="area_terreno_m2"></output></label>
+                <input id="f-terreno" name="area_terreno_m2" type="range" min="50" max="5000" step="10" value="700">
+                <small class="erro" data-erro="area_terreno_m2"></small></div>
+              <div class="campos-2">
+                <div class="campo"><label for="f-andares">Andares</label>
+                  <select id="f-andares" name="andares"><option>1</option><option>1.5</option><option>2</option><option>2.5</option><option>3</option><option>3.5</option></select>
+                  <small class="erro" data-erro="andares"></small></div>
+                <div class="campo"><label for="f-porao">Porão (m²)</label>
+                  <input id="f-porao" name="area_porao_m2" type="number" min="0" max="500" step="5" value="0" inputmode="numeric">
+                  <small class="erro" data-erro="area_porao_m2"></small></div>
+              </div>
+            </details>
+
+            <details>
+              <summary><span>Qualidade</span><small id="resumo-qualidade"></small></summary>
+              <div class="campo"><label for="f-padrao">Padrão construtivo <output data-out="padrao_construtivo"></output></label>
+                <input id="f-padrao" name="padrao_construtivo" type="range" min="1" max="13" step="1" value="7">
+                <div class="escala"><span>Básico</span><span>Médio</span><span>Luxo</span></div>
+                <small class="erro" data-erro="padrao_construtivo"></small></div>
+              <div class="campo"><span class="rotulo">Conservação</span>
+                <div class="seg" data-grupo="condicao">
+                  <label><input type="radio" name="condicao" value="1"><span>1</span></label>
+                  <label><input type="radio" name="condicao" value="2"><span>2</span></label>
+                  <label><input type="radio" name="condicao" value="3" checked><span>3</span></label>
+                  <label><input type="radio" name="condicao" value="4"><span>4</span></label>
+                  <label><input type="radio" name="condicao" value="5"><span>5</span></label>
+                </div>
+                <small class="erro" data-erro="condicao"></small></div>
+              <div class="campo"><span class="rotulo">Qualidade da vista</span>
+                <div class="seg" data-grupo="vista">
+                  <label><input type="radio" name="vista" value="0" checked><span>Nenhuma</span></label>
+                  <label><input type="radio" name="vista" value="1"><span>1</span></label>
+                  <label><input type="radio" name="vista" value="2"><span>2</span></label>
+                  <label><input type="radio" name="vista" value="3"><span>3</span></label>
+                  <label><input type="radio" name="vista" value="4"><span>4</span></label>
+                </div>
+                <small class="erro" data-erro="vista"></small></div>
+              <div class="campo linha-switch"><label for="f-agua">Frente para a água</label>
+                <label class="switch"><input id="f-agua" name="frente_agua" type="checkbox"><span></span></label></div>
+            </details>
+
+            <details>
+              <summary><span>Localização e histórico</span><small id="resumo-local"></small></summary>
+              <div class="campo"><label for="f-cep">CEP (zipcode)</label>
+                <select id="f-cep" name="cep"><option value="98103">98103</option></select>
+                <small class="erro" data-erro="cep"></small></div>
+              <div class="campos-2">
+                <div class="campo"><label for="f-lat">Latitude</label>
+                  <input id="f-lat" name="latitude" type="number" min="47.15" max="47.78" step="0.0001" value="47.67" inputmode="decimal">
+                  <small class="erro" data-erro="latitude"></small></div>
+                <div class="campo"><label for="f-lon">Longitude</label>
+                  <input id="f-lon" name="longitude" type="number" min="-122.52" max="-121.31" step="0.0001" value="-122.34" inputmode="decimal">
+                  <small class="erro" data-erro="longitude"></small></div>
+              </div>
+              <div class="campos-2">
+                <div class="campo"><label for="f-construcao">Ano de construção</label>
+                  <input id="f-construcao" name="ano_construcao" type="number" min="1900" max="2015" step="1" value="1990" inputmode="numeric">
+                  <small class="erro" data-erro="ano_construcao"></small></div>
+                <div class="campo"><label for="f-reforma">Ano da reforma</label>
+                  <input id="f-reforma" name="ano_reforma" type="number" min="1900" max="2015" step="1" placeholder="Sem reforma" inputmode="numeric">
+                  <small class="erro" data-erro="ano_reforma"></small></div>
+              </div>
+            </details>
+
+            <div class="form-acoes">
+              <button type="submit" class="btn btn-pri" id="btn-avaliar">Avaliar imóvel</button>
+              <button type="button" class="btn btn-borda" id="btn-padrao">Restaurar exemplo</button>
+            </div>
+          </form>
+        </aside>
       </div>
     </section>
 
     <!-- ===================== SIMULADOR ===================== -->
     <section class="view" data-view="simulador" hidden>
       <div class="titulo-view">
+        <span class="estrelas">✦✦✦</span>
         <h2>Simulador de cenários</h2>
-        <p>Parte do imóvel do formulário de avaliação e mede, numa única chamada em lote, quanto cada melhoria altera o preço estimado. Clique numa barra para aplicar o cenário ao formulário.</p>
+        <p>Parte do imóvel da avaliação e mede, numa única chamada em lote, quanto cada melhoria altera o preço estimado. Clique num cenário para aplicá-lo à avaliação.</p>
       </div>
-      <div class="cartao">
-        <div class="sim-topo">
-          <div><small class="sobre">Imóvel de partida</small><div id="sim-base" class="sim-base">—</div></div>
-          <button class="btn btn-pri" id="btn-simular" type="button">Simular cenários</button>
-        </div>
-        <div class="grafico-alto"><canvas id="graf-sim" aria-label="Variação de preço por cenário"></canvas></div>
-        <div id="sim-tabela" class="tabela-wrap"></div>
+      <div class="cartao sim-topo">
+        <div><small class="sobre">Imóvel de partida</small><div id="sim-base" class="sim-base">—</div></div>
+        <button class="btn btn-pri" id="btn-simular" type="button">Simular cenários</button>
+      </div>
+      <div class="sim-cartoes" id="sim-cartoes"></div>
+      <div class="grade-2 sim-grade">
+        <div class="cartao"><h3 class="cartao-titulo">Variação do preço por cenário</h3><div class="grafico-alto"><canvas id="graf-sim" aria-label="Variação de preço por cenário"></canvas></div></div>
+        <div class="cartao"><h3 class="cartao-titulo">Tabela dos cenários</h3><div id="sim-tabela" class="tabela-wrap"></div></div>
       </div>
     </section>
 
-    <!-- ===================== MAPA ===================== -->
+    <!-- ===================== MAPA DE VALOR ===================== -->
     <section class="view" data-view="mapa" hidden>
       <div class="titulo-view">
+        <span class="estrelas">✦✦✦</span>
         <h2>Mapa de valor</h2>
-        <p>Preço mediano do metro quadrado por CEP nas vendas históricas. O tamanho do círculo acompanha o número de vendas. Clique num círculo ou numa barra para ligar os dois; clique em qualquer outro ponto para estimar o imóvel do formulário naquele local.</p>
+        <p>Preço mediano do metro quadrado por CEP nas vendas históricas; o tamanho do círculo acompanha o número de vendas. Clique num círculo ou numa barra para ligar os dois; clique em qualquer outro ponto para estimar o imóvel da avaliação naquele local.</p>
       </div>
       <div class="layout-mapa">
         <div class="cartao mapa-cartao">
-          <div id="mapa-valor" class="mapa mapa-grande" aria-label="Mapa de valor por CEP"></div>
+          <div class="mapa-area mapa-area-valor">
+            <div id="mapa-valor" class="mapa" aria-label="Mapa de valor por CEP"></div>
+            <div class="seg-mapa base-mapa" data-controle="base" data-mapa="valor" role="group" aria-label="Fundo do mapa">
+              <button type="button" data-v="mapa" class="ativo">Mapa</button>
+              <button type="button" data-v="satelite">Satélite</button>
+            </div>
+          </div>
           <div class="legenda" id="legenda-mapa"></div>
         </div>
         <div class="cartao ranking-cartao">
@@ -209,20 +256,39 @@
       </div>
     </section>
 
-    <!-- ===================== MODELO ===================== -->
+    <!-- ===================== MODELO (bento) ===================== -->
     <section class="view" data-view="modelo" hidden>
       <div class="titulo-view">
+        <span class="estrelas">✦✦✦</span>
         <h2>Transparência do modelo</h2>
         <p id="modelo-sub">Métricas calculadas em dados que o modelo nunca viu durante o treino.</p>
       </div>
-      <div class="grade-3" id="metricas-cartoes"></div>
-      <div class="grade-2">
-        <div class="cartao">
-          <h3 class="cartao-titulo">Variáveis que mais pesam no preço</h3>
-          <p class="nota">Clique numa variável para ir ao campo correspondente no formulário.</p>
+      <div class="bento">
+        <div class="cartao b-gauge">
+          <div class="b-topo"><h3 class="cartao-titulo">Qualidade no teste</h3><span class="chip" id="b-teste-n">—</span></div>
+          <div class="gauge-linha">
+            <div class="gauge" id="gauge-r2"><svg viewBox="0 0 120 120"><circle class="g-fundo" cx="60" cy="60" r="50"/><circle class="g-valor" cx="60" cy="60" r="50"/></svg><div><strong>—</strong><small>R²</small></div></div>
+            <p class="nota" id="gauge-texto">Explica a variação de preço em imóveis que o modelo nunca viu.</p>
+          </div>
+          <div class="metricas-mini" id="metricas-teste"></div>
+        </div>
+        <div class="cartao b-servico">
+          <div class="b-topo"><h3 class="cartao-titulo">Serviço ao vivo</h3><button class="btn-mini" id="btn-medir" type="button">Medir de novo</button></div>
+          <p class="nota">Latência medida agora, deste navegador, em cada endpoint.</p>
+          <div id="endpoints-status" class="endpoints"></div>
+        </div>
+        <div class="cartao b-comparacao">
+          <h3 class="cartao-titulo">Validação × teste × baseline</h3>
+          <div id="metricas-cartoes" class="comparacao"></div>
+          <div id="modelo-divisao" class="divisao"></div>
+          <p class="nota" id="modelo-faixa"></p>
+        </div>
+        <div class="cartao b-imp">
+          <h3 class="cartao-titulo">O que move o preço</h3>
+          <p class="nota">Importância por permutação. Clique numa variável para ir ao campo da avaliação.</p>
           <div class="grafico-alto"><canvas id="graf-imp" aria-label="Importância das variáveis"></canvas></div>
         </div>
-        <div class="cartao">
+        <div class="cartao b-ler">
           <h3 class="cartao-titulo">Como ler estes números</h3>
           <ul class="lista-ler">
             <li><b>R²</b> mostra quanto da variação dos preços o modelo explica (1 = perfeito).</li>
@@ -231,8 +297,6 @@
             <li><b>Validação</b> escolhe o modelo; <b>teste</b> é a prova final, usada uma única vez.</li>
             <li>O <b>baseline</b> chuta sempre a média: o modelo precisa superá-lo com folga.</li>
           </ul>
-          <div id="modelo-divisao" class="divisao"></div>
-          <p class="nota" id="modelo-faixa"></p>
         </div>
       </div>
     </section>
@@ -240,10 +304,11 @@
     <!-- ===================== DESENVOLVEDORES ===================== -->
     <section class="view" data-view="dev" hidden>
       <div class="titulo-view">
+        <span class="estrelas">✦✦✦</span>
         <h2>Para desenvolvedores</h2>
         <p>API REST em FastAPI com contrato validado por Pydantic. Explore e teste tudo pelo Swagger.</p>
       </div>
-      <div class="acoes"><a class="btn btn-pri" href="/docs" target="_blank" rel="noopener">Abrir Swagger (/docs)</a><a class="btn btn-sec" href="/redoc" target="_blank" rel="noopener">ReDoc</a></div>
+      <div class="acoes"><a class="btn btn-pri" href="/docs" target="_blank" rel="noopener">Abrir Swagger (/docs)</a><a class="btn btn-borda" href="/redoc" target="_blank" rel="noopener">ReDoc</a></div>
       <div class="grade-2">
         <div class="cartao">
           <div class="codigo-topo"><h3 class="cartao-titulo">Requisição com curl</h3><button class="btn-mini" data-copiar="cod-curl">Copiar</button></div>
@@ -275,7 +340,9 @@
             <tbody>
               <tr><td><span class="cod ok">200</span></td><td>Requisição válida, previsão devolvida</td></tr>
               <tr><td><span class="cod aviso">400</span></td><td>Dados com tipo certo, mas que violam regra de negócio (ex.: reforma antes da construção, CEP fora da região)</td></tr>
-              <tr><td><span class="cod aviso">422</span></td><td>Tipo errado ou valor fora dos limites, barrado pelo Pydantic antes do modelo</td></tr>
+              <tr><td><span class="cod aviso">404</span></td><td>Rota inexistente</td></tr>
+              <tr><td><span class="cod aviso">405</span></td><td>Método HTTP não permitido na rota</td></tr>
+              <tr><td><span class="cod aviso">422</span></td><td>Tipo errado, valor fora dos limites, campo ausente ou desconhecido, barrado pelo Pydantic antes do modelo</td></tr>
               <tr><td><span class="cod erro">500</span></td><td>Falha inesperada, tratada sem derrubar a API</td></tr>
               <tr><td><span class="cod erro">503</span></td><td>Modelo ainda não carregado na memória</td></tr>
             </tbody>
@@ -290,13 +357,20 @@
   </main>
 
   <footer class="rodape">
-    <p>Dados de vendas de King County (WA), 2014–2015 · valores em dólares americanos (USD) · projeto acadêmico Senai — Módulo 2</p>
+    <div class="rodape-cta">
+      <div><h2>Pronto para avaliar?</h2><p>Escolha um ponto no mapa e veja o preço estimado, a faixa provável e o comparativo do CEP em milissegundos.</p></div>
+      <a class="btn btn-pri" href="#avaliar">Avaliar um imóvel</a>
+    </div>
+    <div class="rodape-linha">
+      <p>Dados de vendas de King County (WA), 2014–2015 · valores em dólares americanos (USD) · projeto acadêmico Senai — Módulo 2</p>
+      <p class="credito">Layout inspirado no template Estatein, de Produce UI — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · mapas © OpenFreeMap, © OpenStreetMap · imagens de satélite: Esri, Maxar, Earthstar Geographics</p>
+    </div>
   </footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="/assets/app.js?v=7"></script>
+  <script src="/assets/app.js?v=10"></script>
 </body>
 </html>
