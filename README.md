@@ -9,7 +9,7 @@
   <img alt="Módulo 2 · API FastAPI" src="https://img.shields.io/badge/M%C3%B3dulo%202-API%20FastAPI-0f766e?style=for-the-badge&logo=fastapi&logoColor=white">
   <img alt="Python 3.13" src="https://img.shields.io/badge/Python-3.13-1e3a8a?style=for-the-badge&logo=python&logoColor=white">
   <img alt="Pydantic 2.14.2" src="https://img.shields.io/badge/Pydantic-2.14.2-e92063?style=for-the-badge&logo=pydantic&logoColor=white">
-  <img alt="pytest 125 aprovados" src="https://img.shields.io/badge/pytest-125%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
+  <img alt="pytest 126 aprovados" src="https://img.shields.io/badge/pytest-126%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
   <img alt="Modelo v2" src="https://img.shields.io/badge/Modelo-v2-16a34a?style=for-the-badge">
 </p>
 
@@ -56,7 +56,7 @@ Este repositório reúne dois módulos do curso **Desenvolvimento de IA para An�
   <img alt="Pydantic 2.14.2" src="https://img.shields.io/badge/Pydantic-2.14.2-e92063?style=for-the-badge&logo=pydantic&logoColor=white">
   <img alt="Uvicorn 0.54.0" src="https://img.shields.io/badge/Uvicorn-0.54.0-4b5563?style=for-the-badge">
   <img alt="scikit-learn 1.8.0" src="https://img.shields.io/badge/scikit--learn-1.8.0-f59e0b?style=for-the-badge&logo=scikitlearn&logoColor=white">
-  <img alt="pytest 125 aprovados" src="https://img.shields.io/badge/pytest-125%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
+  <img alt="pytest 126 aprovados" src="https://img.shields.io/badge/pytest-126%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
   <img alt="Modelo v2" src="https://img.shields.io/badge/Modelo-v2-16a34a?style=for-the-badge">
   <img alt="Licença MIT" src="https://img.shields.io/badge/Licen%C3%A7a-MIT-475569?style=for-the-badge">
 </p>
@@ -88,7 +88,7 @@ O Módulo 1 terminou com um modelo de regressão validado (R² de 0,896 no teste
 | Contratos | entrada e saída em Pydantic com `Field` (tipos, faixas, padrões e descrições) e `extra="forbid"` |
 | Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo`, `GET /v1/modelo/artefatos` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de acesso com 2FA (`/v1/acesso/*`), de relatórios (`/v1/relatorios/*`), da visão 3D (`/v1/config/mapa3d`), do endereço completo por geocodificação reversa no OpenStreetMap (`GET /v1/endereco`, sem custo e com cache), das comodidades do entorno (`GET /v1/comodidades`, pela Overpass/OpenStreetMap, sem custo) e da administração do banco (`/v1/admin/banco/*`) |
 | Erros | 400, 404, 405, 422, 500 e 503 em JSON padronizado e em português; a API não cai |
-| Qualidade | 125 testes automatizados (`pytest` + `TestClient`) |
+| Qualidade | 126 testes automatizados (`pytest` + `TestClient`) |
 | Produto | plataforma web de gestão que consome a API: painel, nova avaliação com mapa, visão 3D e cartão do entorno, laudo profissional em 8 seções com comodidades, simulador, relatórios de mercado, mapa de valor, transparência do modelo, gestão comercial com faturamento, explorador do banco e área do desenvolvedor |
 | Comercial e dados | chave de API por cliente com e-mail real, planos com preço, suspensão, troca de chave e faturas ([M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail)) e banco SQLite com as 21.613 vendas reais, os laudos, o uso da API e dados de exemplo sintéticos, administrável pelo portal ([M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado)) |
 
@@ -132,7 +132,7 @@ O modelo foi **reaproveitado e aprimorado a partir do Módulo 1** deste reposit�
 | RMSE no teste vs. baseline pela média | **US$ 116.823 vs. US$ 373.780** (−69 %) |
 | Faixa provável | preço × 0,826 a preço × 1,180 (80 % central dos erros na validação) |
 | Latência de inferência após o aquecimento | ~20 a 45 ms por requisição |
-| Testes automatizados | **125 aprovados** |
+| Testes automatizados | **126 aprovados** |
 
 ## M2.6 Estrutura do Módulo 2
 
@@ -647,13 +647,13 @@ Os nomes de lugares vindos do OpenStreetMap são escapados antes de entrar no HT
 
 ## M2.13 Módulo comercial: chaves de API e e-mail
 
-O módulo comercial transforma a API num serviço que pode ser oferecido a clientes. Cada cliente recebe uma **chave de API própria, enviada por e-mail**, e as suas chamadas de predição passam a ser contadas no limite mensal do plano. O console cobre o ciclo de vida comercial do cliente: emissão, **troca de plano** (upgrade ou downgrade, com o novo limite valendo na hora), **suspensão temporária** e reativação, **troca da chave** com novo e-mail, edição do cadastro e revogação definitiva. Cada ação fica registrada no **histórico de auditoria** do cliente, e o **painel de faturamento** mostra a receita recorrente.
+O módulo comercial transforma a API num serviço que pode ser oferecido a clientes. Cada cliente recebe uma **chave de API própria, enviada por e-mail**, e as suas chamadas de predição passam a ser contadas no limite mensal do plano. O console cobre o ciclo de vida comercial do cliente: emissão, **troca de plano** (upgrade ou downgrade, com o novo limite valendo na hora), **suspensão temporária** e reativação, **troca da chave** com novo e-mail, edição do cadastro e revogação definitiva, com **aviso ao cliente por e-mail** (só com o prefixo da chave). Cada ação fica registrada no **histórico de auditoria** do cliente, e o **painel de faturamento** mostra a receita recorrente.
 
 | Método | Rota | Função | Acesso |
 |---|---|---|---|
 | POST | `/v1/comercial/chaves` | cadastra o cliente, emite a chave e envia as instruções por e-mail | console (`X-Admin-Token` ou `X-Admin-Sessao`) · 201 |
 | GET | `/v1/comercial/clientes` | lista clientes, chaves e consumo do mês | console |
-| POST | `/v1/comercial/chaves/{chave_id}/revogar` | revoga uma chave em definitivo | console |
+| POST | `/v1/comercial/chaves/{chave_id}/revogar` | revoga uma chave em definitivo e avisa o cliente por e-mail, só com o prefixo; revogar de novo não reenvia | console |
 | PATCH | `/v1/comercial/chaves/{chave_id}/plano` | troca o plano (upgrade ou downgrade); 400 se for o mesmo plano ou a chave estiver revogada | console |
 | POST | `/v1/comercial/chaves/{chave_id}/suspender` | suspende a chave, com motivo opcional; a mensalidade sai da receita | console |
 | POST | `/v1/comercial/chaves/{chave_id}/reativar` | reativa uma chave suspensa | console |
@@ -830,7 +830,7 @@ Nomes de tabela e de coluna saem só de uma lista fixa no serviço, e a busca va
 
 ## M2.15 Testes automatizados
 
-Os testes usam o `TestClient` do FastAPI, com o `lifespan` real e um banco SQLite temporário, e ficam em [`modulo2_api/tests/`](modulo2_api/tests/). São 125 testes, todos aprovados; as consultas ao OpenStreetMap são simuladas, então a suíte roda sem internet. Os três testes do MLflow (123 a 125) rodam num rastreamento temporário e são pulados se o MLflow não estiver instalado.
+Os testes usam o `TestClient` do FastAPI, com o `lifespan` real e um banco SQLite temporário, e ficam em [`modulo2_api/tests/`](modulo2_api/tests/). São 126 testes, todos aprovados; as consultas ao OpenStreetMap são simuladas, então a suíte roda sem internet. Os três testes do MLflow (123 a 125) rodam num rastreamento temporário e são pulados se o MLflow não estiver instalado.
 
 | # | Teste | O que comprova | Código |
 |---:|---|---|:---:|
@@ -943,6 +943,7 @@ Os testes usam o `TestClient` do FastAPI, com o `lifespan` real e um banco SQLit
 | 123 | `test_metricas_iguais_ao_json` | o *run* do MLflow traz as métricas de `metricas_v2.json`, a tag sha256 e a divisão 60/20/20 | — |
 | 124 | `test_versao_registrada_com_alias` | o Model Registry tem a versão do *run* com o alias `producao` | — |
 | 125 | `test_previsao_registrada_igual_a_da_api` | o modelo registrado no MLflow prevê o mesmo valor que a API | — |
+| 126 | `test_revogacao_avisa_o_cliente_por_email_uma_unica_vez` | a revogação envia o aviso ao cliente só com o prefixo, registra o envio e não reenvia ao revogar de novo | 200 · 403 |
 
 <p align="center">
   <img src="assets/modulo2/api_06_pytest.jpg" alt="Saída do pytest com os testes aprovados" width="90%">
@@ -1045,7 +1046,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 
 ## M2.18 Organização do trabalho e uso do GitHub
 
-**Planejamento antes do código.** O enunciado foi decomposto nas cinco fases técnicas, mais o portal e a documentação. Cada tarefa ganhou um *feature branch* próprio, criado a partir da `develop`, e a ordem seguiu as dependências: o modelo vem antes da estrutura; a estrutura, antes do ciclo de vida; o ciclo de vida, antes dos contratos; os contratos, antes dos endpoints e testes; depois vêm o portal, o ajuste monotônico do modelo, a primeira versão da documentação, a revisão final, a nova identidade do portal, o módulo comercial, a plataforma de gestão, a visão 3D fotorrealista, os ajustes da auditoria e a documentação final; por último entram o e-mail profissional da chave de API, o acesso ao console com senha e segundo fator e os novos limites dos planos; fecham a sequência a senha em hash com as entradas de contingência e o endereço completo, a gestão comercial com o laudo profissional e a administração do banco, e a serialização do artefato em três vias (`.joblib`, SQLite e MLflow). São 21 *feature branches* ao todo.
+**Planejamento antes do código.** O enunciado foi decomposto nas cinco fases técnicas, mais o portal e a documentação. Cada tarefa ganhou um *feature branch* próprio, criado a partir da `develop`, e a ordem seguiu as dependências: o modelo vem antes da estrutura; a estrutura, antes do ciclo de vida; o ciclo de vida, antes dos contratos; os contratos, antes dos endpoints e testes; depois vêm o portal, o ajuste monotônico do modelo, a primeira versão da documentação, a revisão final, a nova identidade do portal, o módulo comercial, a plataforma de gestão, a visão 3D fotorrealista, os ajustes da auditoria e a documentação final; por último entram o e-mail profissional da chave de API, o acesso ao console com senha e segundo fator e os novos limites dos planos; fecham a sequência a senha em hash com as entradas de contingência e o endereço completo, a gestão comercial com o laudo profissional e a administração do banco, a serialização do artefato em três vias (`.joblib`, SQLite e MLflow) e o aviso de revogação por e-mail. São 22 *feature branches* ao todo.
 
 <p align="center">
   <img src="assets/modulo2/fluxo_branches_m2.svg" alt="Fluxo de branches do Módulo 2: develop e um feature branch por fase" width="100%">
@@ -1075,6 +1076,7 @@ print(resposta.status_code, resposta.json()["preco_estimado_usd"])
 | 19 | `feature/m2-acesso-contingencia` | senha da conta só como hash PBKDF2, entradas locais de contingência (só senha ou sem senha), sessão que sobrevive ao reinício, tela cheia nos mapas, satélite acima das formas, endereço completo pelo OpenStreetMap e ficha recolhível na Visão 3D |
 | 20 | `feature/m2-gestao-comercial` | gestão comercial (preços, troca de plano, suspensão, troca de chave, faturamento e histórico), laudo profissional com as comodidades do entorno, dados de exemplo sintéticos e administração do banco, com as telas do portal |
 | 21 | `feature/m2-serializacao-mlflow` | cópia do artefato como BLOB no SQLite com verificação de integridade, registro no MLflow local com alias de produção, cartão do MLflow em Desenvolvedores, `requirements.txt` completo e documentação final |
+| 22 | `feature/m2-email-revogacao` | aviso ao cliente por e-mail na revogação da chave, com teste, e entrada inicial sempre com senha e código |
 | — | `main` | versão final, com todo o código integrado |
 
 **Boas práticas adotadas:**
@@ -1189,7 +1191,7 @@ O crédito ao template e aos mapas também aparece no rodapé de todas as telas 
 |---|---|
 | Código da API | [`modulo2_api/app/`](modulo2_api/app/) |
 | Artefato e métricas | [`modulo2_api/models/`](modulo2_api/models/) |
-| Testes | [`modulo2_api/tests/`](modulo2_api/tests/): 125 aprovados |
+| Testes | [`modulo2_api/tests/`](modulo2_api/tests/): 126 aprovados |
 | Capturas do Swagger, do pytest, do 404/405 e das telas da plataforma | [`assets/modulo2/`](assets/modulo2/) |
 | Transparência sobre o uso de IA | [seção 21](#21-transparência-sobre-uso-de-ia) |
 
