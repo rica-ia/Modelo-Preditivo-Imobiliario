@@ -16,6 +16,12 @@ que a API do Módulo 2 carrega na inicialização.
   e escalonamento ficam no próprio artefato, então a API recebe dados brutos e
   aplica exatamente o mesmo tratamento do treino.
 - **Faixa provável:** quantis 10 % e 90 % da razão real/previsto na validação.
+- **Coerência comercial (restrições monotônicas):** sem restrição, o boosting
+  pode aprender oscilações locais, por exemplo "padrão construtivo +1" baixar o
+  preço em um CEP. O candidato "HistGradientBoosting Log monotônico" obriga o
+  preço a nunca cair quando sobem área útil, padrão, vista, condição, frente para
+  a água, banheiros, área dos vizinhos ou quando o imóvel foi reformado. Ele é
+  adotado se perder no máximo 0,01 de R² na validação para o modelo sem restrição.
 
 Execução, a partir da raiz do repositório:
     python -m modulo2_api.treinamento.treinar_modelo
@@ -40,6 +46,8 @@ if str(RAIZ) not in sys.path:
 from src.config import CATEGORICAL_FEATURES, NUMERIC_FEATURES, RANDOM_STATE  # noqa: E402
 from src.features import limpar_dados, separar_brutos_alvo_grupos  # noqa: E402
 from src.modeling import (  # noqa: E402
+    LogSmearingRegressor,
+    _hgb,
     calcular_metricas,
     construir_preprocessador,
     criar_pipeline,
@@ -78,6 +86,33 @@ ROTULOS = {
 }
 
 
+SEM_RESTRICAO = "HistGradientBoosting Log"
+MONOTONICO = "HistGradientBoosting Log monotônico"
+PERDA_MAXIMA_R2 = 0.01
+
+# Atributos em que o preço só pode subir (ou ficar igual) quando o valor sobe.
+# Os nomes seguem a saída do ColumnTransformer em pandas ("num__<coluna>");
+# os demais atributos, inclusive o one-hot do CEP, ficam sem restrição.
+CRESCENTES = [
+    "sqft_living",
+    "grade",
+    "view",
+    "condition",
+    "waterfront",
+    "bathrooms",
+    "sqft_living15",
+    "foi_reformado",
+]
+
+
+def candidatos() -> dict:
+    """Candidatos do Módulo 1 + o HGB em log com restrições monotônicas."""
+    modelos = dict(modelos_candidatos(RANDOM_STATE))
+    restricoes = {f"num__{coluna}": 1 for coluna in CRESCENTES}
+    modelos[MONOTONICO] = LogSmearingRegressor(_hgb(RANDOM_STATE).set_params(monotonic_cst=restricoes))
+    return modelos
+
+
 def _arredondar(metricas: dict) -> dict:
     return {nome: round(float(valor), 4) for nome, valor in metricas.items()}
 
@@ -114,16 +149,25 @@ def dividir(df: pd.DataFrame):
 def selecionar(partes) -> tuple[str, dict, dict]:
     X_tr, y_tr, _ = partes["treino"]
     X_val, y_val, _ = partes["validacao"]
-    preprocessador = construir_preprocessador(NUMERIC_FEATURES, CATEGORICAL_FEATURES)
+    # Saída em pandas: as restrições monotônicas são indicadas pelo nome da coluna.
+    preprocessador = construir_preprocessador(NUMERIC_FEATURES, CATEGORICAL_FEATURES).set_output(
+        transform="pandas"
+    )
 
     resultados, ajustados = {}, {}
-    for nome, modelo in modelos_candidatos(RANDOM_STATE).items():
+    for nome, modelo in candidatos().items():
         pipeline = criar_pipeline(preprocessador, modelo).fit(X_tr, y_tr)
         resultados[nome] = _arredondar(calcular_metricas(y_val, pipeline.predict(X_val)))
         ajustados[nome] = pipeline
-        print(f"  validação · {nome:<26} RMSE={resultados[nome]['RMSE']:>12,.0f}  R2={resultados[nome]['R2']:.4f}")
+        print(f"  validação · {nome:<36} RMSE={resultados[nome]['RMSE']:>12,.0f}  R2={resultados[nome]['R2']:.4f}")
 
     escolhido = min(resultados, key=lambda n: resultados[n]["RMSE"])
+    # Regra de coerência comercial: o monotônico vence se perder no máximo 0,01 de R².
+    if escolhido == SEM_RESTRICAO:
+        perda = resultados[SEM_RESTRICAO]["R2"] - resultados[MONOTONICO]["R2"]
+        if perda <= PERDA_MAXIMA_R2:
+            escolhido = MONOTONICO
+        print(f"  perda de R² com restrições monotônicas: {perda:.4f} (limite {PERDA_MAXIMA_R2})")
     return escolhido, resultados, ajustados
 
 
@@ -221,6 +265,11 @@ def main() -> None:
         },
         "metricas": {"validacao": resultados_val[escolhido], "teste": metricas_teste},
         "comparacao_validacao": resultados_val,
+        "criterio_selecao": (
+            "menor RMSE na validação; o HGB Log monotônico é preferido se perder até "
+            f"{PERDA_MAXIMA_R2} de R² para o HGB Log sem restrição"
+        ),
+        "restricoes_monotonicas_crescentes": CRESCENTES,
         "baseline": {"modelo": "Baseline pela média", "teste": baseline_teste},
         "importancia": importancias,
         "faixa_erro": faixa,
