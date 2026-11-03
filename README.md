@@ -153,7 +153,7 @@ modulo2_api/
 │   │   ├── carga.py                 #   carga inicial das vendas reais e da amostra de laudos
 │   │   ├── avaliacoes.py            #   laudos: gravação, consulta, exportação e HTML
 │   │   ├── mercado.py               #   relatórios de mercado a partir das vendas reais
-│   │   ├── comercial.py             #   emissão, validação, revogação e consumo das chaves
+│   │   ├── comercial.py             #   emissão, plano, suspensão, troca, revogação, faturamento
 │   │   ├── email.py                 #   e-mail de boas-vindas (SMTP ou arquivo .eml)
 │   │   ├── acesso.py                #   senha, código TOTP, sessões e bloqueio por tentativas
 │   │   └── relatorios.py            #   uso da API e documentação do esquema
@@ -172,7 +172,7 @@ modulo2_api/
 │       ├── visao3d.html             #   voo 360° com imagens fotorrealistas (opcional)
 │       └── assets/                  #   app.css, app.js, visao3d.js, logo.svg e logo do e-mail
 ├── banco/
-│   ├── esquema.sql                  # 6 tabelas e índices do SQLite
+│   ├── esquema.sql                  # 7 tabelas e índices do SQLite
 │   └── ceps_king_county.json        # cidade de cada CEP, usada nos relatórios de mercado
 ├── ferramentas/
 │   ├── gerar_video_360.py           # vídeo MP4 local do voo 360° (opcional)
@@ -413,7 +413,7 @@ curl -X POST http://127.0.0.1:8020/v1/predict \
 | **500 Internal Server Error** | falha inesperada, capturada pelo tratador global sem derrubar o servidor e sem expor detalhes internos | `{"erro": "erro_interno", "mensagem": "Erro inesperado no servidor. Tente novamente."}` |
 | **503 Service Unavailable** | o modelo não está carregado na memória (ou, no console comercial, o token de administração não foi configurado: `console_nao_configurado`) | `{"erro": "modelo_indisponivel", "mensagem": "O modelo não está carregado na memória."}` |
 | **401 Unauthorized** | o header opcional `X-API-Key` traz uma chave inexistente; nas rotas do console, `X-Admin-Token` ausente ou errado ([M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail)) | `{"erro": "chave_invalida", "mensagem": "..."}` ou `{"erro": "nao_autorizado", ...}` |
-| **403 Forbidden** | a chave enviada existe, mas foi revogada | `{"erro": "chave_revogada", "mensagem": "..."}` |
+| **403 Forbidden** | a chave enviada existe, mas foi revogada ou está suspensa | `{"erro": "chave_revogada", "mensagem": "..."}` ou `{"erro": "chave_suspensa", ...}` |
 | **429 Too Many Requests** | a chave ultrapassou o limite mensal do plano | `{"erro": "limite_excedido", "mensagem": "..."}` |
 
 <p align="center">
@@ -450,8 +450,8 @@ O portal mostra como o modelo seria usado no dia a dia de uma empresa de avalia�
 | Análise | Relatórios de mercado | mediana, média e intervalo p25–p75 das **21.613 vendas reais**, por quartos, cidade/bairro, CEP, faixa de preço, padrão construtivo ou ano da venda, com filtros, exportação CSV ou JSON e impressão | `/v1/relatorios/mercado`, `/v1/relatorios/mercado/exportar` |
 | Análise | Mapa de valor | camada de CEPs com cor pelo US$/m² e raio pelo número de vendas, ligada a um ranking em barras | `/v1/regioes`, `/v1/predict` |
 | Análise | Modelo | R² do teste, MAPE, MAE, RMSE, redução sobre o baseline, latência medida ao vivo, validação × teste × baseline e importância das variáveis | `/v1/modelo` |
-| Administração | Comercial | console de chaves de API: emissão por plano, confirmada pela senha da conta, com **e-mail real** ao cliente, pré-visualização do e-mail, lista de clientes com consumo do mês, revogação e testador de chave | `/v1/comercial/*` |
-| Administração | Banco de dados | uso da API (por dia, por origem e por status HTTP), últimas predições e documentação viva das 6 tabelas, com colunas, índices, relações e contagem de linhas | `/v1/relatorios/resumo`, `/v1/relatorios/predicoes`, `/v1/relatorios/esquema` |
+| Administração | Comercial | gestão comercial: painel de faturamento (MRR, previsão anual, ticket médio, receita por plano e clientes perto do limite); emissão por plano, confirmada pela senha da conta, com **e-mail real** ao cliente; lista de clientes com situação e consumo do mês; ficha **Gerenciar** com edição do cadastro, troca de plano, suspensão e reativação, troca da chave, revogação, consumo por dia, histórico de auditoria e e-mails enviados; testador de chave | `/v1/comercial/*` |
+| Administração | Banco de dados | uso da API (por dia, por origem e por status HTTP), últimas predições e documentação viva das 7 tabelas, com colunas, índices, relações e contagem de linhas | `/v1/relatorios/resumo`, `/v1/relatorios/predicoes`, `/v1/relatorios/esquema` |
 | Administração | Desenvolvedores | exemplos em curl e Python, endpoints, códigos HTTP e corpo JSON de exemplo | — |
 
 **Interação entre as telas.** Todas as telas leem um único estado compartilhado, com o imóvel atual e o CEP selecionado:
@@ -553,23 +553,34 @@ O portal mostra como o modelo seria usado no dia a dia de uma empresa de avalia�
 
 ## M2.13 Módulo comercial: chaves de API e e-mail
 
-O módulo comercial transforma a API num serviço que pode ser oferecido a clientes. Cada cliente recebe uma **chave de API própria, enviada por e-mail**, e as suas chamadas de predição passam a ser contadas no limite mensal do plano.
+O módulo comercial transforma a API num serviço que pode ser oferecido a clientes. Cada cliente recebe uma **chave de API própria, enviada por e-mail**, e as suas chamadas de predição passam a ser contadas no limite mensal do plano. O console cobre o ciclo de vida comercial do cliente: emissão, **troca de plano** (upgrade ou downgrade, com o novo limite valendo na hora), **suspensão temporária** e reativação, **troca da chave** com novo e-mail, edição do cadastro e revogação definitiva. Cada ação fica registrada no **histórico de auditoria** do cliente, e o **painel de faturamento** mostra a receita recorrente.
 
 | Método | Rota | Função | Acesso |
 |---|---|---|---|
 | POST | `/v1/comercial/chaves` | cadastra o cliente, emite a chave e envia as instruções por e-mail | console (`X-Admin-Token` ou `X-Admin-Sessao`) · 201 |
 | GET | `/v1/comercial/clientes` | lista clientes, chaves e consumo do mês | console |
-| POST | `/v1/comercial/chaves/{chave_id}/revogar` | revoga uma chave | console |
+| POST | `/v1/comercial/chaves/{chave_id}/revogar` | revoga uma chave em definitivo | console |
+| PATCH | `/v1/comercial/chaves/{chave_id}/plano` | troca o plano (upgrade ou downgrade); 400 se for o mesmo plano ou a chave estiver revogada | console |
+| POST | `/v1/comercial/chaves/{chave_id}/suspender` | suspende a chave, com motivo opcional; a mensalidade sai da receita | console |
+| POST | `/v1/comercial/chaves/{chave_id}/reativar` | reativa uma chave suspensa | console |
+| POST | `/v1/comercial/chaves/{chave_id}/rotacionar` | troca a chave (vazamento, troca de equipe): revoga a atual, emite outra no mesmo plano e envia por e-mail | console + senha da conta · 201 |
+| GET | `/v1/comercial/clientes/{cliente_id}` | ficha do cliente: chaves, consumo por dia, histórico de auditoria e e-mails | console |
+| PATCH | `/v1/comercial/clientes/{cliente_id}` | edita nome, e-mail ou empresa | console |
+| GET | `/v1/comercial/faturamento` | receita recorrente mensal (MRR), previsão anual, ticket médio, receita por plano e clientes com 80 % ou mais do limite | console |
+| GET | `/v1/comercial/planos` | catálogo dos planos com limite, preço e custo por predição | público |
 | GET | `/v1/comercial/emails/{envio_id}` | pré-visualiza o e-mail enviado ao cliente | console |
 | GET | `/v1/comercial/uso` | consumo do mês da própria chave | cliente (`X-API-Key`) |
 
 | Item | Como funciona |
 |---|---|
-| Planos | básico (100 predições por mês), profissional (1.000) e empresarial (10.000) |
+| Planos | básico (100 predições por mês, US$ 29), profissional (1.000, US$ 199) e empresarial (10.000, US$ 1.490); o custo por predição cai de US$ 0,29 para US$ 0,15 conforme o volume |
+| Situação da chave | **ativa** (paga e responde), **suspensa** (temporária: responde 403 `chave_suspensa` e não entra na receita) ou **revogada** (definitiva) |
+| Histórico | tabela `eventos_comerciais` com emissão, troca de plano, suspensão, reativação, troca de chave, revogação e edição, com data e detalhe (por exemplo, "Básico → Profissional (upgrade)") |
+| Faturamento | soma as mensalidades das chaves ativas; mostra receita por plano e alerta os clientes perto do limite, candidatos a upgrade |
 | Formato da chave | prefixo `aval_`; só os 12 primeiros caracteres ficam visíveis no console |
 | Armazenamento | a chave é guardada **apenas como hash SHA-256**; o texto da chave só aparece na resposta de emissão e no e-mail enviado ao cliente |
 | Uso da chave | header `X-API-Key`, **opcional**, em `POST /v1/predict`, `/v1/predict/lote` e `/v1/avaliacoes`; sem o header as rotas continuam abertas ao portal e ao Swagger |
-| Respostas | chave inexistente → 401 `chave_invalida`; revogada → 403 `chave_revogada`; acima do limite → 429 `limite_excedido` |
+| Respostas | chave inexistente → 401 `chave_invalida`; revogada → 403 `chave_revogada`; suspensa → 403 `chave_suspensa`; acima do limite → 429 `limite_excedido` |
 | E-mail | texto e HTML em português, com layout profissional: logo embutido na própria mensagem (sem link externo), instruções de uso, exemplo `curl` e assinatura "by Ricardo Pasquali dos Reis"; enviado por SMTP com STARTTLS pela conta própria da plataforma; sem SMTP configurado, ou se o envio falhar, a mensagem fica registrada como `.eml` para pré-visualização, com a chave mascarada (só o prefixo) |
 | Segredos | `AVALIADOR_ADMIN_TOKEN` e as credenciais SMTP ficam no `.env` (fora do Git, com modelo em [`.env.example`](.env.example)); no portal, o token é informado em **Administrador** e fica só na aba do navegador; com o 2FA ligado, a entrada passa a ser por senha e código do autenticador (abaixo); nenhuma senha vai para log, resposta ou banco |
 
@@ -645,7 +656,8 @@ Os dados da plataforma ficam num **banco SQLite**, criado e migrado automaticame
 | `avaliacoes` | laudos salvos pelo portal, pela API e pela amostra da base, com o imóvel, o preço estimado e a faixa |
 | `predicoes` | data, chave, origem (`api`, `portal` ou `anonima`), CEP, área, preço estimado, latência e status HTTP |
 | `clientes` | nome, e-mail, empresa e plano |
-| `chaves` | prefixo, hash SHA-256, limite mensal, criação e revogação |
+| `chaves` | prefixo, hash SHA-256, limite mensal, criação, suspensão e revogação |
+| `eventos_comerciais` | histórico de auditoria de cada cliente: tipo da ação, chave, detalhe e data |
 | `envios_email` | destinatário, assunto, modo (`smtp` ou `arquivo`) e status |
 
 **Laudos de avaliação**
@@ -672,7 +684,7 @@ Os dados da plataforma ficam num **banco SQLite**, criado e migrado automaticame
 **Banco de dados no portal: uso da API e documentação viva do esquema**
 
 <p align="center">
-  <img src="assets/modulo2/portal_relatorios.jpg" alt="Portal: banco de dados com uso da API, últimas predições e diagrama das 6 tabelas" width="90%">
+  <img src="assets/modulo2/portal_relatorios.jpg" alt="Portal: banco de dados com uso da API, últimas predições e diagrama das 7 tabelas" width="90%">
 </p>
 
 ## M2.15 Testes automatizados
