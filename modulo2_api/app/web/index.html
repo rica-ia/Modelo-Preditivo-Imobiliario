@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/assets/app.css?v=15">
+  <link rel="stylesheet" href="/assets/app.css?v=16">
   <script>
     // Aplica o tema salvo antes da pintura para evitar o "piscar" de cores.
     try {
@@ -86,7 +86,7 @@
         <div class="stat"><strong id="pn-clientes">—</strong><span>clientes</span></div>
         <div class="stat"><strong id="pn-chaves">—</strong><span>chaves ativas</span></div>
         <div class="stat"><strong id="pn-hoje">—</strong><span>predições hoje</span></div>
-        <div class="stat"><strong id="pn-lat">—</strong><span>latência média</span></div>
+        <div class="stat"><strong id="pn-lat">—</strong><span>latência mediana</span></div>
       </div>
       <div class="grade-painel">
         <div class="cartao"><div class="codigo-topo"><h3 class="cartao-titulo">Predições por dia</h3><span class="chip" id="pn-atualizado">—</span></div><div class="grafico-medio"><canvas id="graf-painel" aria-label="Predições por dia"></canvas></div></div>
@@ -419,7 +419,7 @@
         <div class="stat"><strong id="rel-hoje">—</strong><span>predições hoje</span></div>
         <div class="stat"><strong id="rel-clientes">—</strong><span>clientes</span></div>
         <div class="stat"><strong id="rel-chaves">—</strong><span>chaves ativas</span></div>
-        <div class="stat"><strong id="rel-lat">—</strong><span>latência média</span></div>
+        <div class="stat"><strong id="rel-lat">—</strong><span>latência mediana</span></div>
         <div class="stat"><strong id="rel-preco">—</strong><span>preço médio estimado</span></div>
       </div>
       <div class="grade-rel">
@@ -592,6 +592,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="/assets/app.js?v=15"></script>
+  <script src="/assets/app.js?v=16"></script>
 </body>
 </html>

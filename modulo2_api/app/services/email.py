@@ -106,6 +106,21 @@ def _salvar_eml(msg: EmailMessage, pasta: Path, sufixo: str) -> Path:
     return arquivo
 
 
+def _copia_mascarada(msg: EmailMessage, chave: str, prefixo: str) -> EmailMessage:
+    """Cópia do e-mail para o disco: a chave completa nunca é gravada, só o prefixo."""
+    copia = EmailMessage()
+    for cabecalho in ("Subject", "From", "To", "Message-ID"):
+        if msg[cabecalho]:
+            copia[cabecalho] = msg[cabecalho]
+    for parte in msg.iter_parts():
+        conteudo = parte.get_content().replace(chave, f"{prefixo}… (oculta)")
+        if parte.get_content_subtype() == "html":
+            copia.add_alternative(conteudo, subtype="html")
+        else:
+            copia.set_content(conteudo)
+    return copia
+
+
 def enviar(msg: EmailMessage, pasta: Path, sufixo: str, chave: str, prefixo: str) -> dict:
     """Tenta o SMTP; se não houver configuração ou falhar, salva o .eml."""
     usuario, senha = obter("SMTP_USUARIO"), obter("SMTP_SENHA_APP")
@@ -115,18 +130,7 @@ def enviar(msg: EmailMessage, pasta: Path, sufixo: str, chave: str, prefixo: str
                 smtp.starttls()
                 smtp.login(usuario, senha)
                 smtp.send_message(msg)
-            # A cópia de pré-visualização não guarda a chave completa.
-            copia = EmailMessage()
-            for cabecalho in ("Subject", "From", "To", "Message-ID"):
-                copia[cabecalho] = msg[cabecalho]
-            for parte in msg.iter_parts():
-                copia_tipo = parte.get_content_subtype()
-                conteudo = parte.get_content().replace(chave, f"{prefixo}… (oculta)")
-                if copia_tipo == "html":
-                    copia.add_alternative(conteudo, subtype="html")
-                else:
-                    copia.set_content(conteudo)
-            arquivo = _salvar_eml(copia, pasta, sufixo)
+            arquivo = _salvar_eml(_copia_mascarada(msg, chave, prefixo), pasta, sufixo)
             return {"enviado": True, "modo": "smtp", "status": "enviado", "arquivo": str(arquivo),
                     "mensagem": f"E-mail enviado para {msg['To']} pelo SMTP."}
         except Exception as exc:  # o motivo vai sem dados sensíveis
@@ -134,9 +138,9 @@ def enviar(msg: EmailMessage, pasta: Path, sufixo: str, chave: str, prefixo: str
             if isinstance(exc, smtplib.SMTPResponseException):
                 motivo += f" (código {exc.smtp_code})"
             log.warning("Falha no envio SMTP: %s", motivo)
-            arquivo = _salvar_eml(msg, pasta, sufixo)
+            arquivo = _salvar_eml(_copia_mascarada(msg, chave, prefixo), pasta, sufixo)
             return {"enviado": False, "modo": "arquivo", "status": f"falha_smtp: {motivo}", "arquivo": str(arquivo),
-                    "mensagem": f"O SMTP falhou ({motivo}); a mensagem foi salva em .eml para envio manual."}
-    arquivo = _salvar_eml(msg, pasta, sufixo)
+                    "mensagem": f"O SMTP falhou ({motivo}); a mensagem foi salva em .eml, com a chave oculta; entregue ao cliente a chave exibida no console."}
+    arquivo = _salvar_eml(_copia_mascarada(msg, chave, prefixo), pasta, sufixo)
     return {"enviado": False, "modo": "arquivo", "status": "salvo_em_arquivo", "arquivo": str(arquivo),
-            "mensagem": "SMTP não configurado no .env; a mensagem foi salva em .eml para envio manual."}
+            "mensagem": "SMTP não configurado no .env; a mensagem foi salva em .eml, com a chave oculta; entregue ao cliente a chave exibida no console."}

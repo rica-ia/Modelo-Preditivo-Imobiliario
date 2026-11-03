@@ -1,6 +1,7 @@
 """Relatórios de uso calculados direto no SQLite."""
 
 from datetime import datetime
+from statistics import median
 
 from ..config import RAIZ_REPOSITORIO
 from .banco import Banco
@@ -12,18 +13,21 @@ def resumo(banco: Banco) -> dict:
         """
         SELECT COUNT(*) AS total_predicoes,
                SUM(CASE WHEN substr(criado_em, 1, 10) = ? THEN 1 ELSE 0 END) AS predicoes_hoje,
-               AVG(CASE WHEN status_http = 200 THEN latencia_ms END) AS latencia_media_ms,
                AVG(CASE WHEN status_http = 200 THEN preco_estimado_usd END) AS preco_medio_usd
           FROM predicoes
         """,
         (hoje,),
     )
+    # Mediana das 200 últimas predições bem-sucedidas: resiste a picos isolados (1ª chamada, máquina ocupada)
+    recentes = [r["latencia_ms"] for r in banco.consultar(
+        "SELECT latencia_ms FROM predicoes WHERE status_http = 200 AND latencia_ms IS NOT NULL ORDER BY id DESC LIMIT 200"
+    )]
     return {
         "total_predicoes": totais["total_predicoes"] or 0,
         "predicoes_hoje": totais["predicoes_hoje"] or 0,
         "clientes": banco.um("SELECT COUNT(*) AS n FROM clientes")["n"],
         "chaves_ativas": banco.um("SELECT COUNT(*) AS n FROM chaves WHERE revogada_em IS NULL")["n"],
-        "latencia_media_ms": round(totais["latencia_media_ms"] or 0.0, 2),
+        "latencia_mediana_ms": round(median(recentes), 2) if recentes else 0.0,
         "preco_medio_usd": round(totais["preco_medio_usd"] or 0.0, 2),
         "por_dia": banco.consultar(
             "SELECT substr(criado_em, 1, 10) AS dia, COUNT(*) AS total FROM predicoes"

@@ -87,7 +87,7 @@ class ResumoSaida(BaseModel):
     predicoes_hoje: int
     clientes: int
     chaves_ativas: int
-    latencia_media_ms: float
+    latencia_mediana_ms: float = Field(..., description="Mediana da latência das 200 últimas predições bem-sucedidas, em ms.")
     preco_medio_usd: float
     por_dia: list[ContagemDia]
     por_origem: list[ContagemOrigem]
