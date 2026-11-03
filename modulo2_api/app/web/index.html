@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Avaliador Imobiliário</title>
+  <title>Avaliador Imobiliário · Plataforma</title>
   <meta name="description" content="Avaliação instantânea de imóveis por modelo preditivo servido em API REST.">
   <meta name="color-scheme" content="dark light">
   <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/assets/app.css?v=10">
+  <link rel="stylesheet" href="/assets/app.css?v=14">
   <script>
     // Aplica o tema salvo antes da pintura para evitar o "piscar" de cores.
     try {
@@ -21,85 +21,86 @@
   </script>
 </head>
 <body>
-  <div class="faixa-topo">✦ Avalie qualquer imóvel de King County em milissegundos — <a href="#dev">conheça a API</a></div>
-
-  <header class="topo">
-    <div class="topo-linha">
-      <a class="marca" href="#inicio" aria-label="Avaliador Imobiliário, início">
+  <div class="app" id="app">
+    <aside class="lateral" id="lateral" aria-label="Menu principal">
+      <a class="marca" href="#painel" aria-label="Avaliador Imobiliário, painel">
         <span class="marca-ic"><img src="/assets/logo.svg" alt="" width="22" height="22"></span>
-        <span>Avaliador <span class="marca-extra">Imobiliário</span></span>
+        <span class="marca-txt"><b>Avaliador Imobiliário</b><small>Plataforma de gestão e análise</small></span>
       </a>
-      <nav class="nav" aria-label="Módulos">
-        <a href="#inicio" data-nav="inicio">Início</a>
-        <a href="#avaliar" data-nav="avaliar">Avaliar</a>
-        <a href="#simulador" data-nav="simulador">Simulador</a>
-        <a href="#mapa" data-nav="mapa">Mapa de valor</a>
-        <a href="#modelo" data-nav="modelo">Modelo</a>
-        <a href="#dev" data-nav="dev">Desenvolvedores</a>
+      <nav class="menu">
+        <p class="menu-grupo">Operação</p>
+        <a href="#painel" data-nav="painel"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"/></svg><span>Painel</span></a>
+        <a href="#avaliar" data-nav="avaliar"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Nova avaliação</span></a>
+        <a href="#avaliacoes" data-nav="avaliacoes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Avaliações</span></a>
+        <a href="#simulador" data-nav="simulador"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 4 4 7M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span>Simulador</span></a>
+        <p class="menu-grupo">Análise</p>
+        <a href="#mercado" data-nav="mercado"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Relatórios de mercado</span></a>
+        <a href="#mapa" data-nav="mapa"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg><span>Mapa de valor</span></a>
+        <a href="#modelo" data-nav="modelo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19 9 9l4 6 3-4 4 8"/><circle cx="9" cy="9" r="1.5"/></svg><span>Modelo</span></a>
+        <p class="menu-grupo">Administração</p>
+        <a href="#comercial" data-nav="comercial"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M15 8l2 2"/></svg><span>Comercial</span></a>
+        <a href="#banco" data-nav="banco"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span>Banco de dados</span></a>
+        <a href="#dev" data-nav="dev"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 4l-4 16"/></svg><span>Desenvolvedores</span></a>
       </nav>
-      <div class="topo-acoes">
+      <div class="lateral-rodape">
+        <div class="tema tema-movel" role="radiogroup" aria-label="Tema"><button type="button" data-tema="dark">Escuro</button><button type="button" data-tema="light">Claro</button><button type="button" data-tema="auto">Auto</button></div>
+        <a href="#sobre" data-nav="sobre"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span>Sobre a plataforma</span></a>
+        <a href="/docs" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg><span>Documentação da API</span></a>
+      </div>
+    </aside>
+    <div class="veu" id="veu" hidden></div>
+
+    <div class="principal">
+      <header class="cabecalho">
+        <button type="button" class="btn-menu" id="btn-menu" aria-label="Abrir menu" aria-controls="lateral" aria-expanded="false"><span></span><span></span><span></span></button>
+        <h1 class="cab-titulo" id="cab-titulo">Painel</h1>
+        <form class="busca" id="busca" role="search" autocomplete="off">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="busca-q" type="search" placeholder="Buscar avaliações, CEP ou tela…" aria-label="Buscar" list="busca-telas">
+          <datalist id="busca-telas"></datalist>
+        </form>
+        <span class="selo" id="selo-saude"><i></i><span>Verificando a API…</span></span>
         <div class="tema" role="radiogroup" aria-label="Tema">
           <button type="button" data-tema="dark">Escuro</button>
           <button type="button" data-tema="light">Claro</button>
           <button type="button" data-tema="auto">Auto</button>
         </div>
-        <a class="btn btn-borda btn-doc" href="/docs" target="_blank" rel="noopener">Documentação</a>
-      </div>
-    </div>
-  </header>
+        <button type="button" class="btn-admin" data-abrir-admin aria-label="Administrador"><span class="avatar">A</span><span class="admin-txt"><b>Administrador</b><small id="admin-rotulo">sem token</small></span></button>
+      </header>
 
-  <main>
-    <!-- ===================== INÍCIO ===================== -->
-    <section class="view" data-view="inicio">
-      <div class="hero">
-        <div class="hero-texto">
-          <span class="selo" id="selo-saude"><i></i><span>Verificando a API…</span></span>
-          <h1>Descubra o <em>preço justo</em> de um imóvel antes de negociar.</h1>
-          <p class="lead">Um modelo de gradient boosting treinado com vendas reais de King County (WA), servido como API REST com validação estrita de dados. Informe as características e receba o valor estimado com a faixa provável.</p>
-          <div class="acoes">
-            <a class="btn btn-borda" href="#modelo">Como o modelo funciona</a>
-            <a class="btn btn-pri" href="#avaliar">Avaliar um imóvel</a>
-          </div>
-          <div class="stats">
-            <div class="stat"><strong id="st-vendas">—</strong><span>vendas analisadas</span></div>
-            <div class="stat"><strong id="st-ceps">—</strong><span>CEPs cobertos</span></div>
-            <div class="stat"><strong id="st-r2">—</strong><span>R² no teste</span></div>
-            <div class="stat"><strong id="st-lat">—</strong><span>por avaliação</span></div>
-          </div>
+      <main>
+    <!-- ===================== PAINEL ===================== -->
+    <section class="view" data-view="painel">
+      <div class="painel-topo">
+        <div>
+          <span class="sobre">Avaliador Imobiliário · King County (WA)</span>
+          <h2>Painel de gestão</h2>
+          <p class="nota" id="pn-sub">Visão geral das avaliações, do uso da API e do banco de dados.</p>
         </div>
-        <div class="hero-img">
-          <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=70" alt="Residência contemporânea iluminada ao entardecer" loading="eager">
-          <div class="selo-giro" aria-hidden="true">
-            <svg viewBox="0 0 120 120"><defs><path id="circ" d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs><text><textPath href="#circ">AVALIAÇÃO · PREÇO JUSTO · AVALIAÇÃO · PREÇO JUSTO ·</textPath></text></svg>
-            <span>↗</span>
-          </div>
-          <div class="hero-cartao" id="hero-cartao">
-            <small>Valor estimado · CEP <b id="hero-cep">98103</b></small>
-            <strong id="hero-preco">—</strong>
-            <span id="hero-faixa">calculando pela API…</span>
-          </div>
-        </div>
+        <div class="acoes"><a class="btn btn-borda" href="#avaliacoes">Ver avaliações</a><a class="btn btn-pri" href="#avaliar">Nova avaliação</a></div>
       </div>
-
-      <div class="features">
-        <a class="feature" href="#avaliar"><span class="f-ic">⌂</span><h3>Avaliar no mapa</h3><p>Clique em qualquer ponto e receba o valor na hora.</p><i>↗</i></a>
-        <a class="feature" href="#simulador"><span class="f-ic">⇅</span><h3>Simular melhorias</h3><p>Reforma, área, padrão e vista: quanto cada uma vale.</p><i>↗</i></a>
-        <a class="feature" href="#mapa"><span class="f-ic">◎</span><h3>Mapa de valor</h3><p>US$/m² mediano dos 70 CEPs, ligado ao ranking.</p><i>↗</i></a>
-        <a class="feature" href="#modelo"><span class="f-ic">∑</span><h3>Transparência</h3><p>Métricas de validação e teste e o que move o preço.</p><i>↗</i></a>
+      <div id="pn-aviso"></div>
+      <div class="kpis">
+        <div class="stat"><strong id="pn-avaliacoes">—</strong><span>avaliações salvas</span></div>
+        <div class="stat"><strong id="pn-vendas">—</strong><span>vendas históricas</span></div>
+        <div class="stat"><strong id="pn-clientes">—</strong><span>clientes</span></div>
+        <div class="stat"><strong id="pn-chaves">—</strong><span>chaves ativas</span></div>
+        <div class="stat"><strong id="pn-hoje">—</strong><span>predições hoje</span></div>
+        <div class="stat"><strong id="pn-lat">—</strong><span>latência média</span></div>
       </div>
-
-      <div class="secao-titulo">
-        <div><span class="estrelas">✦✦✦</span><h2>Uma API pronta para integrar</h2><p>Os mesmos endpoints que alimentam este portal estão documentados no Swagger e podem ser consumidos por qualquer aplicação.</p></div>
-        <a class="btn btn-borda" href="#dev">Ver exemplos</a>
+      <div class="grade-painel">
+        <div class="cartao"><div class="codigo-topo"><h3 class="cartao-titulo">Predições por dia</h3><span class="chip" id="pn-atualizado">—</span></div><div class="grafico-medio"><canvas id="graf-painel" aria-label="Predições por dia"></canvas></div></div>
+        <div class="cartao"><div class="codigo-topo"><h3 class="cartao-titulo">Últimas avaliações</h3><a class="btn-mini" href="#avaliacoes">Ver todas</a></div><div id="pn-ultimas" class="lista-ultimas"></div></div>
       </div>
-      <div class="grade-3">
-        <div class="cartao mini"><span class="metodo get">GET</span><h3>/health</h3><p>Confirma que o serviço está no ar e que o modelo está na memória RAM.</p></div>
-        <div class="cartao mini"><span class="metodo post">POST</span><h3>/v1/predict</h3><p>Recebe o JSON validado pelo Pydantic e devolve preço, faixa e US$/m².</p></div>
-        <div class="cartao mini"><span class="metodo post">POST</span><h3>/v1/predict/lote</h3><p>Até 20 imóveis numa chamada: a base do simulador de cenários.</p></div>
+      <h3 class="subtitulo">Atalhos</h3>
+      <div class="atalhos">
+        <a class="feature" href="#avaliar"><span class="f-ic">⌖</span><h3>Nova avaliação</h3><p>Clique no mapa, ajuste o imóvel e gere o laudo.</p><i>↗</i></a>
+        <a class="feature" href="#simulador"><span class="f-ic">⇅</span><h3>Simulador</h3><p>Quanto vale reformar, ampliar ou subir o padrão.</p><i>↗</i></a>
+        <a class="feature" href="#mercado"><span class="f-ic">▤</span><h3>Relatórios de mercado</h3><p>Preço mediano e intervalo p25–p75 por dimensão.</p><i>↗</i></a>
+        <a class="feature" href="#comercial"><span class="f-ic">⚿</span><h3>Chaves de API</h3><p>Emita, envie e revogue chaves por plano.</p><i>↗</i></a>
       </div>
     </section>
 
-    <!-- ===================== AVALIAR (mapa primeiro) ===================== -->
     <section class="view view-cheia" data-view="avaliar" hidden>
       <div class="layout-avaliar">
         <div class="mapa-area">
@@ -206,6 +207,7 @@
 
             <div class="form-acoes">
               <button type="submit" class="btn btn-pri" id="btn-avaliar">Avaliar imóvel</button>
+              <button type="button" class="btn btn-borda" id="btn-salvar">Salvar e gerar laudo</button>
               <button type="button" class="btn btn-borda" id="btn-padrao">Restaurar exemplo</button>
             </div>
           </form>
@@ -213,7 +215,35 @@
       </div>
     </section>
 
-    <!-- ===================== SIMULADOR ===================== -->
+    <!-- ===================== AVALIAÇÕES ===================== -->
+    <section class="view" data-view="avaliacoes" hidden>
+      <div class="titulo-view titulo-linha">
+        <div><h2>Avaliações</h2><p>Histórico de avaliações salvas pelo portal, pela API e da amostra da base histórica.</p></div>
+        <div class="acoes"><button type="button" class="btn btn-borda" data-exportar="csv">Exportar CSV</button><button type="button" class="btn btn-borda" data-exportar="json">Exportar JSON</button></div>
+      </div>
+      <form class="cartao filtros" id="filtros-av" autocomplete="off">
+        <div class="campo f-largo"><label for="fa-busca">Buscar por título</label><input id="fa-busca" name="busca" type="search" placeholder="Ex.: Casa em Ballard"></div>
+        <div class="campo"><label for="fa-cidade">Cidade</label><select id="fa-cidade" name="cidade"><option value="">Todas</option></select></div>
+        <div class="campo"><label for="fa-cep">CEP</label><select id="fa-cep" name="cep"><option value="">Todos</option></select></div>
+        <div class="campo"><label for="fa-quartos">Quartos</label><select id="fa-quartos" name="quartos"><option value="">Qualquer</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option value="6">6 ou mais</option></select></div>
+        <div class="campo"><label for="fa-origem">Origem</label><select id="fa-origem" name="origem"><option value="">Todas</option><option value="portal">Portal</option><option value="api">API</option><option value="amostra_base">Amostra da base</option></select></div>
+        <div class="campo"><label for="fa-faixa">Faixa de preço</label><select id="fa-faixa" name="faixa_preco"><option value="">Todas</option></select></div>
+        <div class="campo"><label for="fa-pmin">Valor mínimo (US$)</label><input id="fa-pmin" name="preco_min" type="number" min="0" step="10000" inputmode="numeric"></div>
+        <div class="campo"><label for="fa-pmax">Valor máximo (US$)</label><input id="fa-pmax" name="preco_max" type="number" min="0" step="10000" inputmode="numeric"></div>
+        <div class="campo"><label for="fa-ordem">Ordenar por</label><select id="fa-ordem" name="ordenacao"><option value="recentes">Mais recentes</option><option value="antigas">Mais antigas</option><option value="preco_desc">Maior valor</option><option value="preco_asc">Menor valor</option></select></div>
+        <div class="filtros-acoes"><button type="reset" class="btn-mini" id="fa-limpar">Limpar filtros</button><span class="nota" id="fa-total">—</span></div>
+      </form>
+      <div class="layout-lista">
+        <div class="cartao lista-cartao">
+          <div id="tabela-avaliacoes" class="tabela-wrap"></div>
+          <div class="paginacao" id="paginacao"></div>
+        </div>
+        <aside class="cartao detalhe" id="detalhe-avaliacao" aria-live="polite">
+          <div class="vazio"><span class="ic-grande">☰</span><p>Clique numa avaliação para ver o detalhe, o mapa e o laudo.</p></div>
+        </aside>
+      </div>
+    </section>
+
     <section class="view" data-view="simulador" hidden>
       <div class="titulo-view">
         <span class="estrelas">✦✦✦</span>
@@ -231,7 +261,35 @@
       </div>
     </section>
 
-    <!-- ===================== MAPA DE VALOR ===================== -->
+    <!-- ===================== RELATÓRIOS DE MERCADO ===================== -->
+    <section class="view" data-view="mercado" hidden>
+      <div class="titulo-view titulo-linha">
+        <div><h2>Relatórios de mercado</h2><p>Preço mediano e intervalo entre o 1º e o 3º quartil (p25–p75) das vendas históricas, agrupados pela dimensão escolhida.</p></div>
+        <div class="acoes nao-imprimir"><button type="button" class="btn btn-borda" data-exportar-mercado="csv">Exportar CSV</button><button type="button" class="btn btn-borda" data-exportar-mercado="json">Exportar JSON</button><button type="button" class="btn btn-pri" id="btn-imprimir">Imprimir relatório</button></div>
+      </div>
+      <div class="cartao filtros-mercado nao-imprimir">
+        <div class="seg-dim" id="dimensoes" role="group" aria-label="Dimensão">
+          <button type="button" data-dim="quartos" class="ativo">Quartos</button>
+          <button type="button" data-dim="cidade">Cidade/bairro</button>
+          <button type="button" data-dim="cep">CEP</button>
+          <button type="button" data-dim="faixa_preco">Faixa de preço</button>
+          <button type="button" data-dim="padrao">Padrão construtivo</button>
+          <button type="button" data-dim="ano_venda">Ano da venda</button>
+        </div>
+        <form class="filtros-linha" id="filtros-mercado" autocomplete="off">
+          <div class="campo"><label for="fm-cidade">Cidade</label><select id="fm-cidade" name="cidade"><option value="">Todas</option></select></div>
+          <div class="campo"><label for="fm-quartos">Quartos</label><select id="fm-quartos" name="quartos"><option value="">Qualquer</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option value="6">6 ou mais</option></select></div>
+          <div class="campo"><label for="fm-faixa">Faixa de preço</label><select id="fm-faixa" name="faixa_preco"><option value="">Todas</option></select></div>
+        </form>
+      </div>
+      <div id="mercado-aviso"></div>
+      <div class="grade-mercado">
+        <div class="cartao"><div class="codigo-topo"><h3 class="cartao-titulo" id="mercado-titulo">Preço por quartos</h3><span class="nota" id="mercado-dica">Barra: p25 a p75 · ponto: mediana</span></div>
+          <div class="mercado-scroll"><div class="mercado-alto" id="mercado-alto"><canvas id="graf-mercado" aria-label="Preço por grupo"></canvas></div></div></div>
+        <div class="cartao"><h3 class="cartao-titulo">Tabela</h3><div id="tabela-mercado" class="tabela-wrap mercado-tabela"></div></div>
+      </div>
+    </section>
+
     <section class="view" data-view="mapa" hidden>
       <div class="titulo-view">
         <span class="estrelas">✦✦✦</span>
@@ -256,7 +314,6 @@
       </div>
     </section>
 
-    <!-- ===================== MODELO (bento) ===================== -->
     <section class="view" data-view="modelo" hidden>
       <div class="titulo-view">
         <span class="estrelas">✦✦✦</span>
@@ -301,7 +358,84 @@
       </div>
     </section>
 
-    <!-- ===================== DESENVOLVEDORES ===================== -->
+    <section class="view" data-view="comercial" hidden>
+      <div class="titulo-view">
+        <span class="estrelas">✦✦✦</span>
+        <h2>Comercial</h2>
+        <p>Emita chaves de API por plano, envie a chave ao cliente por e-mail e acompanhe o consumo do mês. As rotas comerciais exigem o token de administrador.</p>
+      </div>
+      <div class="cartao admin-status" id="admin-status">
+        <span class="chip" id="adm-estado">Sem token</span>
+        <p class="nota">As rotas comerciais exigem o token de administrador, informado em <b>Administrador</b>, no cabeçalho. Ele fica só nesta aba do navegador e vai no cabeçalho <code>X-Admin-Token</code>.</p>
+        <button type="button" class="btn btn-borda" data-abrir-admin>Informar token</button>
+      </div>
+      <div class="grade-com">
+        <form id="form-chave" class="cartao" novalidate>
+          <h3 class="cartao-titulo">Nova chave de API</h3>
+          <div class="campos-2">
+            <div class="campo"><label for="c-nome">Nome do cliente</label><input id="c-nome" name="nome" type="text" autocomplete="off" required><small class="erro" data-erro="nome"></small></div>
+            <div class="campo"><label for="c-email">E-mail</label><input id="c-email" name="email" type="email" autocomplete="off" required><small class="erro" data-erro="email"></small></div>
+          </div>
+          <div class="campo"><label for="c-empresa">Empresa <span class="nota">opcional</span></label><input id="c-empresa" name="empresa" type="text" autocomplete="off"><small class="erro" data-erro="empresa"></small></div>
+          <span class="rotulo">Plano</span>
+          <div class="planos" role="radiogroup" aria-label="Plano">
+            <label class="plano"><input type="radio" name="plano" value="basico" checked><span><small>Básico</small><b>1.000</b><i>avaliações por mês</i></span></label>
+            <label class="plano"><input type="radio" name="plano" value="profissional"><span><small>Profissional</small><b>10.000</b><i>avaliações por mês</i></span></label>
+            <label class="plano"><input type="radio" name="plano" value="empresarial"><span><small>Empresarial</small><b>100.000</b><i>avaliações por mês</i></span></label>
+          </div>
+          <small class="erro" data-erro="plano"></small>
+          <div class="form-acoes"><button type="submit" class="btn btn-pri" id="btn-gerar">Gerar chave e enviar e-mail</button></div>
+        </form>
+        <div class="cartao" id="chave-resultado" aria-live="polite">
+          <div class="vazio"><span class="ic-grande">⚿</span><p>A chave gerada aparece aqui <b>uma única vez</b>, com o comprovante do e-mail.</p></div>
+        </div>
+      </div>
+      <div class="cartao bloco">
+        <div class="codigo-topo"><h3 class="cartao-titulo">Clientes e chaves</h3><button class="btn-mini" id="btn-clientes" type="button">Atualizar</button></div>
+        <div id="tabela-clientes" class="tabela-wrap"><p class="nota">Informe o token de administrador para listar os clientes.</p></div>
+      </div>
+      <div class="cartao bloco">
+        <h3 class="cartao-titulo">Testar uma chave</h3>
+        <p class="nota">Cole uma chave para ver o consumo do mês ou avaliar o imóvel atual com ela (cabeçalho <code>X-API-Key</code>).</p>
+        <div class="testador">
+          <input id="teste-chave" type="text" autocomplete="off" spellcheck="false" placeholder="Cole a chave de API">
+          <button type="button" class="btn btn-borda" id="btn-uso">Ver consumo</button>
+          <button type="button" class="btn btn-pri" id="btn-avaliar-chave">Avaliar com esta chave</button>
+        </div>
+        <div id="teste-resultado" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="view" data-view="banco" hidden>
+      <div class="titulo-view">
+        <span class="estrelas">✦✦✦</span>
+        <h2>Banco de dados</h2>
+        <p>Documentação viva do SQLite: tabelas, colunas, índices, relações e o uso da API registrado a cada predição. Os números se atualizam a cada 10 segundos.</p>
+      </div>
+      <div id="rel-aviso"></div>
+      <h3 class="subtitulo">Uso da API</h3>
+      <div class="kpis">
+        <div class="stat"><strong id="rel-total">—</strong><span>predições registradas</span></div>
+        <div class="stat"><strong id="rel-hoje">—</strong><span>predições hoje</span></div>
+        <div class="stat"><strong id="rel-clientes">—</strong><span>clientes</span></div>
+        <div class="stat"><strong id="rel-chaves">—</strong><span>chaves ativas</span></div>
+        <div class="stat"><strong id="rel-lat">—</strong><span>latência média</span></div>
+        <div class="stat"><strong id="rel-preco">—</strong><span>preço médio estimado</span></div>
+      </div>
+      <div class="grade-rel">
+        <div class="cartao g-dia"><h3 class="cartao-titulo">Predições por dia</h3><div class="grafico-medio"><canvas id="graf-dia" aria-label="Predições por dia"></canvas></div></div>
+        <div class="cartao"><h3 class="cartao-titulo">Por origem</h3><div class="grafico-medio"><canvas id="graf-origem" aria-label="Predições por origem"></canvas></div></div>
+        <div class="cartao"><h3 class="cartao-titulo">Por status HTTP</h3><div class="grafico-medio"><canvas id="graf-status" aria-label="Predições por status HTTP"></canvas></div></div>
+      </div>
+      <div class="cartao bloco">
+        <div class="codigo-topo"><h3 class="cartao-titulo">Últimas predições</h3><span class="chip" id="rel-atualizado">—</span></div>
+        <div id="tabela-predicoes" class="tabela-wrap"></div>
+      </div>
+      <div class="secao-titulo bloco"><div><h2>Documentação do banco</h2><p id="esquema-info">Tabelas, colunas, índices e quantidade de linhas, lidas do próprio arquivo SQLite.</p></div></div>
+      <div class="cartao bloco"><h3 class="cartao-titulo">Relações entre as tabelas</h3><div class="diagrama" id="diagrama"></div></div>
+      <div id="esquema-cartoes" class="grade-3 bloco"></div>
+    </section>
+
     <section class="view" data-view="dev" hidden>
       <div class="titulo-view">
         <span class="estrelas">✦✦✦</span>
@@ -330,6 +464,15 @@
               <tr><td><span class="metodo post">POST</span></td><td><code>/v1/predict/lote</code></td><td>Vários imóveis numa chamada</td></tr>
               <tr><td><span class="metodo get">GET</span></td><td><code>/v1/modelo</code></td><td>Métricas e metadados do modelo</td></tr>
               <tr><td><span class="metodo get">GET</span></td><td><code>/v1/regioes</code></td><td>Valor mediano por CEP</td></tr>
+              <tr><td><span class="metodo post">POST</span></td><td><code>/v1/comercial/chaves</code></td><td>Emite chave de API (administrador)</td></tr>
+              <tr><td><span class="metodo get">GET</span></td><td><code>/v1/comercial/uso</code></td><td>Consumo do mês da chave</td></tr>
+              <tr><td><span class="metodo post">POST</span></td><td><code>/v1/avaliacoes</code></td><td>Salva uma avaliação com título e responsável</td></tr>
+              <tr><td><span class="metodo get">GET</span></td><td><code>/v1/avaliacoes</code></td><td>Histórico paginado com filtros</td></tr>
+              <tr><td><span class="metodo get">GET</span></td><td><code>/v1/avaliacoes/{id}/laudo</code></td><td>Laudo em HTML, pronto para imprimir</td></tr>
+              <tr><td><span class="metodo get">GET</span></td><td><code>/v1/avaliacoes/exportar</code></td><td>Exporta o histórico em CSV ou JSON</td></tr>
+              <tr><td><span class="metodo get">GET</span></td><td><code>/v1/relatorios/mercado</code></td><td>Estatísticas de mercado por dimensão</td></tr>
+              <tr><td><span class="metodo get">GET</span></td><td><code>/v1/relatorios/resumo</code></td><td>Indicadores do banco de predições</td></tr>
+              <tr><td><span class="metodo get">GET</span></td><td><code>/v1/relatorios/esquema</code></td><td>Documentação do banco SQLite</td></tr>
             </tbody>
           </table></div>
         </div>
@@ -339,6 +482,9 @@
             <thead><tr><th>Código</th><th>Quando acontece</th></tr></thead>
             <tbody>
               <tr><td><span class="cod ok">200</span></td><td>Requisição válida, previsão devolvida</td></tr>
+              <tr><td><span class="cod aviso">401</span></td><td>Chave de API inválida (<code>chave_invalida</code>) ou token de administrador ausente</td></tr>
+              <tr><td><span class="cod aviso">403</span></td><td>Chave de API revogada (<code>chave_revogada</code>)</td></tr>
+              <tr><td><span class="cod aviso">429</span></td><td>Limite mensal do plano atingido (<code>limite_excedido</code>)</td></tr>
               <tr><td><span class="cod aviso">400</span></td><td>Dados com tipo certo, mas que violam regra de negócio (ex.: reforma antes da construção, CEP fora da região)</td></tr>
               <tr><td><span class="cod aviso">404</span></td><td>Rota inexistente</td></tr>
               <tr><td><span class="cod aviso">405</span></td><td>Método HTTP não permitido na rota</td></tr>
@@ -354,23 +500,98 @@
         <pre><code id="cod-json"></code></pre>
       </div>
     </section>
-  </main>
 
-  <footer class="rodape">
-    <div class="rodape-cta">
-      <div><h2>Pronto para avaliar?</h2><p>Escolha um ponto no mapa e veja o preço estimado, a faixa provável e o comparativo do CEP em milissegundos.</p></div>
-      <a class="btn btn-pri" href="#avaliar">Avaliar um imóvel</a>
+    <section class="view" data-view="sobre" hidden>
+      <div class="hero">
+        <div class="hero-texto">
+          <span class="selo" id="selo-saude"><i></i><span>Verificando a API…</span></span>
+          <h1>Descubra o <em>preço justo</em> de um imóvel antes de negociar.</h1>
+          <p class="lead">Um modelo de gradient boosting treinado com vendas reais de King County (WA), servido como API REST com validação estrita de dados. Informe as características e receba o valor estimado com a faixa provável.</p>
+          <div class="acoes">
+            <a class="btn btn-borda" href="#modelo">Como o modelo funciona</a>
+            <a class="btn btn-pri" href="#avaliar">Avaliar um imóvel</a>
+          </div>
+          <div class="stats">
+            <div class="stat"><strong id="st-vendas">—</strong><span>vendas analisadas</span></div>
+            <div class="stat"><strong id="st-ceps">—</strong><span>CEPs cobertos</span></div>
+            <div class="stat"><strong id="st-r2">—</strong><span>R² no teste</span></div>
+            <div class="stat"><strong id="st-lat">—</strong><span>por avaliação</span></div>
+          </div>
+        </div>
+        <div class="hero-img">
+          <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=70" alt="Residência contemporânea iluminada ao entardecer" loading="eager">
+          <div class="selo-giro" aria-hidden="true">
+            <svg viewBox="0 0 120 120"><defs><path id="circ" d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs><text><textPath href="#circ">AVALIAÇÃO · PREÇO JUSTO · AVALIAÇÃO · PREÇO JUSTO ·</textPath></text></svg>
+            <span>↗</span>
+          </div>
+          <div class="hero-cartao" id="hero-cartao">
+            <small>Valor estimado · CEP <b id="hero-cep">98103</b></small>
+            <strong id="hero-preco">—</strong>
+            <span id="hero-faixa">calculando pela API…</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="features">
+        <a class="feature" href="#avaliar"><span class="f-ic">⌂</span><h3>Avaliar no mapa</h3><p>Clique em qualquer ponto e receba o valor na hora.</p><i>↗</i></a>
+        <a class="feature" href="#simulador"><span class="f-ic">⇅</span><h3>Simular melhorias</h3><p>Reforma, área, padrão e vista: quanto cada uma vale.</p><i>↗</i></a>
+        <a class="feature" href="#mapa"><span class="f-ic">◎</span><h3>Mapa de valor</h3><p>US$/m² mediano dos 70 CEPs, ligado ao ranking.</p><i>↗</i></a>
+        <a class="feature" href="#modelo"><span class="f-ic">∑</span><h3>Transparência</h3><p>Métricas de validação e teste e o que move o preço.</p><i>↗</i></a>
+      </div>
+
+      <div class="secao-titulo">
+        <div><span class="estrelas">✦✦✦</span><h2>Uma API pronta para integrar</h2><p>Os mesmos endpoints que alimentam este portal estão documentados no Swagger e podem ser consumidos por qualquer aplicação.</p></div>
+        <a class="btn btn-borda" href="#dev">Ver exemplos</a>
+      </div>
+      <div class="grade-3">
+        <div class="cartao mini"><span class="metodo get">GET</span><h3>/health</h3><p>Confirma que o serviço está no ar e que o modelo está na memória RAM.</p></div>
+        <div class="cartao mini"><span class="metodo post">POST</span><h3>/v1/predict</h3><p>Recebe o JSON validado pelo Pydantic e devolve preço, faixa e US$/m².</p></div>
+        <div class="cartao mini"><span class="metodo post">POST</span><h3>/v1/predict/lote</h3><p>Até 20 imóveis numa chamada: a base do simulador de cenários.</p></div>
+      </div>
+    </section>
+      </main>
+
+      <footer class="rodape">
+        <div class="rodape-linha">
+          <p>Dados de vendas de King County (WA), 2014–2015 · valores em dólares americanos (USD) · projeto acadêmico Senai — Módulo 2</p>
+          <p class="credito">Layout inspirado no template Estatein, de Produce UI — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · mapas © OpenFreeMap, © OpenStreetMap · imagens de satélite: Esri, Maxar, Earthstar Geographics</p>
+        </div>
+      </footer>
     </div>
-    <div class="rodape-linha">
-      <p>Dados de vendas de King County (WA), 2014–2015 · valores em dólares americanos (USD) · projeto acadêmico Senai — Módulo 2</p>
-      <p class="credito">Layout inspirado no template Estatein, de Produce UI — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · mapas © OpenFreeMap, © OpenStreetMap · imagens de satélite: Esri, Maxar, Earthstar Geographics</p>
+  </div>
+
+  <div class="modal" id="modal-admin" hidden role="dialog" aria-modal="true" aria-labelledby="admin-titulo">
+    <div class="modal-caixa modal-pequeno">
+      <div class="codigo-topo"><h3 class="cartao-titulo" id="admin-titulo">Administrador</h3><button type="button" class="btn-mini" data-fechar-modal>Fechar</button></div>
+      <p class="nota">O token de administrador libera as rotas comerciais e fica só nesta aba do navegador (sessionStorage).</p>
+      <div class="campo admin-campo"><label for="adm-token">Token de administrador</label>
+        <input id="adm-token" type="password" autocomplete="off" spellcheck="false" placeholder="Cole o token de administrador"></div>
+      <div class="acoes"><button type="button" class="btn btn-pri" id="adm-usar">Usar token</button><button type="button" class="btn btn-borda" id="adm-esquecer">Esquecer token</button></div>
     </div>
-  </footer>
+  </div>
+
+  <div class="modal" id="modal-salvar" hidden role="dialog" aria-modal="true" aria-labelledby="salvar-titulo">
+    <form class="modal-caixa modal-pequeno" id="form-salvar" novalidate>
+      <div class="codigo-topo"><h3 class="cartao-titulo" id="salvar-titulo">Salvar e gerar laudo</h3><button type="button" class="btn-mini" data-fechar-modal>Fechar</button></div>
+      <p class="nota" id="salvar-resumo"></p>
+      <div class="campo"><label for="sv-titulo">Título da avaliação</label><input id="sv-titulo" name="titulo" type="text" maxlength="120" required placeholder="Ex.: Casa em Wallingford"><small class="erro" data-erro="titulo"></small></div>
+      <div class="campo"><label for="sv-resp">Responsável <span class="nota">opcional</span></label><input id="sv-resp" name="responsavel" type="text" maxlength="120" placeholder="Nome de quem assina o laudo"><small class="erro" data-erro="responsavel"></small></div>
+      <div id="salvar-erro"></div>
+      <div class="acoes"><button type="submit" class="btn btn-pri" id="sv-confirmar">Salvar avaliação</button></div>
+    </form>
+  </div>
+
+  <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <div class="modal-caixa">
+      <div class="codigo-topo"><h3 class="cartao-titulo" id="modal-titulo">E-mail enviado ao cliente</h3><button type="button" class="btn-mini" id="modal-fechar">Fechar</button></div>
+      <iframe id="modal-iframe" title="Pré-visualização do e-mail" sandbox=""></iframe>
+    </div>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="/assets/app.js?v=10"></script>
+  <script src="/assets/app.js?v=14"></script>
 </body>
 </html>

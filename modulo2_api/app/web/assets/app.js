@@ -31,15 +31,17 @@
     const t = setTimeout(() => ctrl.abort(), opcoes.timeout || 12000);
     const t0 = performance.now();
     try {
+      const cab = { ...(opcoes.corpo ? { "Content-Type": "application/json" } : {}), ...(opcoes.headers || {}) };
       const resp = await fetch(caminho, {
         method: opcoes.metodo || "GET",
-        headers: opcoes.corpo ? { "Content-Type": "application/json" } : undefined,
+        headers: Object.keys(cab).length ? cab : undefined,
         body: opcoes.corpo ? JSON.stringify(opcoes.corpo) : undefined,
         cache: "no-store",
         signal: ctrl.signal,
       });
       let dados = null;
-      try { dados = await resp.json(); } catch (e) { dados = null; }
+      if (opcoes.texto) { try { dados = await resp.text(); } catch (e) { dados = null; } }
+      else { try { dados = await resp.json(); } catch (e) { dados = null; } }
       return { ok: resp.ok, status: resp.status, dados, ms: performance.now() - t0 };
     } catch (e) {
       return { ok: false, status: 0, dados: null, ms: performance.now() - t0 };
@@ -131,7 +133,7 @@
   const estiloUrl = () => OFM + (escuroAtivo() ? "dark" : "positron");
   const LIMITE_MAPA = [[-123.1, 46.95], [-120.75, 47.98]];
   const mapas = [];
-  const basePreferida = { avaliar: "mapa", valor: "mapa" };
+  const basePreferida = { avaliar: "mapa", valor: "mapa", detalhe: "mapa" };
   window.__errosMapa = [];
   function criarMapa(chave, centro, zoom, depoisDoEstilo) {
     const m = new maplibregl.Map({
@@ -140,8 +142,8 @@
     });
     m.touchZoomRotate.disableRotation();
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-    const reg = { m, chave, tema: escuroAtivo(), depoisDoEstilo };
-    m.on("style.load", () => { adicionarSatelite(reg); if (reg.depoisDoEstilo) reg.depoisDoEstilo(); });
+    const reg = { m, chave, tema: escuroAtivo(), depoisDoEstilo, tres: false, raf: null };
+    m.on("style.load", () => { adicionarSatelite(reg); adicionarPredios(reg); if (reg.depoisDoEstilo) reg.depoisDoEstilo(); });
     m.on("error", (e) => { window.__errosMapa.push(String((e && e.error && e.error.message) || e)); });
     // Alguns estilos citam padrões de preenchimento ausentes do sprite: um pixel transparente evita o aviso.
     m.on("styleimagemissing", (e) => { if (!m.hasImage(e.id)) m.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) }); });
@@ -163,7 +165,7 @@
     basePreferida[chave] = b.dataset.v;
     $$("button", grupo).forEach((x) => x.classList.toggle("ativo", x === b));
     const reg = mapas.find((r) => r.chave === chave);
-    if (reg && reg.m.getLayer("satelite")) reg.m.setLayoutProperty("satelite", "visibility", b.dataset.v === "satelite" ? "visible" : "none");
+    if (reg) definirBase(reg, b.dataset.v);
   }));
 
   function distancia(a, b, c, d) {
@@ -228,17 +230,27 @@
 
   // ---------------------------------------------------------------- roteamento
   const inicializadas = new Set();
+  const APELIDOS = { inicio: "painel", relatorios: "banco" };
+  let viewAtual = "painel";
   function rotear() {
-    const nome = (location.hash || "#inicio").slice(1) || "inicio";
-    const alvo = $(`.view[data-view="${nome}"]`) ? nome : "inicio";
+    let nome = (location.hash || "#painel").slice(1).split("?")[0] || "painel";
+    nome = APELIDOS[nome] || nome;
+    const alvo = $(`.view[data-view="${nome}"]`) ? nome : "painel";
+    viewAtual = alvo;
     $$(".view").forEach((v) => { v.hidden = v.dataset.view !== alvo; });
-    $$(".nav a").forEach((a) => a.classList.toggle("ativo", a.dataset.nav === alvo));
-    const ativo = $(`.nav a[data-nav="${alvo}"]`);
-    if (ativo && ativo.scrollIntoView && window.innerWidth <= 720) ativo.scrollIntoView({ block: "nearest", inline: "center" });
+    $$("[data-nav]").forEach((a) => a.classList.toggle("ativo", a.dataset.nav === alvo));
+    const link = $(`.menu a[data-nav="${alvo}"], .lateral-rodape a[data-nav="${alvo}"]`);
+    $("#cab-titulo").textContent = link ? link.textContent.trim() : "Painel";
+    document.title = `${link ? link.textContent.trim() : "Painel"} · Avaliador Imobiliário`;
+    fecharMenu();
     if (!rotear.semRolagem) window.scrollTo({ top: 0 });
     rotear.semRolagem = false;
-    const init = { avaliar: initAvaliar, simulador: initSimulador, mapa: initMapa, modelo: initModelo, dev: initDev, inicio: initInicio }[alvo];
+    const init = {
+      painel: initPainel, avaliar: initAvaliar, avaliacoes: initAvaliacoes, simulador: initSimulador, mercado: initMercado,
+      mapa: initMapa, modelo: initModelo, comercial: initComercial, banco: initBanco, dev: initDev, sobre: initInicio,
+    }[alvo];
     if (!inicializadas.has(alvo)) { inicializadas.add(alvo); init && init(); }
+    else ({ painel: atualizarPainel, banco: atualizarUso, avaliacoes: carregarAvaliacoes, comercial: carregarClientes }[alvo] || (() => {}))();
     setTimeout(() => { mapas.forEach((r) => r.m.resize()); arrumarPins(); }, 60);
   }
   window.addEventListener("hashchange", rotear);
@@ -262,7 +274,8 @@
     const d = r.dados || {};
     if (r.ok && d.modelo_carregado) {
       selo.className = "selo on";
-      selo.querySelector("span").textContent = `API no ar · modelo ${d.versao_modelo || ""} na memória${d.uptime_s !== undefined ? " há " + fmtUptime(d.uptime_s) : ""}`;
+      selo.querySelector("span").textContent = `API no ar · modelo ${d.versao_modelo || ""}`;
+      selo.title = `Modelo ${d.versao_modelo || ""} na memória${d.uptime_s !== undefined ? " há " + fmtUptime(d.uptime_s) : ""}`;
     } else if (r.ok) {
       selo.className = "selo off";
       selo.querySelector("span").textContent = "API no ar · modelo não carregado";
@@ -272,8 +285,6 @@
     }
   }
   async function initInicio() {
-    verificarSaude();
-    setInterval(verificarSaude, 15000);
     carregarRegioes().then((rs) => {
       if (!rs) return;
       $("#st-vendas").textContent = num(rs.reduce((s, g) => s + (Number(g.vendas) || 0), 0));
@@ -408,8 +419,9 @@
   }
 
   // ---------------------------------------------------------------- avaliação
+  const ORIGEM = { "X-Origem": "portal" };
   function prever(payload) {
-    return api("/v1/predict", { metodo: "POST", corpo: payload });
+    return api("/v1/predict", { metodo: "POST", corpo: payload, headers: ORIGEM });
   }
   /** Avalia o imóvel do estado e atualiza cartão, popup e comparativo do CEP. */
   async function avaliarEstado(comPopup) {
@@ -545,7 +557,7 @@
     const m = mapaAvaliar.m, ocupadas = [];
     const ordem = pins.slice().sort((a, b) => (b.g.cep === estado.cep) - (a.g.cep === estado.cep) || b.g.vendas - a.g.vendas);
     ordem.forEach((p) => {
-      if (camadaAvaliar === "valor") { p.el.style.display = "none"; return; }
+      if (camadaAvaliar === "valor" || mapaAvaliar.tres) { p.el.style.display = "none"; return; }
       const pt = m.project([p.g.longitude, p.g.latitude]);
       const caixa = { x: pt.x - p.w / 2 - 3, y: pt.y - 40, w: p.w + 6, h: 36 };
       const bate = ocupadas.some((o) => caixa.x < o.x + o.w && o.x < caixa.x + caixa.w && caixa.y < o.y + o.h && o.y < caixa.y + caixa.h);
@@ -588,6 +600,7 @@
       mapaAvaliar = criarMapa("avaliar", [estado.imovel.longitude, estado.imovel.latitude], 11.2, camadasAvaliar);
       moverMarcador(estado.imovel.latitude, estado.imovel.longitude);
       mapaAvaliar.m.on("moveend", arrumarPins);
+      iniciar3DAvaliar();
       mapaAvaliar.m.on("click", (e) => {
         const lat = arred(e.lngLat.lat), lon = arred(e.lngLat.lng);
         if (!dentroDaArea(lat, lon)) { toast(AVISO_AREA); return; }
@@ -656,7 +669,7 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="carregando"></span> Simulando…';
     const lista = cenarios({ ...estado.imovel });
-    const r = await api("/v1/predict/lote", { metodo: "POST", corpo: { imoveis: lista.map((c) => c.dados) } });
+    const r = await api("/v1/predict/lote", { metodo: "POST", corpo: { imoveis: lista.map((c) => c.dados) }, headers: ORIGEM });
     btn.disabled = false;
     btn.textContent = "Simular cenários";
     if (!r.ok || !r.dados || !Array.isArray(r.dados.previsoes)) {
@@ -964,7 +977,7 @@
     if (!caixa.children.length) caixa.innerHTML = '<p class="nota"><span class="carregando"></span> Medindo…</p>';
     const res = [];
     for (const e of ENDPOINTS) {
-      const r = await api(e.rota, { metodo: e.metodo, corpo: e.corpo ? e.corpo() : undefined, timeout: 8000 });
+      const r = await api(e.rota, { metodo: e.metodo, corpo: e.corpo ? e.corpo() : undefined, headers: e.corpo ? ORIGEM : undefined, timeout: 8000 });
       res.push({ ...e, status: r.status, ms: r.ms });
     }
     const maxMs = Math.max(20, ...res.map((x) => x.ms));
@@ -1006,13 +1019,746 @@
     const json = JSON.stringify(exemplo, null, 2);
     const base = location.origin;
     $("#cod-json").textContent = json;
-    $("#cod-curl").textContent = `curl -X POST "${base}/v1/predict" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(exemplo)}'`;
-    $("#cod-py").textContent = `import requests\n\nimovel = ${json.replace(/\btrue\b/g, "True").replace(/\bfalse\b/g, "False").replace(/\bnull\b/g, "None")}\n\nresposta = requests.post("${base}/v1/predict", json=imovel, timeout=10)\nresposta.raise_for_status()\nprint(resposta.json()["preco_estimado_usd"])`;
+    $("#cod-curl").textContent = `# X-API-Key é opcional: com ela, o consumo conta no plano do cliente\ncurl -X POST "${base}/v1/predict" \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: SUA_CHAVE" \\\n  -d '${JSON.stringify(exemplo)}'\n\n# Salvar a avaliação e abrir o laudo\ncurl -X POST "${base}/v1/avaliacoes" \\\n  -H "Content-Type: application/json" \\\n  -d '{"titulo": "Casa de exemplo", "imovel": ${JSON.stringify(exemplo)}}'\n\n# Relatório de mercado por quartos\ncurl "${base}/v1/relatorios/mercado?dimensao=quartos"`;
+    $("#cod-py").textContent = `import requests\n\nimovel = ${json.replace(/\btrue\b/g, "True").replace(/\bfalse\b/g, "False").replace(/\bnull\b/g, "None")}\n\ncabecalhos = {"X-API-Key": "SUA_CHAVE"}  # opcional: conta no plano do cliente\n\nresposta = requests.post("${base}/v1/predict", json=imovel, headers=cabecalhos, timeout=10)\nresposta.raise_for_status()\nprint(resposta.json()["preco_estimado_usd"])\n\n# Histórico de avaliações com filtros\nlista = requests.get("${base}/v1/avaliacoes", params={"cep": "98103", "limite": 20}, timeout=10).json()\nprint(lista["total"])`;
     $$("[data-copiar]").forEach((b) => b.addEventListener("click", async () => {
       const texto = $("#" + b.dataset.copiar).textContent;
       try { await navigator.clipboard.writeText(texto); toast("Copiado para a área de transferência"); }
       catch (e) { toast("Não foi possível copiar automaticamente"); }
     }));
+  }
+
+  // ---------------------------------------------------------------- utilidades da aplicação
+  /** Lê o primeiro campo preenchido entre vários nomes possíveis (aceita caminhos "a.b"). */
+  const campo = (o, ...ks) => {
+    for (const k of ks) {
+      const v = k.split(".").reduce((a, p) => (a == null ? a : a[p]), o);
+      if (v !== undefined && v !== null && v !== "") return v;
+    }
+    return null;
+  };
+  const lista = (d, ...ks) => (Array.isArray(d) ? d : (d && ks.map((k) => d[k]).find(Array.isArray)) || []);
+  const dataHora = (v) => { if (!v) return "—"; const d = new Date(v); return isNaN(d) ? esc(v) : d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); };
+  const qs = (o) => Object.entries(o).filter(([, v]) => v !== "" && v !== null && v !== undefined).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+  const visivel = (view) => viewAtual === view && !document.hidden;
+  /** Mensagem amigável para rota ainda não publicada ou API fora do ar. */
+  function avisoRota(r, modulo) {
+    if (r.status === 404) return alertaHTML(`${modulo} ainda não está ativo`, "Esta versão da API ainda não publicou a rota. A tela volta a funcionar sozinha assim que ela estiver no ar.", [], "aviso");
+    if (r.status === 0) return alertaHTML("API indisponível", "Não foi possível falar com o servidor. Confirme que a API está rodando e tente de novo.", [], "aviso");
+    if (r.status === 401 || r.status === 403) return alertaHTML(`Acesso negado (${r.status})`, (r.dados && r.dados.mensagem) || "Informe um token de administrador válido em Administrador, no cabeçalho.", [], "aviso");
+    return alertaHTML(`Erro ${r.status}`, mensagemErro(r), detalhesErro(r.dados), r.status >= 500 ? "" : "aviso");
+  }
+  function baixar(url) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  function desenharGrafico(chave, canvas, config) {
+    if (!temGrafico()) return;
+    if (graficos[chave]) graficos[chave].destroy();
+    graficos[chave] = new Chart(canvas, config);
+  }
+  /** Converte {rótulo: valor} ou [{...}] em pares [rótulo, valor]. */
+  function pares(d, rotulos, valores) {
+    if (!d) return [];
+    if (Array.isArray(d)) return d.map((x) => [String(campo(x, ...rotulos) ?? "—"), Number(campo(x, ...valores)) || 0]);
+    return Object.entries(d).map(([k, v]) => [k, Number(typeof v === "object" ? campo(v, ...valores) : v) || 0]);
+  }
+  const eixos = () => ({ texto: cssVar("--muted"), linha: cssVar("--line") });
+
+  // ---------------------------------------------------------------- menu lateral, busca e modais
+  function fecharMenu() {
+    $("#app").classList.remove("menu-aberto");
+    $("#veu").hidden = true;
+    $("#btn-menu").setAttribute("aria-expanded", "false");
+  }
+  $("#btn-menu").addEventListener("click", () => {
+    const abrir = !$("#app").classList.contains("menu-aberto");
+    $("#app").classList.toggle("menu-aberto", abrir);
+    $("#veu").hidden = !abrir;
+    $("#btn-menu").setAttribute("aria-expanded", String(abrir));
+  });
+  $("#veu").addEventListener("click", fecharMenu);
+  const TELAS = $$(".menu a[data-nav], .lateral-rodape a[data-nav]").map((a) => ({ nome: a.textContent.trim(), view: a.dataset.nav }));
+  $("#busca-telas").innerHTML = TELAS.map((t) => `<option value="${esc(t.nome)}">`).join("");
+  $("#busca").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const q = $("#busca-q").value.trim();
+    if (!q) return;
+    const tela = TELAS.find((t) => normalizar(t.nome) === normalizar(q)) || TELAS.find((t) => normalizar(t.nome).startsWith(normalizar(q)));
+    if (tela) { irPara(tela.view); $("#busca-q").value = ""; return; }
+    const f = $("#filtros-av");
+    f.reset();
+    if (/^\d{5}$/.test(q)) { garantirOpcao(f.elements.cep, q); f.elements.cep.value = q; } else f.elements.busca.value = q;
+    filtrosAv.pagina = 1;
+    irPara("avaliacoes");
+    if (inicializadas.has("avaliacoes")) carregarAvaliacoes();
+  });
+  function abrirModal(id) { const m = $("#" + id); m.hidden = false; const f = m.querySelector("input"); if (f) setTimeout(() => f.focus(), 30); }
+  function fecharModal(m) { m.hidden = true; if (m.id === "modal") $("#modal-iframe").srcdoc = ""; }
+  $$(".modal").forEach((m) => m.addEventListener("click", (ev) => { if (ev.target === m || ev.target.closest("[data-fechar-modal]") || ev.target.id === "modal-fechar") fecharModal(m); }));
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") $$(".modal:not([hidden])").forEach(fecharModal); });
+  document.addEventListener("click", (ev) => { if (ev.target.closest("[data-abrir-admin]")) abrirModal("modal-admin"); });
+  function garantirOpcao(sel, v) { if (![...sel.options].some((o) => o.value === String(v))) sel.add(new Option(String(v), String(v))); }
+
+  // ---------------------------------------------------------------- administrador (token só na sessão)
+  const CHAVE_ADMIN = "ai-admin";
+  function tokenAdmin() { try { return sessionStorage.getItem(CHAVE_ADMIN) || ""; } catch (e) { return memoriaAdmin; } }
+  let memoriaAdmin = "";
+  function gravarToken(t) { memoriaAdmin = t; try { if (t) sessionStorage.setItem(CHAVE_ADMIN, t); else sessionStorage.removeItem(CHAVE_ADMIN); } catch (e) {} atualizarAdmin(); }
+  const cabAdmin = () => (tokenAdmin() ? { "X-Admin-Token": tokenAdmin() } : {});
+  function atualizarAdmin() {
+    const tem = !!tokenAdmin();
+    $("#admin-rotulo").textContent = tem ? "token ativo" : "sem token";
+    $$(".btn-admin").forEach((b) => b.classList.toggle("ativo", tem));
+    const chip = $("#adm-estado");
+    chip.textContent = tem ? "Token informado" : "Sem token";
+    chip.className = "chip " + (tem ? "ok" : "ruim");
+    $("#adm-token").value = "";
+    $("#adm-token").placeholder = tem ? "Token guardado nesta sessão (oculto)" : "Cole o token de administrador";
+  }
+  $("#adm-usar").addEventListener("click", () => {
+    const t = $("#adm-token").value.trim();
+    if (!t) { toast("Cole o token de administrador"); return; }
+    gravarToken(t);
+    fecharModal($("#modal-admin"));
+    toast("Token de administrador ativo nesta sessão");
+    if (inicializadas.has("comercial")) carregarClientes();
+  });
+  $("#adm-token").addEventListener("keydown", (ev) => { if (ev.key === "Enter") $("#adm-usar").click(); });
+  $("#adm-esquecer").addEventListener("click", () => { gravarToken(""); toast("Token esquecido"); if (inicializadas.has("comercial")) carregarClientes(); });
+
+  // ---------------------------------------------------------------- painel
+  async function carregarResumo() {
+    const r = await api("/v1/relatorios/resumo");
+    return r.ok && r.dados ? { ok: true, d: r.dados } : { ok: false, r };
+  }
+  function graficoDia(chave, canvas, porDia) {
+    const pp = pares(porDia, ["dia", "data", "date"], ["total", "quantidade", "predicoes", "n"]);
+    const { texto, linha } = eixos();
+    desenharGrafico(chave, canvas, {
+      type: "bar",
+      data: { labels: pp.map((x) => x[0]), datasets: [{ data: pp.map((x) => x[1]), backgroundColor: cssVar("--accent"), borderRadius: 6, maxBarThickness: 34 }] },
+      options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: texto, maxRotation: 0, autoSkip: true }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: texto, precision: 0 }, grid: { color: linha } } } },
+    });
+  }
+  function itemUltima(it) {
+    const preco = campo(it, "preco_estimado_usd", "resultado.preco_estimado_usd");
+    return `<button type="button" class="item-ultima" data-avaliacao="${esc(campo(it, "id"))}"><b>${esc(campo(it, "titulo") || "Avaliação #" + campo(it, "id"))}</b><strong>${preco != null ? usd.format(preco) : "—"}</strong>
+      <small>${esc(campo(it, "cidade") || "")}${campo(it, "cep") ? " · CEP " + esc(campo(it, "cep", "imovel.cep")) : ""} · <span class="origem ${esc(campo(it, "origem") || "")}">${esc(campo(it, "origem") || "—")}</span></small><small>${dataHora(campo(it, "criado_em", "criada_em"))}</small></button>`;
+  }
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-avaliacao]");
+    if (!b) return;
+    abrirAvaliacao(b.dataset.avaliacao);
+  });
+  async function atualizarPainel() {
+    const [res, av, rs] = await Promise.all([carregarResumo(), api("/v1/avaliacoes?" + qs({ limite: 6, pagina: 1, ordenacao: "recentes" })), carregarRegioes()]);
+    const d = res.ok ? res.d : {};
+    const set = (id, v) => { $(id).textContent = v; };
+    const totalAv = av.ok && av.dados ? campo(av.dados, "total") : campo(d, "avaliacoes", "total_avaliacoes");
+    set("#pn-avaliacoes", totalAv != null ? num(totalAv) : "—");
+    const vendas = campo(d, "vendas_historicas", "total_vendas") ?? (rs ? rs.reduce((s, g) => s + (Number(g.vendas) || 0), 0) : null);
+    set("#pn-vendas", vendas != null ? num(vendas) : "—");
+    set("#pn-clientes", campo(d, "clientes") != null ? num(d.clientes) : "—");
+    set("#pn-chaves", campo(d, "chaves_ativas") != null ? num(d.chaves_ativas) : "—");
+    set("#pn-hoje", campo(d, "predicoes_hoje") != null ? num(d.predicoes_hoje) : "—");
+    set("#pn-lat", campo(d, "latencia_media_ms") != null ? `${num(d.latencia_media_ms, 1)} ms` : "—");
+    $("#pn-aviso").innerHTML = res.ok ? "" : avisoRota(res.r, "O banco de relatórios");
+    if (res.ok) graficoDia("painel", $("#graf-painel"), d.por_dia);
+    $("#pn-atualizado").textContent = "atualizado às " + new Date().toLocaleTimeString("pt-BR");
+    const itens = av.ok ? lista(av.dados, "itens", "avaliacoes") : [];
+    $("#pn-ultimas").innerHTML = av.ok ? (itens.length ? itens.map(itemUltima).join("") : '<p class="nota">Nenhuma avaliação salva ainda. Use <b>Nova avaliação</b> e <b>Salvar e gerar laudo</b>.</p>') : avisoRota(av, "O histórico de avaliações");
+  }
+  function initPainel() {
+    atualizarPainel();
+    setInterval(() => { if (visivel("painel")) atualizarPainel(); }, 15000);
+  }
+
+  // ---------------------------------------------------------------- salvar avaliação e laudo
+  $("#btn-salvar").addEventListener("click", () => {
+    const v = estado.imovel;
+    $("#salvar-resumo").textContent = `${num(v.area_util_m2)} m² · ${v.quartos} quartos · ${num(v.banheiros, v.banheiros % 1 ? 2 : 0)} banheiros · CEP ${v.cep}${resultadoAtual() ? " · " + usd.format(estado.ultimoResultado.dados.preco_estimado_usd) : ""}`;
+    $("#salvar-erro").innerHTML = "";
+    const t = $("#sv-titulo");
+    if (!t.value) t.value = `Imóvel no CEP ${v.cep} · ${num(v.area_util_m2)} m²`;
+    abrirModal("modal-salvar");
+  });
+  $("#form-salvar").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const f = ev.target.elements, titulo = f.titulo.value.trim();
+    $$(".erro", ev.target).forEach((e) => { e.textContent = ""; });
+    if (!titulo) { $('.erro[data-erro="titulo"]', ev.target).textContent = "Informe um título"; return; }
+    const btn = $("#sv-confirmar");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="carregando"></span> Salvando…';
+    const corpo = { titulo, responsavel: f.responsavel.value.trim() || null, imovel: { ...estado.imovel } };
+    const r = await api("/v1/avaliacoes", { metodo: "POST", corpo, headers: ORIGEM });
+    btn.disabled = false;
+    btn.textContent = "Salvar avaliação";
+    if (!r.ok || !r.dados) {
+      const det = detalhesErro(r.dados);
+      det.forEach((d) => { const e = $(`.erro[data-erro="${d.campo}"]`, ev.target); if (e) e.textContent = d.mensagem; });
+      $("#salvar-erro").innerHTML = r.status === 404 ? avisoRota(r, "O registro de avaliações") : alertaHTML(r.status ? tituloErro(r.status) : "API indisponível", mensagemErro(r), det, "aviso");
+      return;
+    }
+    fecharModal($("#modal-salvar"));
+    const id = campo(r.dados, "id", "avaliacao_id", "avaliacao.id");
+    const res = campo(r.dados, "resultado") || r.dados;
+    if (campo(res, "preco_estimado_usd") != null) {
+      estado.ultimoResultado = { dados: { ...res, faixa_provavel_usd: campo(res, "faixa_provavel_usd") || estado.ultimoResultado?.dados?.faixa_provavel_usd }, payload: { ...estado.imovel } };
+      if (!$("#resultado .res-preco")) mostrarResultado(estado.ultimoResultado.dados, estado.ultimoResultado.payload);
+    }
+    if (!$("#resultado .res-preco") && !resultadoAtual()) await avaliarEstado(false);
+    const caixa = document.createElement("div");
+    caixa.className = "salvo";
+    caixa.innerHTML = `<b>✓ Avaliação #${esc(id)} salva</b> · ${esc(titulo)}<div class="laudo-acoes"><a class="btn btn-pri" href="/v1/avaliacoes/${encodeURIComponent(id)}/laudo" target="_blank" rel="noopener">Abrir laudo</a><button type="button" class="btn btn-borda" data-avaliacao="${esc(id)}">Ver na lista</button></div>`;
+    $$("#resultado .salvo").forEach((x) => x.remove());
+    $("#resultado").appendChild(caixa);
+    $("#sv-titulo").value = "";
+    toast(`Avaliação #${id} salva`);
+  });
+
+  // ---------------------------------------------------------------- avaliações (histórico)
+  const filtrosAv = { pagina: 1, limite: 15, selecionada: null };
+  let ultimasAv = [];
+  function paramsAv() {
+    const f = $("#filtros-av").elements;
+    return { busca: f.busca.value.trim(), cidade: f.cidade.value, cep: f.cep.value, quartos: f.quartos.value, faixa_preco: f.faixa_preco.value, origem: f.origem.value, preco_min: f.preco_min.value, preco_max: f.preco_max.value, ordenacao: f.ordenacao.value };
+  }
+  let opcoesPreenchidas = null;
+  function preencherCidades() {
+    if (opcoesPreenchidas) return opcoesPreenchidas;
+    opcoesPreenchidas = Promise.all(["cidade", "faixa_preco"].map((dim) => api("/v1/relatorios/mercado?dimensao=" + dim))).then(([rc, rf]) => {
+      const cidades = rc.ok ? lista(rc.dados, "linhas").map((l) => String(campo(l, "grupo"))).filter(Boolean).sort((a, b) => a.localeCompare(b)) : [];
+      ["#fa-cidade", "#fm-cidade"].forEach((sel) => cidades.forEach((c) => garantirOpcao($(sel), c)));
+      const faixas = rf.ok ? lista(rf.dados, "linhas").map((l) => String(campo(l, "grupo"))).filter(Boolean) : [];
+      ["#fa-faixa", "#fm-faixa"].forEach((sel) => faixas.forEach((c) => garantirOpcao($(sel), c)));
+      if (!rc.ok) opcoesPreenchidas = null;
+    });
+    return opcoesPreenchidas;
+  }
+  async function carregarAvaliacoes() {
+    const caixa = $("#tabela-avaliacoes");
+    if (!caixa.children.length) caixa.innerHTML = '<p class="nota"><span class="carregando"></span> Carregando…</p>';
+    const r = await api("/v1/avaliacoes?" + qs({ ...paramsAv(), pagina: filtrosAv.pagina, limite: filtrosAv.limite }));
+    if (!r.ok || !r.dados) { caixa.innerHTML = avisoRota(r, "O histórico de avaliações"); $("#paginacao").innerHTML = ""; $("#fa-total").textContent = "—"; return; }
+    const d = r.dados, itens = lista(d, "itens", "avaliacoes");
+    ultimasAv = itens;
+    const total = Number(campo(d, "total")) || itens.length, limite = Number(campo(d, "limite")) || filtrosAv.limite, pagina = Number(campo(d, "pagina")) || filtrosAv.pagina;
+    const paginas = Math.max(1, Math.ceil(total / limite));
+    $("#fa-total").textContent = `${num(total)} ${total === 1 ? "avaliação encontrada" : "avaliações encontradas"}`;
+    caixa.innerHTML = itens.length ? `<table class="tabela"><thead><tr><th>#</th><th>Título</th><th>Origem</th><th>Local</th><th class="num">Área</th><th class="num">Quartos</th><th class="num">Valor estimado</th><th>Data</th></tr></thead><tbody>${itens.map((it) => {
+      const id = campo(it, "id");
+      const preco = campo(it, "preco_estimado_usd", "resultado.preco_estimado_usd");
+      return `<tr class="clicavel${String(id) === String(filtrosAv.selecionada) ? " selecionada" : ""}" data-linha="${esc(id)}" tabindex="0">
+        <td>${esc(id)}</td><td>${esc(campo(it, "titulo") || "—")}</td><td><span class="origem ${esc(campo(it, "origem") || "")}">${esc(campo(it, "origem") || "—")}</span></td>
+        <td>${esc(campo(it, "cidade") || "")}${campo(it, "cep", "imovel.cep") ? " · " + esc(campo(it, "cep", "imovel.cep")) : ""}</td>
+        <td class="num">${campo(it, "area_util_m2", "imovel.area_util_m2") != null ? num(campo(it, "area_util_m2", "imovel.area_util_m2")) + " m²" : "—"}</td>
+        <td class="num">${esc(campo(it, "quartos", "imovel.quartos") ?? "—")}</td>
+        <td class="num"><b>${preco != null ? usd.format(preco) : "—"}</b></td><td>${dataHora(campo(it, "criado_em", "criada_em"))}</td></tr>`;
+    }).join("")}</tbody></table>` : '<div class="vazio">Nenhuma avaliação com estes filtros.</div>';
+    $("#paginacao").innerHTML = `<span class="nota">Página ${pagina} de ${paginas}</span><div><button type="button" class="btn-mini" data-pag="-1" ${pagina <= 1 ? "disabled" : ""}>← Anterior</button><button type="button" class="btn-mini" data-pag="1" ${pagina >= paginas ? "disabled" : ""}>Próxima →</button></div>`;
+  }
+  function itemDaLista(id) { return ultimasAv.find((x) => String(campo(x, "id")) === String(id)); }
+  async function abrirAvaliacao(id) {
+    filtrosAv.selecionada = id;
+    if (viewAtual !== "avaliacoes") irPara("avaliacoes");
+    if (!inicializadas.has("avaliacoes")) return; // o init carrega a lista e mostra o detalhe
+    if (!itemDaLista(id)) await carregarAvaliacoes();
+    $$("#tabela-avaliacoes tr[data-linha]").forEach((tr) => tr.classList.toggle("selecionada", tr.dataset.linha === String(id)));
+    let it = itemDaLista(id);
+    const r = await api(`/v1/avaliacoes/${encodeURIComponent(id)}`);
+    if (r.ok && r.dados) it = { ...(it || {}), ...r.dados };
+    if (!it) { $("#det-corpo").innerHTML = avisoRota(r, "O detalhe da avaliação"); return; }
+    mostrarDetalhe(it);
+  }
+  let mapaDetalhe = null, marcadorDetalhe = null;
+  function mostrarDetalhe(it) {
+    const id = campo(it, "id");
+    const preco = Number(campo(it, "preco_estimado_usd", "resultado.preco_estimado_usd"));
+    const min = Number(campo(it, "faixa_min", "faixa_min_usd", "faixa_provavel_usd.minimo") ?? NaN);
+    const max = Number(campo(it, "faixa_max", "faixa_max_usd", "faixa_provavel_usd.maximo") ?? NaN);
+    const real = campo(it, "preco_real_usd", "preco_venda_usd", "preco_real");
+    let erro = campo(it, "erro_pct", "erro_percentual");
+    if (erro == null && real) erro = (preco / Number(real) - 1) * 100;
+    const lat = Number(campo(it, "latitude", "imovel.latitude")), lon = Number(campo(it, "longitude", "imovel.longitude"));
+    const pos = max > min ? Math.min(100, Math.max(0, ((preco - min) / (max - min)) * 100)) : 50;
+    $("#det-topo").innerHTML = `<div class="res-topo"><div><h3 class="res-titulo">${esc(campo(it, "titulo") || "Avaliação #" + id)}</h3><p class="res-local">#${esc(id)} · ${dataHora(campo(it, "criado_em", "criada_em"))}${campo(it, "responsavel") ? " · " + esc(it.responsavel) : ""}</p></div><span class="origem ${esc(campo(it, "origem") || "")}">${esc(campo(it, "origem") || "—")}</span></div>`;
+    $("#det-mapa-area").hidden = !(Number.isFinite(lat) && Number.isFinite(lon) && temMapa());
+    if (!$("#det-mapa-area").hidden) {
+      if (!mapaDetalhe) {
+        mapaDetalhe = criarMapa("detalhe", [lon, lat], 13.5);
+        const el = document.createElement("div");
+        el.className = "marcador-imovel";
+        el.style.zIndex = "5";
+        marcadorDetalhe = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(mapaDetalhe.m);
+        montarControles3D(mapaDetalhe, $("#det-mapa-area"), () => mapaDetalhe.centro);
+      } else {
+        desligar3D(mapaDetalhe, true);
+        mapaDetalhe.m.jumpTo({ center: [lon, lat], zoom: 13.5 });
+        marcadorDetalhe.setLngLat([lon, lat]);
+      }
+      mapaDetalhe.centro = [lon, lat];
+      setTimeout(() => mapaDetalhe.m.resize(), 30);
+    }
+    $("#det-corpo").innerHTML = `
+      <div class="res-rotulo">Valor estimado</div>
+      <div class="res-preco"><small>US$</small>${Number.isFinite(preco) ? num(preco) : "—"}</div>
+      ${Number.isFinite(min) && Number.isFinite(max) ? `<div class="faixa-barra"><div class="faixa-ponto" style="left:${pos}%"></div></div><div class="faixa-valores"><span>mín. <b>${usd.format(min)}</b></span><span>máx. <b>${usd.format(max)}</b></span></div>` : ""}
+      <div class="res-grade">
+        <div class="res-item"><small>Local</small><b>${esc(campo(it, "cidade") || "—")}</b><small>CEP ${esc(campo(it, "cep", "imovel.cep") || "—")}</small></div>
+        <div class="res-item"><small>Imóvel</small><b>${campo(it, "area_util_m2", "imovel.area_util_m2") != null ? num(campo(it, "area_util_m2", "imovel.area_util_m2")) + " m²" : "—"}</b><small>${esc(campo(it, "quartos", "imovel.quartos") ?? "—")} quartos</small></div>
+        <div class="res-item"><small>${real ? "Preço real" : "US$/m²"}</small><b>${real ? usd.format(real) : campo(it, "preco_m2_usd", "preco_por_m2_usd") ? usd.format(campo(it, "preco_m2_usd", "preco_por_m2_usd")) : "—"}</b>${erro != null ? `<small class="${Math.abs(erro) <= 12 ? "pos" : "neg"}">erro ${sinal(Number(erro))}</small>` : ""}</div>
+      </div>
+      <div class="laudo-acoes"><a class="btn btn-pri" href="/v1/avaliacoes/${encodeURIComponent(id)}/laudo" target="_blank" rel="noopener">Laudo</a><button type="button" class="btn btn-borda" data-reavaliar="${esc(id)}">Abrir na avaliação</button></div>`;
+  }
+  async function initAvaliacoes() {
+    const aside = $("#detalhe-avaliacao");
+    aside.innerHTML = `<div id="det-topo"><div class="vazio"><span class="ic-grande">☰</span><p>Clique numa avaliação para ver o detalhe, o mapa e o laudo.</p></div></div>
+      <div class="mapa-mini" id="det-mapa-area" hidden><div id="mapa-detalhe" class="mapa"></div></div><div id="det-corpo"></div>`;
+    const f = $("#filtros-av");
+    let t = null;
+    const recarregar = () => { clearTimeout(t); t = setTimeout(() => { filtrosAv.pagina = 1; carregarAvaliacoes(); }, 300); };
+    f.addEventListener("input", recarregar);
+    f.addEventListener("change", recarregar);
+    f.addEventListener("reset", () => setTimeout(recarregar, 0));
+    f.addEventListener("submit", (ev) => ev.preventDefault());
+    $("#paginacao").addEventListener("click", (ev) => { const b = ev.target.closest("[data-pag]"); if (!b) return; filtrosAv.pagina = Math.max(1, filtrosAv.pagina + Number(b.dataset.pag)); carregarAvaliacoes(); });
+    $("#tabela-avaliacoes").addEventListener("click", (ev) => { const tr = ev.target.closest("tr[data-linha]"); if (tr) abrirAvaliacao(tr.dataset.linha); });
+    $("#tabela-avaliacoes").addEventListener("keydown", (ev) => { const tr = ev.target.closest("tr[data-linha]"); if (tr && ev.key === "Enter") abrirAvaliacao(tr.dataset.linha); });
+    $$("[data-exportar]").forEach((b) => b.addEventListener("click", async () => {
+      const url = "/v1/avaliacoes/exportar?" + qs({ formato: b.dataset.exportar, ...paramsAv() });
+      const r = await api(url, { texto: true });
+      if (!r.ok) { toast(r.status === 404 ? "Exportação ainda não está ativa nesta API" : `Não foi possível exportar (${r.status})`); return; }
+      baixar(url);
+    }));
+    document.addEventListener("click", (ev) => {
+      const b = ev.target.closest("[data-reavaliar]");
+      if (!b) return;
+      const it = itemDaLista(b.dataset.reavaliar);
+      const im = it && (campo(it, "imovel") || it);
+      if (!im) return;
+      const parcial = {};
+      Object.keys(PADRAO).forEach((k) => { if (im[k] !== undefined && im[k] !== null) parcial[k] = im[k]; else if (k === "ano_reforma") parcial[k] = null; });
+      parcial.cep = String(parcial.cep || estado.imovel.cep);
+      estado.cenarioAplicado = null;
+      atualizarEstado(parcial, "historico");
+      irPara("avaliar");
+      setTimeout(() => { avaliarEstado(true); if (mapaAvaliar) mapaAvaliar.m.jumpTo({ center: [estado.imovel.longitude, estado.imovel.latitude], zoom: 12.5 }); }, 300);
+    });
+    const rs = await carregarRegioes();
+    if (rs) rs.slice().sort((a, b) => a.cep.localeCompare(b.cep)).forEach((g) => garantirOpcao($("#fa-cep"), g.cep));
+    preencherCidades();
+    await carregarAvaliacoes();
+    if (filtrosAv.selecionada) abrirAvaliacao(filtrosAv.selecionada);
+  }
+
+  // ---------------------------------------------------------------- relatórios de mercado
+  const mercado = { dim: "quartos", linhas: [], ordem: null, dir: -1 };
+  const NOMES_DIM = { quartos: "quartos", cidade: "cidade/bairro", cep: "CEP", faixa_preco: "faixa de preço", padrao: "padrão construtivo", ano_venda: "ano da venda" };
+  function paramsMercado() {
+    const f = $("#filtros-mercado").elements;
+    return { dimensao: mercado.dim, cidade: f.cidade.value, quartos: f.quartos.value, faixa_preco: f.faixa_preco.value };
+  }
+  async function carregarMercado() {
+    $("#mercado-titulo").textContent = `Preço por ${NOMES_DIM[mercado.dim] || mercado.dim}`;
+    const r = await api("/v1/relatorios/mercado?" + qs(paramsMercado()));
+    if (!r.ok || !r.dados) { $("#mercado-aviso").innerHTML = avisoRota(r, "O relatório de mercado"); mercado.linhas = []; $("#tabela-mercado").innerHTML = ""; if (graficos.mercado) { graficos.mercado.destroy(); graficos.mercado = null; } return; }
+    $("#mercado-aviso").innerHTML = "";
+    mercado.linhas = lista(r.dados, "linhas");
+    desenharMercado();
+    tabelaMercado();
+  }
+  function desenharMercado() {
+    const ls = mercado.linhas;
+    $("#mercado-alto").style.height = `${Math.max(300, ls.length * 26 + 70)}px`;
+    const { texto, linha } = eixos();
+    desenharGrafico("mercado", $("#graf-mercado"), {
+      type: "bar",
+      data: {
+        labels: ls.map((l) => String(l.grupo)),
+        datasets: [
+          { label: "p25–p75", data: ls.map((l) => [Number(l.p25_usd), Number(l.p75_usd)]), backgroundColor: cssVar("--accent-bg").replace(/[\d.]+\)$/, ".55)"), borderColor: cssVar("--accent"), borderWidth: 1.5, borderRadius: 6, borderSkipped: false, barThickness: 16 },
+          { label: "Mediana", type: "line", indexAxis: "y", data: ls.map((l) => Number(l.preco_mediano_usd)), showLine: false, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: DESTAQUE, pointBorderColor: cssVar("--bg2"), pointBorderWidth: 2 },
+        ],
+      },
+      options: {
+        indexAxis: "y", responsive: true, maintainAspectRatio: false, animation: false,
+        onClick: (ev, els) => { if (els.length) { const l = ls[els[0].index]; setTimeout(() => irParaGrupo(l), 0); } },
+        onHover: (ev, els) => { ev.native.target.style.cursor = els.length ? "pointer" : "default"; },
+        plugins: { legend: { labels: { color: texto, usePointStyle: true } }, tooltip: { callbacks: { label: (c) => { const l = ls[c.dataIndex]; return c.datasetIndex === 0 ? `p25 ${usd.format(l.p25_usd)} · p75 ${usd.format(l.p75_usd)}` : `mediana ${usd.format(l.preco_mediano_usd)} · ${num(l.vendas)} vendas`; } } } },
+        scales: { x: { position: "top", ticks: { color: texto, callback: (v) => curto(v), maxTicksLimit: 6 }, grid: { color: linha } }, y: { ticks: { color: texto, autoSkip: false, font: { size: 12 } }, grid: { display: false } } },
+      },
+    });
+  }
+  const COLS_MERCADO = [["grupo", "Grupo"], ["vendas", "Vendas"], ["preco_mediano_usd", "Mediana"], ["preco_medio_usd", "Média"], ["p25_usd", "p25"], ["p75_usd", "p75"], ["preco_m2_mediano_usd", "US$/m²"]];
+  function tabelaMercado() {
+    const ls = mercado.linhas.slice();
+    if (mercado.ordem) ls.sort((a, b) => { const x = a[mercado.ordem], y = b[mercado.ordem]; return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "pt-BR", { numeric: true })) * mercado.dir; });
+    $("#tabela-mercado").innerHTML = `<table class="tabela"><thead><tr>${COLS_MERCADO.map(([k, n]) => `<th class="ordenavel${k === "grupo" ? "" : " num"}" data-ordenar="${k}">${n}${mercado.ordem === k ? (mercado.dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead><tbody>${ls.map((l) => `<tr class="clicavel" data-grupo="${esc(l.grupo)}">${COLS_MERCADO.map(([k]) => `<td class="${k === "grupo" ? "" : "num"}">${k === "grupo" ? `<b>${esc(l.grupo)}</b>` : k === "vendas" ? num(l[k]) : l[k] != null ? usd.format(l[k]) : "—"}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+  function irParaGrupo(l) {
+    const g = String(l.grupo);
+    if (mercado.dim === "cep") {
+      irPara("mapa");
+      setTimeout(() => selecionarCepNoMapa(g, true, "mercado"), inicializadas.has("mapa") && mapaValor ? 100 : 1500);
+      return;
+    }
+    const f = $("#filtros-av");
+    if (mercado.dim === "cidade") { f.reset(); garantirOpcao(f.elements.cidade, g); f.elements.cidade.value = g; }
+    else if (mercado.dim === "quartos") { f.reset(); const q = String(parseInt(g, 10)); garantirOpcao(f.elements.quartos, q); f.elements.quartos.value = q; }
+    else if (mercado.dim === "faixa_preco") { f.reset(); garantirOpcao(f.elements.faixa_preco, g); f.elements.faixa_preco.value = g; }
+    else { toast("Filtro direto disponível para quartos, cidade, faixa de preço e CEP"); return; }
+    filtrosAv.pagina = 1;
+    irPara("avaliacoes");
+    if (inicializadas.has("avaliacoes")) carregarAvaliacoes();
+    toast(`Avaliações filtradas por ${NOMES_DIM[mercado.dim]}: ${g}`);
+  }
+  function initMercado() {
+    $("#dimensoes").addEventListener("click", (ev) => {
+      const b = ev.target.closest("[data-dim]");
+      if (!b) return;
+      mercado.dim = b.dataset.dim;
+      mercado.ordem = null;
+      $$("#dimensoes button").forEach((x) => x.classList.toggle("ativo", x === b));
+      carregarMercado();
+    });
+    let t = null;
+    const f = $("#filtros-mercado");
+    const rec = () => { clearTimeout(t); t = setTimeout(carregarMercado, 300); };
+    f.addEventListener("input", rec);
+    f.addEventListener("change", rec);
+    f.addEventListener("submit", (ev) => ev.preventDefault());
+    $("#tabela-mercado").addEventListener("click", (ev) => {
+      const th = ev.target.closest("[data-ordenar]");
+      if (th) { const k = th.dataset.ordenar; mercado.dir = mercado.ordem === k ? -mercado.dir : k === "grupo" ? 1 : -1; mercado.ordem = k; tabelaMercado(); return; }
+      const tr = ev.target.closest("tr[data-grupo]");
+      if (tr) { const l = mercado.linhas.find((x) => String(x.grupo) === tr.dataset.grupo); if (l) irParaGrupo(l); }
+    });
+    $$("[data-exportar-mercado]").forEach((b) => b.addEventListener("click", async () => {
+      const url = "/v1/relatorios/mercado/exportar?" + qs({ formato: b.dataset.exportarMercado, ...paramsMercado() });
+      const r = await api(url, { texto: true });
+      if (!r.ok) { toast(r.status === 404 ? "Exportação ainda não está ativa nesta API" : `Não foi possível exportar (${r.status})`); return; }
+      baixar(url);
+    }));
+    $("#btn-imprimir").addEventListener("click", () => window.print());
+    preencherCidades();
+    carregarMercado();
+  }
+
+  // ---------------------------------------------------------------- comercial (chaves de API)
+  let ultimaChave = null;
+  function initComercial() {
+    atualizarAdmin();
+    $("#form-chave").addEventListener("submit", gerarChave);
+    $("#btn-clientes").addEventListener("click", carregarClientes);
+    $("#tabela-clientes").addEventListener("click", revogarChave);
+    $("#btn-uso").addEventListener("click", verUso);
+    $("#btn-avaliar-chave").addEventListener("click", avaliarComChave);
+    $("#chave-resultado").addEventListener("click", async (ev) => {
+      if (ev.target.closest("[data-copiar-chave]")) {
+        try { await navigator.clipboard.writeText(ultimaChave || ""); toast("Chave copiada"); } catch (e) { toast("Não foi possível copiar automaticamente"); }
+      } else if (ev.target.closest("[data-usar-chave]")) {
+        $("#teste-chave").value = ultimaChave || "";
+        $("#teste-chave").scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (ev.target.closest("[data-ver-email]")) verEmail(ev.target.closest("[data-ver-email]").dataset.verEmail);
+    });
+    carregarClientes();
+  }
+  async function gerarChave(ev) {
+    ev.preventDefault();
+    const f = ev.target.elements;
+    $$(".erro", ev.target).forEach((e) => { e.textContent = ""; });
+    $$(".campo.invalido", ev.target).forEach((c) => c.classList.remove("invalido"));
+    const marcar = (c, m) => { const e = $(`.erro[data-erro="${c}"]`, ev.target); if (e) { e.textContent = m; const cc = e.closest(".campo"); if (cc) cc.classList.add("invalido"); } };
+    const corpo = { nome: f.nome.value.trim(), email: f.email.value.trim(), empresa: f.empresa.value.trim() || null, plano: f.plano.value };
+    let ok = true;
+    if (!corpo.nome) { marcar("nome", "Informe o nome"); ok = false; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(corpo.email)) { marcar("email", "E-mail inválido"); ok = false; }
+    if (!ok) return;
+    if (!tokenAdmin()) { $("#chave-resultado").innerHTML = alertaHTML("Token de administrador necessário", "Informe o token em Administrador, no cabeçalho, para emitir chaves.", [], "aviso"); abrirModal("modal-admin"); return; }
+    const btn = $("#btn-gerar");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="carregando"></span> Gerando…';
+    const r = await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: cabAdmin() });
+    btn.disabled = false;
+    btn.textContent = "Gerar chave e enviar e-mail";
+    if (!r.ok || !r.dados) {
+      const det = detalhesErro(r.dados);
+      det.forEach((d) => marcar(d.campo, d.mensagem));
+      $("#chave-resultado").innerHTML = r.status === 422 ? alertaHTML(tituloErro(422), mensagemErro(r), det, "aviso") : avisoRota(r, "O módulo comercial");
+      return;
+    }
+    const d = r.dados, em = d.email || {};
+    ultimaChave = d.chave;
+    const selo = em.modo === "smtp" ? `<span class="selo-email smtp">✓ E-mail enviado para ${esc(em.destinatario)}</span>`
+      : em.modo === "arquivo" ? '<span class="selo-email arquivo">✉ E-mail salvo localmente (SMTP não configurado)</span>'
+        : `<span class="selo-email">${esc(em.mensagem || "E-mail não enviado")}</span>`;
+    $("#chave-resultado").innerHTML = `
+      <div class="res-topo"><div><h3 class="res-titulo">Chave emitida</h3><p class="res-local">Cliente #${esc(d.cliente_id)} · chave #${esc(d.chave_id)} · plano ${esc(d.plano)}</p></div><span class="chip ok">${num(d.limite_mensal)}/mês</span></div>
+      <p class="guarde">⚠ Guarde agora: esta chave não será mostrada de novo. O banco guarda só o hash.</p>
+      <div class="chave-caixa"><code id="chave-texto">${esc(d.chave)}</code><button type="button" class="btn-mini" data-copiar-chave>Copiar</button></div>
+      ${selo}
+      <dl class="lista-dados"><dt>Prefixo</dt><dd><code>${esc(d.prefixo)}</code></dd><dt>Destinatário</dt><dd>${esc(em.destinatario || corpo.email)}</dd>${em.mensagem ? `<dt>Envio</dt><dd>${esc(em.mensagem)}</dd>` : ""}</dl>
+      <div class="laudo-acoes">${em.envio_id != null ? `<button type="button" class="btn btn-borda" data-ver-email="${esc(em.envio_id)}">Ver e-mail</button>` : ""}<button type="button" class="btn btn-pri" data-usar-chave>Usar no testador</button></div>`;
+    ev.target.reset();
+    carregarClientes();
+  }
+  async function verEmail(id) {
+    const r = await api(`/v1/comercial/emails/${encodeURIComponent(id)}`, { headers: cabAdmin(), texto: true });
+    if (!r.ok || !r.dados) { toast(r.status === 404 ? "E-mail não encontrado ou rota ainda inativa" : `Não foi possível abrir o e-mail (${r.status})`); return; }
+    $("#modal-iframe").srcdoc = r.dados;
+    abrirModal("modal");
+  }
+  async function carregarClientes() {
+    const caixa = $("#tabela-clientes");
+    if (!tokenAdmin()) { caixa.innerHTML = '<p class="nota">Informe o token de administrador para listar os clientes.</p>'; return; }
+    const r = await api("/v1/comercial/clientes", { headers: cabAdmin() });
+    if (!r.ok || !r.dados) { caixa.innerHTML = avisoRota(r, "O módulo comercial"); return; }
+    const cs = lista(r.dados, "clientes", "itens");
+    caixa.innerHTML = cs.length ? `<table class="tabela"><thead><tr><th>Cliente</th><th>Prefixo</th><th>Plano</th><th>Uso no mês</th><th>Situação</th><th>Criada em</th><th></th></tr></thead><tbody>${cs.map((c) => {
+      const uso = Number(campo(c, "uso_mes")) || 0, lim = Number(campo(c, "limite_mensal")) || 0, frac = lim ? Math.min(1, uso / lim) : 0;
+      const ativa = campo(c, "ativa") !== false && !campo(c, "revogada_em");
+      const chave = campo(c, "chave_id", "id");
+      return `<tr><td><b>${esc(campo(c, "nome") || "—")}</b><br><small class="nota">${esc(campo(c, "email") || "")}${campo(c, "empresa") ? " · " + esc(c.empresa) : ""}</small></td>
+        <td><code>${esc(campo(c, "prefixo") || "—")}</code></td><td>${esc(campo(c, "plano") || "—")}</td>
+        <td><div class="uso"><small>${num(uso)} de ${num(lim)}</small><div class="barra"><i class="${frac > 0.8 ? "alto" : ""}" style="width:${Math.max(2, frac * 100)}%"></i></div></div></td>
+        <td><span class="chip ${ativa ? "ok" : "ruim"}">${ativa ? "ativa" : "revogada"}</span></td><td>${dataHora(campo(c, "criado_em", "criada_em"))}</td>
+        <td>${ativa && chave != null ? `<button type="button" class="btn-mini btn-perigo" data-revogar="${esc(chave)}">Revogar</button>` : ""}</td></tr>`;
+    }).join("")}</tbody></table>` : '<p class="nota">Nenhum cliente cadastrado ainda.</p>';
+  }
+  async function revogarChave(ev) {
+    const b = ev.target.closest("[data-revogar]");
+    if (!b) return;
+    if (!b.classList.contains("confirmar")) {
+      b.classList.add("confirmar");
+      b.textContent = "Confirmar revogação";
+      setTimeout(() => { if (b.isConnected) { b.classList.remove("confirmar"); b.textContent = "Revogar"; } }, 4000);
+      return;
+    }
+    b.disabled = true;
+    const r = await api(`/v1/comercial/chaves/${encodeURIComponent(b.dataset.revogar)}/revogar`, { metodo: "POST", headers: cabAdmin() });
+    if (!r.ok) { toast(r.status === 404 ? "Chave não encontrada ou rota inativa" : `Não foi possível revogar (${r.status})`); b.disabled = false; return; }
+    toast("Chave revogada: as próximas chamadas com ela recebem 403");
+    carregarClientes();
+  }
+  const ERROS_CHAVE = {
+    401: ["Chave inválida", "A chave não existe ou foi digitada errada (chave_invalida)."],
+    403: ["Chave revogada", "Esta chave foi revogada pelo administrador e não aceita mais chamadas (chave_revogada)."],
+    429: ["Limite do plano atingido", "O consumo do mês chegou ao limite do plano (limite_excedido). Faça upgrade ou aguarde o próximo mês."],
+  };
+  function erroChave(r) {
+    const e = ERROS_CHAVE[r.status];
+    if (!e) return avisoRota(r, "O controle de chaves");
+    return `<div class="alerta aviso"><h4><span class="cod aviso">${r.status}</span> ${e[0]}</h4><p>${esc((r.dados && r.dados.mensagem) || e[1])}</p>${r.dados && r.dados.erro ? `<p class="nota">código: <code>${esc(r.dados.erro)}</code></p>` : ""}</div>`;
+  }
+  async function verUso() {
+    const k = $("#teste-chave").value.trim();
+    if (!k) { toast("Cole uma chave de API"); return; }
+    const r = await api("/v1/comercial/uso", { headers: { "X-API-Key": k } });
+    if (!r.ok || !r.dados) { $("#teste-resultado").innerHTML = erroChave(r); return; }
+    const d = r.dados, uso = Number(campo(d, "usadas_mes", "uso_mes")) || 0, lim = Number(campo(d, "limite_mensal")) || 0;
+    $("#teste-resultado").innerHTML = `<div class="resposta-chave">
+      <div class="res-item"><small>${esc(campo(d, "cliente") || "Cliente")} · plano</small><b>${esc(campo(d, "plano") || "—")}</b></div>
+      <div class="res-item"><small>Uso no mês</small><b>${num(uso)}</b></div>
+      <div class="res-item"><small>Limite mensal</small><b>${num(lim)}</b></div>
+      <div class="res-item"><small>Restante</small><b class="pos">${num(campo(d, "restantes", "restante") ?? Math.max(0, lim - uso))}</b></div></div>`;
+  }
+  async function avaliarComChave() {
+    const k = $("#teste-chave").value.trim();
+    if (!k) { toast("Cole uma chave de API"); return; }
+    const r = await api("/v1/predict", { metodo: "POST", corpo: { ...estado.imovel }, headers: { "X-API-Key": k } });
+    if (!r.ok || !r.dados) { $("#teste-resultado").innerHTML = erroChave(r); return; }
+    const d = r.dados, fx = d.faixa_provavel_usd || {};
+    $("#teste-resultado").innerHTML = `<div class="salvo"><b>200 · avaliação aceita com a chave</b> · ${usd.format(d.preco_estimado_usd)} (faixa ${usd.format(fx.minimo)} – ${usd.format(fx.maximo)}) · ${num(estado.imovel.area_util_m2)} m², CEP ${esc(estado.imovel.cep)}</div>`;
+  }
+
+  // ---------------------------------------------------------------- banco de dados (documentação e uso)
+  async function atualizarUso() {
+    const res = await carregarResumo();
+    $("#rel-aviso").innerHTML = res.ok ? "" : avisoRota(res.r, "O banco de relatórios");
+    if (res.ok) {
+      const d = res.d, set = (id, v) => { $(id).textContent = v; };
+      set("#rel-total", campo(d, "total_predicoes") != null ? num(d.total_predicoes) : "—");
+      set("#rel-hoje", campo(d, "predicoes_hoje") != null ? num(d.predicoes_hoje) : "—");
+      set("#rel-clientes", campo(d, "clientes") != null ? num(d.clientes) : "—");
+      set("#rel-chaves", campo(d, "chaves_ativas") != null ? num(d.chaves_ativas) : "—");
+      set("#rel-lat", campo(d, "latencia_media_ms") != null ? `${num(d.latencia_media_ms, 1)} ms` : "—");
+      set("#rel-preco", campo(d, "preco_medio_usd") != null ? usd.format(d.preco_medio_usd) : "—");
+      graficoDia("dia", $("#graf-dia"), d.por_dia);
+      const { texto, linha } = eixos();
+      const po = pares(d.por_origem, ["origem"], ["total", "quantidade", "n"]);
+      desenharGrafico("origem", $("#graf-origem"), {
+        type: "doughnut",
+        data: { labels: po.map((x) => x[0]), datasets: [{ data: po.map((x) => x[1]), backgroundColor: ["#703bf7", "#a685fa", "#1baf7a", "#ff9f0a", "#4b22b5"], borderColor: cssVar("--card"), borderWidth: 3 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: false, cutout: "62%", plugins: { legend: { position: "bottom", labels: { color: texto } } } },
+      });
+      const pst = pares(d.por_status, ["status_http", "status"], ["total", "quantidade", "n"]);
+      desenharGrafico("status", $("#graf-status"), {
+        type: "bar",
+        data: { labels: pst.map((x) => x[0]), datasets: [{ data: pst.map((x) => x[1]), backgroundColor: pst.map((x) => (String(x[0]).startsWith("2") ? "#1baf7a" : String(x[0]).startsWith("5") ? "#ff5d5d" : "#ff9f0a")), borderRadius: 6, maxBarThickness: 40 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: texto }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: texto, precision: 0 }, grid: { color: linha } } } },
+      });
+    }
+    const r = await api("/v1/relatorios/predicoes?limite=20");
+    const caixa = $("#tabela-predicoes");
+    if (!r.ok || !r.dados) { caixa.innerHTML = res.ok ? avisoRota(r, "A lista de predições") : ""; return; }
+    const ps = lista(r.dados, "predicoes", "itens");
+    caixa.innerHTML = ps.length ? `<table class="tabela"><thead><tr><th>#</th><th>Data</th><th>Origem</th><th>Cliente</th><th>CEP</th><th class="num">Área</th><th class="num">Preço estimado</th><th class="num">Latência</th><th>Status</th></tr></thead><tbody>${ps.map((x) => {
+      const st = Number(x.status_http), cls = st >= 200 && st < 300 ? "ok" : st >= 500 ? "erro" : "aviso";
+      return `<tr><td>${esc(x.id)}</td><td>${dataHora(x.criado_em)}</td><td><span class="origem ${esc(x.origem || "")}">${esc(x.origem || "—")}</span></td><td>${esc(campo(x, "cliente", "cliente_nome") || "—")}</td><td>${esc(x.cep || "—")}</td>
+        <td class="num">${x.area_util_m2 != null ? num(x.area_util_m2) + " m²" : "—"}</td><td class="num">${x.preco_estimado_usd != null ? usd.format(x.preco_estimado_usd) : "—"}</td>
+        <td class="num">${x.latencia_ms != null ? num(x.latencia_ms, 1) + " ms" : "—"}</td><td><span class="cod ${cls}">${esc(x.status_http)}</span></td></tr>`;
+    }).join("")}</tbody></table>` : '<p class="nota">Nenhuma predição registrada ainda.</p>';
+    $("#rel-atualizado").textContent = "atualizado às " + new Date().toLocaleTimeString("pt-BR");
+  }
+  const POS_TABELAS = { clientes: [0, 0], chaves: [1, 0], predicoes: [2, 0], envios_email: [0, 1], avaliacoes: [1, 1], vendas_historicas: [2, 1] };
+  const ALVO_FK = { cliente_id: "clientes", chave_id: "chaves", predicao_id: "predicoes", venda_id: "vendas_historicas", avaliacao_id: "avaliacoes", envio_id: "envios_email" };
+  function desenharDiagrama(tabelas) {
+    const W = 230, LIN = 17, TOPO = 30, MAXC = 8, GX = 70, GY = 56;
+    const nomes = tabelas.map((t) => t.nome);
+    Object.keys(POS_TABELAS).forEach((n) => { if (!nomes.includes(n)) tabelas.push({ nome: n, colunas: [], linhas: null, ausente: true }); });
+    let extra = 0;
+    const caixas = {};
+    tabelas.forEach((t) => {
+      const pos = POS_TABELAS[t.nome] || [extra % 3, 2 + Math.floor(extra++ / 3)];
+      const cols = (t.colunas || []).slice(0, MAXC);
+      caixas[t.nome] = { t, cols, x: 10 + pos[0] * (W + GX), col: pos[0], row: pos[1], h: TOPO + Math.max(1, cols.length + ((t.colunas || []).length > MAXC ? 1 : 0)) * LIN + 10 };
+    });
+    const alturaLinha = {};
+    Object.values(caixas).forEach((c) => { alturaLinha[c.row] = Math.max(alturaLinha[c.row] || 0, c.h); });
+    const yLinha = (r) => 10 + Object.keys(alturaLinha).filter((k) => k < r).reduce((s, k) => s + alturaLinha[k] + GY, 0);
+    Object.values(caixas).forEach((c) => { c.y = yLinha(c.row); });
+    const largura = 20 + 3 * W + 2 * GX, altura = Math.max(...Object.values(caixas).map((c) => c.y + c.h)) + 10;
+    const rels = [];
+    Object.values(caixas).forEach((c) => (c.t.colunas || []).forEach((col, i) => {
+      const alvo = col.referencia || col.fk || ALVO_FK[col.nome];
+      const nomeAlvo = typeof alvo === "string" ? alvo.split(".")[0] : null;
+      if (nomeAlvo && caixas[nomeAlvo] && nomeAlvo !== c.t.nome) rels.push({ de: c, ate: caixas[nomeAlvo], col: col.nome, i: Math.min(i, MAXC) });
+    }));
+    const caminho = ({ de, ate, i }) => {
+      const y1 = de.y + TOPO + i * LIN + 6;
+      if (de.row === ate.row) {
+        const dir = ate.x < de.x;
+        const x1 = dir ? de.x : de.x + W, x2 = dir ? ate.x + W : ate.x, y2 = ate.y + TOPO / 2;
+        return `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`;
+      }
+      const x1 = de.x + (ate.x > de.x ? W : 0), x2 = ate.x + W / 2, y2 = ate.y + ate.h;
+      return `M${x1},${y1} C${x1 + (ate.x > de.x ? 40 : -40)},${y1} ${x2},${y2 + 40} ${x2},${y2}`;
+    };
+    $("#diagrama").innerHTML = `<svg viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Diagrama das relações entre as tabelas do banco">
+      <defs><marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${cssVar("--accent-3")}"/></marker></defs>
+      ${rels.map((r) => `<path class="t-rel" d="${caminho(r)}" marker-end="url(#seta)"><title>${esc(r.de.t.nome)}.${esc(r.col)} → ${esc(r.ate.t.nome)}.id</title></path>`).join("")}
+      ${Object.values(caixas).map((c) => `<g>
+        <rect class="t-caixa" x="${c.x}" y="${c.y}" width="${W}" height="${c.h}" rx="10"${c.t.ausente ? ' stroke-dasharray="5 4"' : ""}/>
+        <path class="t-topo" d="M${c.x},${c.y + 10} a10,10 0 0 1 10,-10 h${W - 20} a10,10 0 0 1 10,10 v${TOPO - 10} h-${W} z"${c.t.ausente ? ' opacity=".45"' : ""}/>
+        <text class="t-nome" x="${c.x + 12}" y="${c.y + 20}">${esc(c.t.nome)}</text>
+        <text class="t-linhas" x="${c.x + W - 12}" y="${c.y + 20}" text-anchor="end">${c.t.ausente ? "ainda não criada" : c.t.linhas != null ? num(c.t.linhas) + " linhas" : ""}</text>
+        ${c.cols.map((col, i) => `<text class="t-col${col.nome === "id" || ALVO_FK[col.nome] ? " t-chave" : ""}" x="${c.x + 12}" y="${c.y + TOPO + 12 + i * LIN}">${col.nome === "id" ? "🔑 " : ALVO_FK[col.nome] ? "↗ " : ""}${esc(col.nome)}<tspan fill="${cssVar("--muted")}"> ${esc(col.tipo || "")}</tspan></text>`).join("")}
+        ${(c.t.colunas || []).length > MAXC ? `<text class="t-col" x="${c.x + 12}" y="${c.y + TOPO + 12 + MAXC * LIN}">+ ${c.t.colunas.length - MAXC} colunas</text>` : ""}
+      </g>`).join("")}
+    </svg>`;
+  }
+  async function carregarEsquema() {
+    const r = await api("/v1/relatorios/esquema");
+    if (!r.ok || !r.dados) { $("#esquema-cartoes").innerHTML = avisoRota(r, "A documentação do banco"); desenharDiagrama([]); return; }
+    const d = r.dados, ts = lista(d, "tabelas");
+    $("#esquema-info").textContent = `${d.banco || "SQLite"}${d.arquivo ? " · arquivo " + d.arquivo : ""} · ${ts.length} tabelas · ${num(ts.reduce((s, t) => s + (Number(t.linhas) || 0), 0))} linhas no total.`;
+    desenharDiagrama(ts.map((t) => ({ ...t })));
+    $("#esquema-cartoes").innerHTML = ts.map((t) => {
+      const idx = lista(t, "indices");
+      return `<div class="cartao esquema-cartao"><h3>${esc(t.nome)} <span>${num(t.linhas)} linhas</span></h3><p>${esc(t.descricao || "")}</p>
+      <ul class="colunas">${(t.colunas || []).map((c) => `<li><code>${esc(c.nome)}</code><em>${esc(c.tipo || "")}</em>${c.descricao ? `<small>${esc(c.descricao)}</small>` : ""}</li>`).join("")}</ul>
+      ${idx.length ? `<div class="indices">${idx.map((i) => `<code title="${esc(typeof i === "object" ? (i.colunas || []).join(", ") : "")}">${esc(typeof i === "object" ? i.nome : i)}</code>`).join("")}</div>` : ""}</div>`;
+    }).join("");
+  }
+  function initBanco() {
+    atualizarUso();
+    carregarEsquema();
+    setInterval(() => { if (visivel("banco")) atualizarUso(); }, 10000);
+  }
+
+  // ---------------------------------------------------------------- visão 3D (prédios do OpenFreeMap + voo orbital)
+  function adicionarPredios(reg) {
+    const m = reg.m;
+    if (m.getLayer("predios-3d") || !m.getSource("openmaptiles")) return;
+    m.addLayer({
+      id: "predios-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 13,
+      layout: { visibility: reg.tres ? "visible" : "none" },
+      paint: {
+        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 0], 0, "#4b22b5", 30, "#8254f8", 90, "#c2acfc"],
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+        "fill-extrusion-opacity": 0.88,
+      },
+    });
+  }
+  function pararOrbita(reg) {
+    if (reg.raf) cancelAnimationFrame(reg.raf);
+    reg.raf = null;
+    if (reg.ui) reg.ui.parar.textContent = "Girar 360°";
+  }
+  function orbitar(reg) {
+    pararOrbita(reg);
+    const m = reg.m, ini = performance.now(), b0 = m.getBearing(), DUR = 12000;
+    if (reg.ui) reg.ui.parar.textContent = "Parar voo";
+    const passo = (t) => {
+      const f = Math.min(1, (t - ini) / DUR);
+      m.setBearing(b0 + 360 * f);
+      if (f < 1 && reg.tres) reg.raf = requestAnimationFrame(passo);
+      else pararOrbita(reg);
+    };
+    reg.raf = requestAnimationFrame(passo);
+  }
+  function ligar3D(reg, centro) {
+    const m = reg.m;
+    reg.tres = true;
+    if (m.getLayer("predios-3d")) m.setLayoutProperty("predios-3d", "visibility", "visible");
+    if (reg.ui) { reg.ui.btn.classList.add("ativo"); reg.ui.btn.textContent = "Sair do 3D"; reg.ui.ctrl.classList.add("on"); }
+    if (reg === mapaAvaliar) arrumarPins();
+    m.easeTo({ center: centro || m.getCenter(), pitch: 60, zoom: Math.max(m.getZoom(), reg === mapaAvaliar ? 16 : 15.5), bearing: m.getBearing() - 20, duration: 1800 });
+    m.once("moveend", () => { if (reg.tres) orbitar(reg); });
+  }
+  function desligar3D(reg, imediato) {
+    if (!reg.tres) return;
+    pararOrbita(reg);
+    reg.tres = false;
+    const m = reg.m;
+    if (m.getLayer("predios-3d")) m.setLayoutProperty("predios-3d", "visibility", "none");
+    if (reg.ui) { reg.ui.btn.classList.remove("ativo"); reg.ui.btn.textContent = "Visão 3D"; reg.ui.ctrl.classList.remove("on"); }
+    if (imediato) m.jumpTo({ pitch: 0, bearing: 0 });
+    else m.easeTo({ pitch: 0, bearing: 0, duration: 900 });
+    if (reg === mapaAvaliar) setTimeout(arrumarPins, 950);
+  }
+  function definirBase(reg, base) {
+    basePreferida[reg.chave] = base;
+    if (reg.m.getLayer("satelite")) reg.m.setLayoutProperty("satelite", "visibility", base === "satelite" ? "visible" : "none");
+    $$(`[data-controle="base"][data-mapa="${reg.chave}"] button`).forEach((x) => x.classList.toggle("ativo", x.dataset.v === base));
+    if (reg.ui) reg.ui.sat.classList.toggle("ativo", base === "satelite");
+  }
+  function montarControles3D(reg, area, centroFn) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-borda btn-3d";
+    btn.textContent = "Visão 3D";
+    const ctrl = document.createElement("div");
+    ctrl.className = "ctrl-3d";
+    ctrl.innerHTML = '<button type="button" class="btn-mini" data-3d="parar">Parar voo</button><button type="button" class="btn-mini" data-3d="sat">Satélite 3D</button>';
+    area.append(btn, ctrl);
+    reg.ui = { btn, ctrl, parar: ctrl.querySelector('[data-3d="parar"]'), sat: ctrl.querySelector('[data-3d="sat"]') };
+    btn.addEventListener("click", () => (reg.tres ? desligar3D(reg) : ligar3D(reg, centroFn())));
+    reg.ui.parar.addEventListener("click", () => (reg.raf ? pararOrbita(reg) : orbitar(reg)));
+    reg.ui.sat.addEventListener("click", () => definirBase(reg, basePreferida[reg.chave] === "satelite" ? "mapa" : "satelite"));
+  }
+  function iniciar3DAvaliar() {
+    if (!mapaAvaliar) return;
+    montarControles3D(mapaAvaliar, $("#mapa-avaliar").parentElement, () => [estado.imovel.longitude, estado.imovel.latitude]);
+    mapaAvaliar.ui.btn.addEventListener("click", () => { if (mapaAvaliar.tres && !resultadoAtual()) avaliarEstado(true); else if (mapaAvaliar.tres && estado.ultimoResultado && !popupAval) popupAvaliacao(estado.ultimoResultado.dados, estado.ultimoResultado.payload); });
   }
 
   // ---------------------------------------------------------------- partida
@@ -1021,6 +1767,8 @@
   atualizarBaseSimulador();
   atualizarChips();
   carregarRegioes();
-  if (!inicializadas.has("inicio")) { inicializadas.add("inicio"); initInicio(); }
+  verificarSaude();
+  setInterval(verificarSaude, 15000);
+  atualizarAdmin();
   rotear();
 })();
