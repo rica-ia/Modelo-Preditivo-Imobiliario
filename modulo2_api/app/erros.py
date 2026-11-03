@@ -4,6 +4,7 @@
 Cada falha vira um JSON previsível, em português, e a API nunca cai:
 - 400: regra de negócio violada (dados bem formados, mas incoerentes);
 - 422: contrato Pydantic violado (tipo, faixa, campo ausente ou desconhecido);
+- 404/405: rota inexistente ou método não permitido;
 - 503: modelo fora da memória;
 - 500: qualquer erro inesperado, sem expor detalhes internos.
 """
@@ -13,6 +14,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .services.excecoes import ModeloIndisponivelError, RegraDeNegocioError
 
@@ -67,6 +69,17 @@ async def modelo_indisponivel(request: Request, exc: ModeloIndisponivelError) ->
     return JSONResponse(status_code=503, content={"erro": "modelo_indisponivel", "mensagem": str(exc)})
 
 
+HTTP_MENSAGENS = {
+    404: ("nao_encontrado", "Rota não encontrada. Consulte a documentação em /docs."),
+    405: ("metodo_nao_permitido", "Método HTTP não permitido nesta rota."),
+}
+
+
+async def erro_http(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    codigo, mensagem = HTTP_MENSAGENS.get(exc.status_code, ("erro_http", str(exc.detail)))
+    return JSONResponse(status_code=exc.status_code, content={"erro": codigo, "mensagem": mensagem}, headers=exc.headers)
+
+
 async def erro_interno(request: Request, exc: Exception) -> JSONResponse:
     log.exception("Erro inesperado em %s", request.url.path)
     return JSONResponse(
@@ -77,6 +90,7 @@ async def erro_interno(request: Request, exc: Exception) -> JSONResponse:
 
 def registrar_tratadores(app: FastAPI) -> None:
     app.add_exception_handler(RequestValidationError, dados_invalidos)
+    app.add_exception_handler(StarletteHTTPException, erro_http)
     app.add_exception_handler(RegraDeNegocioError, regra_de_negocio)
     app.add_exception_handler(ModeloIndisponivelError, modelo_indisponivel)
     app.add_exception_handler(Exception, erro_interno)

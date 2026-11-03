@@ -124,3 +124,16 @@ def test_predicoes_nao_releem_o_artefato(cliente, monkeypatch):
     monkeypatch.setattr(servico_modelo.joblib, "load", proibido)
     for _ in range(5):
         assert cliente.post("/v1/predict", json=_imovel()).status_code == 200
+
+
+# ## 404 e 405 em português
+def test_rota_inexistente_404(cliente):
+    resposta = cliente.get("/v1/inexistente")
+    assert resposta.status_code == 404
+    assert resposta.json()["erro"] == "nao_encontrado"
+
+
+def test_metodo_nao_permitido_405(cliente):
+    resposta = cliente.get("/v1/predict")
+    assert resposta.status_code == 405
+    assert resposta.json()["erro"] == "metodo_nao_permitido"
