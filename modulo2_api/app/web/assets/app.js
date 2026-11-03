@@ -1167,7 +1167,7 @@
     set("#pn-clientes", campo(d, "clientes") != null ? num(d.clientes) : "—");
     set("#pn-chaves", campo(d, "chaves_ativas") != null ? num(d.chaves_ativas) : "—");
     set("#pn-hoje", campo(d, "predicoes_hoje") != null ? num(d.predicoes_hoje) : "—");
-    set("#pn-lat", campo(d, "latencia_media_ms") != null ? `${num(d.latencia_media_ms, 1)} ms` : "—");
+    set("#pn-lat", campo(d, "latencia_mediana_ms") != null ? `${num(d.latencia_mediana_ms, 1)} ms` : "—");
     $("#pn-aviso").innerHTML = res.ok ? "" : avisoRota(res.r, "O banco de relatórios");
     if (res.ok) graficoDia("painel", $("#graf-painel"), d.por_dia);
     $("#pn-atualizado").textContent = "atualizado às " + new Date().toLocaleTimeString("pt-BR");
@@ -1589,7 +1589,7 @@
       set("#rel-hoje", campo(d, "predicoes_hoje") != null ? num(d.predicoes_hoje) : "—");
       set("#rel-clientes", campo(d, "clientes") != null ? num(d.clientes) : "—");
       set("#rel-chaves", campo(d, "chaves_ativas") != null ? num(d.chaves_ativas) : "—");
-      set("#rel-lat", campo(d, "latencia_media_ms") != null ? `${num(d.latencia_media_ms, 1)} ms` : "—");
+      set("#rel-lat", campo(d, "latencia_mediana_ms") != null ? `${num(d.latencia_mediana_ms, 1)} ms` : "—");
       set("#rel-preco", campo(d, "preco_medio_usd") != null ? usd.format(d.preco_medio_usd) : "—");
       graficoDia("dia", $("#graf-dia"), d.por_dia);
       const { texto, linha } = eixos();
