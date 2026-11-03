@@ -147,3 +147,10 @@ def test_corpo_nao_utf8_400_em_portugues(cliente):
     assert resposta.status_code in (400, 422)
     assert resposta.json()["erro"] in ("corpo_invalido", "dados_invalidos")
     assert "There was an error" not in resposta.text
+
+
+def test_visao3d_servida_fora_do_schema(cliente):
+    resposta = cliente.get("/visao3d")
+    assert resposta.status_code == 200
+    assert "text/html" in resposta.headers["content-type"]
+    assert "/visao3d" not in cliente.get("/openapi.json").json()["paths"]

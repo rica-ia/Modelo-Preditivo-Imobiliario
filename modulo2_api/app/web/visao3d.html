@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visão 3D · Avaliador Imobiliário</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.122.0/Build/Cesium/Widgets/widgets.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <style>
+    :root {
+      --bg: #141414; --card: rgba(26, 26, 26, .86); --line: #333333; --text: #ffffff; --muted: #999999; --soft: #bfbfbf;
+      --accent: #703bf7; --accent-2: #8254f8; --accent-bg: rgba(112, 59, 247, .18); --ok: #1baf7a; --warn: #ff9f0a;
+      --fonte: "Urbanist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 500 15px/1.5 var(--fonte); overflow: hidden; }
+    #cena, #cena-alt { position: absolute; inset: 0; }
+    #cena-alt { display: none; }
+    .cesium-viewer-bottom { left: auto !important; right: 10px !important; bottom: 8px !important; }
+    .cesium-widget-credits { font-family: var(--fonte); }
+
+    .painel { position: absolute; z-index: 5; background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+    .ficha { top: 20px; left: 20px; padding: 16px 20px; min-width: 280px; max-width: 360px; }
+    .marca { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; color: var(--soft); }
+    .marca img { width: 28px; height: 28px; }
+    .ficha h1 { margin: 10px 0 2px; font-size: 20px; line-height: 1.25; }
+    .ficha .sub { color: var(--muted); font-size: 13px; }
+    .valor { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .valor .rot { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    .valor .num { font-size: 30px; font-weight: 800; color: #fff; }
+    .valor .faixa { color: var(--soft); font-size: 13px; }
+
+    .comandos { left: 50%; bottom: 22px; transform: translateX(-50%); padding: 8px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .comandos button { font: 700 14px var(--fonte); color: var(--text); background: transparent; border: 1px solid var(--line);
+      border-radius: 10px; padding: 10px 16px; cursor: pointer; transition: .2s; }
+    .comandos button:hover { border-color: var(--accent-2); }
+    .comandos button.primario { background: var(--accent); border-color: var(--accent); }
+    .comandos button.gravando { background: #c62828; border-color: #c62828; }
+    .comandos button:disabled { opacity: .45; cursor: default; }
+
+    .estado { top: 20px; right: 20px; padding: 10px 14px; font-size: 13px; color: var(--soft); display: flex; align-items: center; gap: 8px; }
+    .ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+    .ponto.ok { background: var(--ok); }
+    .credito { position: absolute; z-index: 5; left: 20px; bottom: 22px; font-size: 12px; color: var(--soft);
+      background: rgba(0, 0, 0, .55); padding: 4px 10px; border-radius: 8px; }
+    .aviso { top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 24px 28px; max-width: 460px; text-align: center; display: none; }
+    .aviso h2 { margin: 0 0 8px; font-size: 18px; }
+    .aviso p { margin: 0 0 14px; color: var(--soft); }
+    .aviso button { font: 700 14px var(--fonte); color: #fff; background: var(--accent); border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer; }
+
+    body.captura .comandos, body.captura .estado { display: none; }
+    @media (max-width: 640px) {
+      .ficha { left: 12px; right: 12px; top: 12px; max-width: none; min-width: 0; }
+      .estado { display: none; }
+      .credito { left: 12px; bottom: 84px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="cena" aria-label="Visão 3D do entorno do imóvel"></div>
+  <div id="cena-alt" aria-label="Visão 3D simplificada"></div>
+
+  <section class="painel ficha" aria-live="polite">
+    <div class="marca"><img src="/assets/logo.svg" alt=""> Avaliador Imobiliário · Visão 3D</div>
+    <h1 id="titulo">Entorno do imóvel</h1>
+    <div class="sub" id="coords">—</div>
+    <div class="valor" id="bloco-valor" hidden>
+      <div class="rot">Valor estimado pelo modelo</div>
+      <div class="num" id="valor">—</div>
+      <div class="faixa" id="faixa"></div>
+    </div>
+  </section>
+
+  <div class="painel estado"><span class="ponto" id="ponto"></span><span id="estado">Carregando a cena…</span></div>
+
+  <div class="painel comandos" role="toolbar" aria-label="Comandos da visão 3D">
+    <button class="primario" id="bt-voo" disabled>Iniciar voo 360°</button>
+    <button id="bt-pausa" disabled>Pausar</button>
+    <button id="bt-gravar" disabled>Gravar vídeo</button>
+    <button id="bt-voltar" onclick="location.href='/'">Voltar ao portal</button>
+  </div>
+
+  <div class="credito" id="credito">Carregando…</div>
+
+  <div class="painel aviso" id="aviso" role="alert">
+    <h2>Imagens fotorrealistas indisponíveis</h2>
+    <p id="aviso-texto">Este acesso não tem a chave do Google Maps configurada. A visão 3D segue com o mapa vetorial aberto: prédios em volume sobre o satélite.</p>
+    <button id="bt-alt">Abrir a visão 3D simplificada</button>
+  </div>
+
+  <script>window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1.122.0/Build/Cesium/";</script>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.122.0/Build/Cesium/Cesium.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="/assets/visao3d.js?v=2"></script>
+</body>
+</html>
