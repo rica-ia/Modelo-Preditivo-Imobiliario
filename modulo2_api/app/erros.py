@@ -45,6 +45,8 @@ MENSAGENS = {
     "too_short": "deve ter ao menos {min_length} item(ns)",
     "too_long": "deve ter no máximo {max_length} item(ns)",
     "json_invalid": "JSON malformado",
+    "literal_error": "opção inválida; use {expected}",
+    "enum": "opção inválida; use {expected}",
 }
 
 
