@@ -67,9 +67,10 @@ def codigo_confere(segredo: str, codigo: str, instante: float | None = None) -> 
 
 
 def uri_autenticador(segredo: str, conta: str = "admin") -> str:
-    """URI lido pelo QR Code nos apps autenticadores."""
-    emissor = "Avaliador%20Imobili%C3%A1rio"
-    return f"otpauth://totp/{emissor}:{conta}?secret={segredo}&issuer={emissor}&digits={DIGITOS}&period={PASSO_S}"
+    """URI lido pelo QR Code nos apps autenticadores (curto, para o QR caber pequeno no terminal;
+    6 dígitos e 30 s são o padrão do TOTP e não precisam ir no URI)."""
+    emissor = "Avaliador"
+    return f"otpauth://totp/{emissor}:{conta}?secret={segredo}&issuer={emissor}"
 
 
 # ## Configuração lida do ambiente / .env

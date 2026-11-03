@@ -32,7 +32,7 @@ def nova_chave(cliente):
 
 def test_criar_chave_201(nova_chave):
     assert nova_chave["chave"].startswith("aval_")
-    assert nova_chave["limite_mensal"] == 1000
+    assert nova_chave["limite_mensal"] == 100
     assert nova_chave["prefixo"] == nova_chave["chave"][:12]
 
 
@@ -63,7 +63,7 @@ def test_predict_com_chave_valida_conta_uso(cliente, nova_chave):
     assert cliente.post("/v1/predict", json=EXEMPLO_IMOVEL, headers=chave).status_code == 200
     uso = cliente.get("/v1/comercial/uso", headers=chave).json()
     assert uso["usadas_mes"] == antes + 1
-    assert uso["restantes"] == 1000 - uso["usadas_mes"]
+    assert uso["restantes"] == 100 - uso["usadas_mes"]
     assert uso["cliente"] == CLIENTE["nome"]
 
 
@@ -99,7 +99,7 @@ def test_limite_excedido_429(cliente, nova_chave):
         assert resposta.status_code == 429
         assert resposta.json()["erro"] == "limite_excedido"
     finally:
-        banco.executar("UPDATE chaves SET limite_mensal = 1000 WHERE id = ?", (nova_chave["chave_id"],))
+        banco.executar("UPDATE chaves SET limite_mensal = 100 WHERE id = ?", (nova_chave["chave_id"],))
 
 
 def test_email_em_modo_arquivo(cliente, nova_chave):
@@ -136,7 +136,7 @@ def test_plano_invalido_422_em_portugues(cliente):
 def test_email_profissional_com_logo_embutido_e_titular():
     from modulo2_api.app.services.email import montar_email
 
-    msg = montar_email("Cliente", "cliente@exemplo.com", "aval_teste123456789", "basico", 1000)
+    msg = montar_email("Cliente", "cliente@exemplo.com", "aval_teste123456789", "basico", 100)
     tipos = [parte.get_content_type() for parte in msg.walk()]
     assert tipos == ["multipart/alternative", "text/plain", "multipart/related", "text/html", "image/png"]
     corpo = next(p for p in msg.walk() if p.get_content_type() == "text/html").get_content()

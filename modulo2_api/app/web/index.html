@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/assets/app.css?v=17">
+  <link rel="stylesheet" href="/assets/app.css?v=18">
   <script>
     // Aplica o tema salvo antes da pintura para evitar o "piscar" de cores.
     try {
@@ -379,9 +379,9 @@
           <div class="campo"><label for="c-empresa">Empresa <span class="nota">opcional</span></label><input id="c-empresa" name="empresa" type="text" autocomplete="off"><small class="erro" data-erro="empresa"></small></div>
           <span class="rotulo">Plano</span>
           <div class="planos" role="radiogroup" aria-label="Plano">
-            <label class="plano"><input type="radio" name="plano" value="basico" checked><span><small>Básico</small><b>1.000</b><i>avaliações por mês</i></span></label>
-            <label class="plano"><input type="radio" name="plano" value="profissional"><span><small>Profissional</small><b>10.000</b><i>avaliações por mês</i></span></label>
-            <label class="plano"><input type="radio" name="plano" value="empresarial"><span><small>Empresarial</small><b>100.000</b><i>avaliações por mês</i></span></label>
+            <label class="plano"><input type="radio" name="plano" value="basico" checked><span><small>Básico</small><b>100</b><i>predições por mês</i></span></label>
+            <label class="plano"><input type="radio" name="plano" value="profissional"><span><small>Profissional</small><b>1.000</b><i>predições por mês</i></span></label>
+            <label class="plano"><input type="radio" name="plano" value="empresarial"><span><small>Empresarial</small><b>10.000</b><i>predições por mês</i></span></label>
           </div>
           <small class="erro" data-erro="plano"></small>
           <div class="form-acoes"><button type="submit" class="btn btn-pri" id="btn-gerar">Gerar chave e enviar e-mail</button></div>
@@ -611,6 +611,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="/assets/app.js?v=17"></script>
+  <script src="/assets/app.js?v=18"></script>
 </body>
 </html>

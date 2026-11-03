@@ -19,7 +19,7 @@ from .excecoes import ChaveInvalidaError, ChaveRevogadaError, LimiteExcedidoErro
 
 log = logging.getLogger("avaliador")
 
-LIMITES = {"basico": 1_000, "profissional": 10_000, "empresarial": 100_000}
+LIMITES = {"basico": 100, "profissional": 1_000, "empresarial": 10_000}
 
 
 def _hash(chave: str) -> str:

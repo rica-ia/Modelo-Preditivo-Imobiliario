@@ -47,16 +47,40 @@ def gravar_segredo(env: Path, segredo: str) -> None:
     env.write_bytes(texto.encode("utf-8"))  # UTF-8 sem BOM
 
 
-def mostrar_qr(segredo: str, mostrar_chave: bool) -> Path:
+# Blocos de quadrante: cada caractere desenha 2 x 2 pontos do QR (TL, TR, BL, BR acesos = claros)
+QUADRANTES = " ▗▖▄▝▐▞▟▘▚▌▙▀▜▛█"
+
+
+def desenho_compacto(matriz: list[list[bool]]) -> str:
+    """QR em 1/4 da área do desenho padrão: claro = bloco aceso, escuro = espaço (terminal escuro)."""
+    altura, largura = len(matriz), len(matriz[0])
+
+    def claro(y: int, x: int) -> int:
+        return int(y >= altura or x >= largura or not matriz[y][x])
+
+    linhas = []
+    for y in range(0, altura, 2):
+        linhas.append("".join(
+            QUADRANTES[(claro(y, x) << 3) | (claro(y, x + 1) << 2) | (claro(y + 1, x) << 1) | claro(y + 1, x + 1)]
+            for x in range(0, largura, 2)
+        ))
+    return "\n".join(linhas)
+
+
+def mostrar_qr(segredo: str, mostrar_chave: bool, grande: bool = False) -> Path:
     import qrcode
     import qrcode.image.svg
 
     uri = uri_autenticador(segredo)
-    qr = qrcode.QRCode(border=2, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr = qrcode.QRCode(border=1, error_correction=qrcode.constants.ERROR_CORRECT_L)
     qr.add_data(uri)
     qr.make(fit=True)
     print("\nLeia este QR Code no app autenticador do celular:\n")
-    qr.print_ascii(invert=True)
+    if grande:
+        qr.print_ascii(invert=True)
+    else:
+        print(desenho_compacto(qr.get_matrix()))
+        print("\n(se o celular não ler, use --mostrar-qr --grande)")
     PASTA_SAIDA.mkdir(parents=True, exist_ok=True)
     svg = PASTA_SAIDA / "qr_2fa_avaliador.svg"
     qrcode.make(uri, image_factory=qrcode.image.svg.SvgPathImage, border=2).save(str(svg))
@@ -87,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--testar", action="store_true", help="confere um código de 6 dígitos do app")
     parser.add_argument("--mostrar-qr", action="store_true", help="mostra o QR do segredo atual")
     parser.add_argument("--mostrar-chave", action="store_true", help="mostra também a chave para digitar no app")
+    parser.add_argument("--grande", action="store_true", help="desenha o QR no tamanho padrão (maior)")
     parser.add_argument("--env", type=Path, default=ARQUIVO_ENV, help="arquivo .env (padrão: .env da raiz)")
     args = parser.parse_args(argv)
 
@@ -100,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
         if not atual:
             print("O 2FA ainda não está configurado. Rode o comando sem opções primeiro.")
             return 1
-        mostrar_qr(atual, args.mostrar_chave)
+        mostrar_qr(atual, args.mostrar_chave, args.grande)
         return 0
     if atual and not args.novo:
         print("O 2FA já está configurado neste .env. Use --mostrar-qr para ver o QR de novo,"
@@ -110,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
     segredo = gerar_segredo()
     gravar_segredo(args.env, segredo)
     print(f"Segredo do 2FA gravado em {args.env.name} ({VARIAVEL}).")
-    mostrar_qr(segredo, args.mostrar_chave)
+    mostrar_qr(segredo, args.mostrar_chave, args.grande)
     print("\nPróximos passos:")
     print("  1. No app autenticador, toque em '+' e leia o QR Code.")
     print("  2. Reinicie a API para ela ler o .env.")
