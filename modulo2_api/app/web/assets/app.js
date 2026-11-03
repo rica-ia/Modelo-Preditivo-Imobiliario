@@ -1304,6 +1304,7 @@
         marcadorDetalhe.setLngLat([lon, lat]);
       }
       mapaDetalhe.centro = [lon, lat];
+      mapaDetalhe.valor = { v: preco, min, max };
       setTimeout(() => mapaDetalhe.m.resize(), 30);
     }
     $("#det-corpo").innerHTML = `
@@ -1748,9 +1749,20 @@
     btn.textContent = "Visão 3D";
     const ctrl = document.createElement("div");
     ctrl.className = "ctrl-3d";
-    ctrl.innerHTML = '<button type="button" class="btn-mini" data-3d="parar">Parar voo</button><button type="button" class="btn-mini" data-3d="sat">Satélite 3D</button>';
+    ctrl.innerHTML = '<button type="button" class="btn-mini" data-3d="parar">Parar voo</button><button type="button" class="btn-mini" data-3d="sat">Satélite 3D</button><button type="button" class="btn-mini" data-3d="foto" title="Voo 360° com imagens 3D fotorrealistas (requer chave própria no .env local)">Voo fotorrealista</button>';
     area.append(btn, ctrl);
     reg.ui = { btn, ctrl, parar: ctrl.querySelector('[data-3d="parar"]'), sat: ctrl.querySelector('[data-3d="sat"]') };
+    // Abre a página de voo 360° no ponto atual, levando o valor da última avaliação
+    ctrl.querySelector('[data-3d="foto"]').addEventListener("click", () => {
+      const [lng, lat] = centroFn(), d = estado.ultimoResultado && estado.ultimoResultado.dados;
+      const val = reg.valor || (d && { v: d.preco_estimado_usd, min: d.faixa_provavel_usd?.minimo, max: d.faixa_provavel_usd?.maximo });
+      const q = new URLSearchParams({ lat: lat.toFixed(6), lng: lng.toFixed(6), titulo: "Entorno do imóvel avaliado" });
+      if (val && Number.isFinite(val.v)) {
+        q.set("valor", Math.round(val.v));
+        if (Number.isFinite(val.min) && Number.isFinite(val.max)) { q.set("faixa_min", Math.round(val.min)); q.set("faixa_max", Math.round(val.max)); }
+      }
+      window.open(`/visao3d?${q}`, "_blank", "noopener");
+    });
     btn.addEventListener("click", () => (reg.tres ? desligar3D(reg) : ligar3D(reg, centroFn())));
     reg.ui.parar.addEventListener("click", () => (reg.raf ? pararOrbita(reg) : orbitar(reg)));
     reg.ui.sat.addEventListener("click", () => definirBase(reg, basePreferida[reg.chave] === "satelite" ? "mapa" : "satelite"));
