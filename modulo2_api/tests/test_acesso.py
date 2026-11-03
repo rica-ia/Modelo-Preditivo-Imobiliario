@@ -54,14 +54,13 @@ def test_entrar_200_e_sessao_aceita_no_console(cliente_2fa):
     assert len(sessao) >= 40 and resposta.json()["expira_em"]
     console = cliente.get("/v1/comercial/clientes", headers={"X-Admin-Sessao": sessao})
     assert console.status_code == 200
-    # Na sessão 2FA, emitir chave pede o código do app de novo
-    sem_codigo = cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE, headers={"X-Admin-Sessao": sessao})
-    assert sem_codigo.status_code == 401 and sem_codigo.json()["erro"] == "acesso_negado"
-    errado = str((int(totp(segredo)) + 500_000) % 1_000_000).zfill(6)
+    # Na sessão, emitir chave pede a senha da conta de novo
+    sem_senha = cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE, headers={"X-Admin-Sessao": sessao})
+    assert sem_senha.status_code == 401 and sem_senha.json()["erro"] == "acesso_negado"
     assert cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE,
-                        headers={"X-Admin-Sessao": sessao, "X-Codigo-2FA": errado}).status_code == 401
+                        headers={"X-Admin-Sessao": sessao, "X-Senha-Conta": "errada"}).status_code == 401
     criada = cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE,
-                          headers={"X-Admin-Sessao": sessao, "X-Codigo-2FA": totp(segredo)})
+                          headers={"X-Admin-Sessao": sessao, "X-Senha-Conta": SENHA})
     assert criada.status_code == 201
     # O token de administrador (scripts) segue sem a confirmação
     assert cliente.post("/v1/comercial/chaves", json=NOVA_CHAVE, headers={"X-Admin-Token": "token-de-teste"}).status_code == 201
@@ -150,5 +149,15 @@ def test_entrada_de_contingencia_so_local_e_com_token(cliente_2fa):
         assert local.post("/v1/acesso/entrar-local").status_code == 401
         assert local.post("/v1/acesso/entrar-local", headers={"X-Admin-Token": "errado"}).status_code == 401
         r = local.post("/v1/acesso/entrar-local", headers={"X-Admin-Token": "token-de-teste"})
+        assert r.status_code == 200
+        assert local.get("/v1/comercial/clientes", headers={"X-Admin-Sessao": r.json()["sessao"]}).status_code == 200
+
+
+def test_entrada_so_com_senha_apenas_local(cliente_2fa):
+    cliente, _ = cliente_2fa
+    assert cliente.post("/v1/acesso/entrar-senha", json={"senha": SENHA}).status_code == 401  # host "testclient"
+    with TestClient(main.app, client=("127.0.0.1", 50001)) as local:
+        assert local.post("/v1/acesso/entrar-senha", json={"senha": "errada"}).status_code == 401
+        r = local.post("/v1/acesso/entrar-senha", json={"senha": SENHA})
         assert r.status_code == 200
         assert local.get("/v1/comercial/clientes", headers={"X-Admin-Sessao": r.json()["sessao"]}).status_code == 200

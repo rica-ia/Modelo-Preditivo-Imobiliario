@@ -76,3 +76,23 @@ def entrar_local(request: Request, acesso: ServicoAcesso = Depends(obter_acesso)
     if request.client is None or request.client.host not in HOSTS_LOCAIS:
         raise AcessoNegadoError("A entrada de contingência só funciona na própria máquina.")
     return SessaoSaida(**acesso.abrir_sessao())
+
+
+class EntrarSenhaEntrada(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    senha: str = Field(..., min_length=1, max_length=128, description="Senha da conta.")
+
+
+@router.post(
+    "/entrar-senha",
+    response_model=SessaoSaida,
+    summary="Entrada só com a senha, só na própria máquina",
+    description="Abre uma sessão com a senha da conta, sem o código do app. Só responde a chamadas de "
+                "127.0.0.1; é o que o comando `avaliador senha` usa. Mesmo contador de 5 falhas e bloqueio de 5 min.",
+    responses={401: {"model": ErroSaida, "description": "Senha incorreta ou chamada fora da máquina local."},
+               429: {"model": ErroSaida, "description": "Bloqueio de 5 min após 5 falhas."}},
+)
+def entrar_senha(dados: EntrarSenhaEntrada, request: Request, acesso: ServicoAcesso = Depends(obter_acesso)) -> SessaoSaida:
+    if request.client is None or request.client.host not in HOSTS_LOCAIS:
+        raise AcessoNegadoError("A entrada só com senha funciona apenas na própria máquina.")
+    return SessaoSaida(**acesso.entrar_so_senha(dados.senha))

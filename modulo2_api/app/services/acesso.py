@@ -141,17 +141,29 @@ class ServicoAcesso:
             self._falhas = 0
         return self.abrir_sessao()
 
-    def confirmar_codigo(self, codigo: str | None) -> None:
-        """Confirmação com o código do app em ações sensíveis (emitir chave), dentro de uma sessão 2FA.
-        Usa o mesmo contador de falhas e bloqueio da entrada."""
+    def _conferir(self, ok, motivo: str) -> None:
+        """Aplica o contador de falhas e o bloqueio a uma conferência (`ok` é chamado já com a trava)."""
         agora = time.time()
         with self._trava:
             if agora < self._bloqueado_ate:
                 minutos = max(1, round((self._bloqueado_ate - agora) / 60))
                 raise MuitasTentativasError(f"Muitas tentativas incorretas. Tente de novo em {minutos} min.")
-            if not codigo_confere(segredo_configurado(), (codigo or "").strip(), agora):
-                self._registrar_falha(agora, "Código do autenticador incorreto")
+            if not ok():
+                self._registrar_falha(agora, motivo)
             self._falhas = 0
+
+    def confirmar_senha(self, senha: str | None) -> None:
+        """Confirmação com a senha da conta em ações sensíveis (emitir chave), dentro de uma sessão."""
+        if not senha_configurada():
+            raise CredenciaisInvalidasError("A senha de acesso não está configurada neste servidor.")
+        self._conferir(lambda: senha_confere(senha or ""), "Senha da conta incorreta")
+
+    def entrar_so_senha(self, senha: str) -> dict:
+        """Entrada só com a senha (comando `avaliador senha`, restrito à própria máquina pela rota)."""
+        if not senha_configurada():
+            raise CredenciaisInvalidasError("A senha de acesso não está configurada neste servidor.")
+        self._conferir(lambda: senha_confere(senha), "Senha incorreta")
+        return self.abrir_sessao()
 
     def _registrar_falha(self, agora: float, motivo: str) -> None:
         """Chamado com a trava já adquirida; sempre levanta a exceção."""

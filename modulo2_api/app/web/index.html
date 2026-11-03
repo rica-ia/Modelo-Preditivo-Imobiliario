@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/assets/app.css?v=20">
+  <link rel="stylesheet" href="/assets/app.css?v=22">
   <script>
     // Aplica o tema salvo antes da pintura para evitar o "piscar" de cores.
     try {
@@ -384,7 +384,7 @@
             <label class="plano"><input type="radio" name="plano" value="empresarial"><span><small>Empresarial</small><b>10.000</b><i>predições por mês</i></span></label>
           </div>
           <small class="erro" data-erro="plano"></small>
-          <div class="campo" id="campo-codigo2fa" hidden><label for="c-codigo2fa">Código do autenticador <span class="nota">confirma a emissão</span></label><input id="c-codigo2fa" name="codigo2fa" type="text" inputmode="numeric" maxlength="6" pattern="\d{6}" autocomplete="one-time-code" placeholder="000000"><small class="erro" data-erro="codigo2fa"></small></div>
+          <div class="campo" id="campo-senha-conta" hidden><label for="c-senha-conta">Senha da conta <span class="nota">confirma a emissão</span></label><input id="c-senha-conta" name="senhaconta" type="password" autocomplete="current-password" maxlength="128"><small class="erro" data-erro="senhaconta"></small></div>
           <div class="form-acoes"><button type="submit" class="btn btn-pri" id="btn-gerar">Gerar chave e enviar e-mail</button></div>
         </form>
         <div class="cartao" id="chave-resultado" aria-live="polite">
@@ -567,7 +567,7 @@
       <h2 id="entrar-titulo">Entrar na plataforma</h2>
       <p class="nota">Acesso protegido por senha e segundo fator. Abra o app autenticador do celular e digite o código de 6 dígitos.</p>
       <div class="campo"><label for="en-senha">Senha</label><input id="en-senha" type="password" autocomplete="current-password" required></div>
-      <div class="campo"><label for="en-codigo">Código do autenticador</label><input id="en-codigo" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></div>
+      <div class="campo"><label for="en-codigo">Código do autenticador</label><input id="en-codigo" type="password" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></div>
       <div class="entrar-erro" id="entrar-erro" role="alert" hidden></div>
       <button type="submit" class="btn btn-pri entrar-btn" id="en-entrar">Entrar</button>
       <p class="nota entrar-rodape">A API pública continua aberta: <a href="/docs">documentação interativa</a> e <code>POST /v1/predict</code> não exigem login.</p>
@@ -612,6 +612,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="/assets/app.js?v=20"></script>
+  <script src="/assets/app.js?v=22"></script>
 </body>
 </html>

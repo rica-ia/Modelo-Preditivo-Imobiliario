@@ -142,6 +142,9 @@
     });
     m.touchZoomRotate.disableRotation();
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    // Tela cheia da área inteira do mapa, para levar junto os chips, a legenda e os seletores sobrepostos
+    const area = m.getContainer().closest(".mapa-area") || m.getContainer().parentElement;
+    m.addControl(new maplibregl.FullscreenControl({ container: area }), "bottom-right");
     const reg = { m, chave, tema: escuroAtivo(), depoisDoEstilo, tres: false, raf: null };
     m.on("style.load", () => { adicionarSatelite(reg); adicionarPredios(reg); if (reg.depoisDoEstilo) reg.depoisDoEstilo(); });
     m.on("error", (e) => { window.__errosMapa.push(String((e && e.error && e.error.message) || e)); });
@@ -153,7 +156,11 @@
   function adicionarSatelite(reg) {
     const m = reg.m;
     if (!m.getSource("satelite")) m.addSource("satelite", { type: "raster", tiles: [ESRI], tileSize: 256, maxzoom: 19, attribution: "Imagens: Esri, Maxar, Earthstar Geographics" });
-    const rotulos = (m.getStyle().layers || []).find((l) => l.type === "symbol");
+    // A foto entra acima de todo o desenho do estilo (prédios e ruas em cor escura) e abaixo só dos
+    // rótulos finais; o primeiro rótulo (nome da água) vem antes dos prédios e deixava tudo preto.
+    const camadas = m.getStyle().layers || [];
+    const ultimaForma = camadas.reduce((u, l, i) => (l.type !== "symbol" ? i : u), -1);
+    const rotulos = camadas.slice(ultimaForma + 1).find((l) => l.type === "symbol");
     if (!m.getLayer("satelite")) {
       m.addLayer({ id: "satelite", type: "raster", source: "satelite", layout: { visibility: basePreferida[reg.chave] === "satelite" ? "visible" : "none" } }, rotulos && rotulos.id);
     }
@@ -1120,7 +1127,7 @@
   const temAdmin = () => (acesso.exige ? !!sessaoAdmin() : !!tokenAdmin());
   function pedirAdmin() { if (acesso.exige) mostrarEntrada("Entre com a senha e o código do autenticador.", "info"); else abrirModal("modal-admin"); }
   function atualizarAdmin() {
-    const campoCodigo = $("#campo-codigo2fa");
+    const campoCodigo = $("#campo-senha-conta");
     if (campoCodigo) campoCodigo.hidden = !acesso.exige;
     if (acesso.exige) {
       const tem2 = !!sessaoAdmin();
@@ -1169,7 +1176,6 @@
     $("#en-senha").value = "";
     $("#en-codigo").value = "";
   }
-  $("#c-codigo2fa").addEventListener("input", (ev) => { ev.target.value = ev.target.value.replace(/\D/g, "").slice(0, 6); });
   $("#en-codigo").addEventListener("input", (ev) => { ev.target.value = ev.target.value.replace(/\D/g, "").slice(0, 6); });
   $("#form-entrar").addEventListener("submit", async (ev) => {
     ev.preventDefault();
@@ -1562,8 +1568,8 @@
     let ok = true;
     if (!corpo.nome) { marcar("nome", "Informe o nome"); ok = false; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(corpo.email)) { marcar("email", "E-mail inválido"); ok = false; }
-    const codigo2fa = f.codigo2fa ? f.codigo2fa.value.replace(/\s/g, "") : "";
-    if (acesso.exige && !/^\d{6}$/.test(codigo2fa)) { marcar("codigo2fa", "Digite os 6 dígitos do app autenticador"); ok = false; }
+    const senhaConta = f.senhaconta ? f.senhaconta.value : "";
+    if (acesso.exige && !senhaConta) { marcar("senhaconta", "Digite a senha da conta para confirmar"); ok = false; }
     if (!ok) return;
     if (!temAdmin()) {
       $("#chave-resultado").innerHTML = acesso.exige
@@ -1575,11 +1581,11 @@
     const btn = $("#btn-gerar");
     btn.disabled = true;
     btn.innerHTML = '<span class="carregando"></span> Gerando…';
-    const r = conferirSessao(await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: { ...cabAdmin(), ...(acesso.exige ? { "X-Codigo-2FA": codigo2fa } : {}) } }));
+    const r = conferirSessao(await api("/v1/comercial/chaves", { metodo: "POST", corpo, headers: { ...cabAdmin(), ...(acesso.exige ? { "X-Senha-Conta": senhaConta } : {}) } }));
     btn.disabled = false;
     btn.textContent = "Gerar chave e enviar e-mail";
-    if (!r.ok && r.dados && r.dados.erro === "acesso_negado") { marcar("codigo2fa", r.dados.mensagem); return; }
-    if (r.status === 429) { marcar("codigo2fa", (r.dados && r.dados.mensagem) || "Muitas tentativas. Aguarde 5 min."); return; }
+    if (!r.ok && r.dados && r.dados.erro === "acesso_negado") { marcar("senhaconta", r.dados.mensagem); f.senhaconta.value = ""; return; }
+    if (r.status === 429) { marcar("senhaconta", (r.dados && r.dados.mensagem) || "Muitas tentativas. Aguarde 5 min."); return; }
     if (!r.ok || !r.dados) {
       const det = detalhesErro(r.dados);
       det.forEach((d) => marcar(d.campo, d.mensagem));

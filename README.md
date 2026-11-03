@@ -79,7 +79,7 @@ O Módulo 1 terminou com um modelo de regressão validado (R² de 0,896 no teste
 | Contratos | entrada e saída em Pydantic com `Field` (tipos, faixas, padrões e descrições) e `extra="forbid"` |
 | Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de acesso com 2FA (`/v1/acesso/*`), de relatórios (`/v1/relatorios/*`) e da visão 3D (`/v1/config/mapa3d`) |
 | Erros | 400, 404, 405, 422, 500 e 503 em JSON padronizado e em português; a API não cai |
-| Qualidade | 69 testes automatizados (`pytest` + `TestClient`) |
+| Qualidade | 70 testes automatizados (`pytest` + `TestClient`) |
 | Produto | plataforma web de gestão que consome a API: painel, nova avaliação com mapa e visão 3D, laudos com exportação, simulador, relatórios de mercado, mapa de valor, transparência do modelo, console comercial, documentação do banco e área do desenvolvedor |
 | Comercial e dados | chave de API por cliente com e-mail real ([M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail)) e banco SQLite com as 21.613 vendas reais, os laudos e o uso da API ([M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado)) |
 
@@ -610,11 +610,12 @@ O console da plataforma pode exigir **senha + código de 6 dígitos de um app au
 | GET | `/v1/acesso/estado` | informa se o console exige 2FA (`exige_2fa`) | 200 |
 | POST | `/v1/acesso/entrar` | recebe `senha` e `codigo` e devolve a sessão e a expiração | 200 · 401 `acesso_negado` · 422 · 429 `muitas_tentativas` |
 | POST | `/v1/acesso/sair` | encerra a sessão enviada em `X-Admin-Sessao` | 200 |
+| POST | `/v1/acesso/entrar-senha` | entrada só com a senha da conta (`senha`), sem o código do app; só aceita chamada de 127.0.0.1 | 200 · 401 · 422 · 429 |
 | POST | `/v1/acesso/entrar-local` | entrada de contingência sem senha nem código: exige `X-Admin-Token` (só existe no `.env` local) e chamada de 127.0.0.1 | 200 · 401 |
 
 Sessão inventada ou expirada nas rotas do console devolve 401 `nao_autorizado`, e o portal volta para a tela de entrada.
 
-Dentro da sessão 2FA, **emitir uma chave pede de novo o código do app** (cabeçalho `X-Codigo-2FA`, campo "Código do autenticador" na tela Comercial), com o mesmo contador de 5 falhas e bloqueio de 5 min; o token de administrador, usado por scripts e testes, segue sem essa etapa.
+Dentro da sessão, **emitir uma chave pede de novo a senha da conta** (cabeçalho `X-Senha-Conta`, campo "Senha da conta" na tela Comercial), com o mesmo contador de 5 falhas e bloqueio de 5 min; o token de administrador, usado por scripts e testes, segue sem essa etapa.
 
 O mesmo QR pode ser lido em mais de um celular: todos geram os mesmos códigos, porque partilham o segredo. A entrada de contingência entrega a sessão no fragmento da URL (`#entrar=...`), que o navegador não envia ao servidor, e o portal a apaga do endereço assim que a grava.
 

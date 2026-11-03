@@ -3,7 +3,7 @@
 
 Console do administrador (emitir, listar e revogar chaves; ver o e-mail enviado)
 protegido pelo cabeçalho `X-Admin-Token` ou por uma sessão 2FA (`X-Admin-Sessao`; emitir
-chave pede também o código do app em `X-Codigo-2FA`), e consulta de consumo do cliente pela
+chave pede também a senha da conta em `X-Senha-Conta`), e consulta de consumo do cliente pela
 própria chave (`X-API-Key`).
 """
 
@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse
 from ..schemas.comercial import ClienteSaida, NovaChaveEntrada, NovaChaveSaida, RevogacaoSaida, UsoSaida
 from ..schemas.sistema import ErroSaida
 from ..services.comercial import ServicoComercial
-from .dependencias import cabecalho_chave, confirmar_2fa, exigir_admin, obter_comercial
+from .dependencias import cabecalho_chave, confirmar_senha_conta, exigir_admin, obter_comercial
 
 router = APIRouter(prefix="/v1/comercial", tags=["Comercial"])
 
@@ -27,11 +27,11 @@ ERROS_ADMIN = {
     "/chaves",
     status_code=201,
     response_model=NovaChaveSaida,
-    responses={**ERROS_ADMIN, 429: {"model": ErroSaida, "description": "Código do autenticador errado 5 vezes: bloqueio de 5 min."}},
-    dependencies=[Depends(exigir_admin), Depends(confirmar_2fa)],
+    responses={**ERROS_ADMIN, 429: {"model": ErroSaida, "description": "Senha da conta errada 5 vezes: bloqueio de 5 min."}},
+    dependencies=[Depends(exigir_admin), Depends(confirmar_senha_conta)],
     summary="Cadastra o cliente, emite a chave e envia as instruções por e-mail",
     description="Com o token de administrador, basta o corpo. Numa sessão 2FA (`X-Admin-Sessao`), a emissão "
-                "pede também o código atual do app autenticador no cabeçalho `X-Codigo-2FA`.",
+                "pede também a senha da conta no cabeçalho `X-Senha-Conta`.",
 )
 def criar_chave(dados: NovaChaveEntrada, comercial: ServicoComercial = Depends(obter_comercial)) -> NovaChaveSaida:
     return NovaChaveSaida(**comercial.criar_chave(dados.nome, dados.email, dados.empresa, dados.plano))
