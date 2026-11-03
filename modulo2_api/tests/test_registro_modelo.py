@@ -65,11 +65,12 @@ def test_rota_lista_artefatos_sem_blob(cliente):
 
 def test_verificacao_integra(cliente):
     artefato_id = cliente.get("/v1/modelo/artefatos").json()[0]["id"]
-    corpo = cliente.get(f"/v1/modelo/artefatos/{artefato_id}/verificar").json()
+    corpo = cliente.get(f"/v1/modelo/artefatos/{artefato_id}/verificar", headers=ADMIN).json()
     assert corpo["integro"] is True
     assert corpo["sha256_blob"] == corpo["sha256_disco"] == corpo["sha256_carregado"] == SHA_DISCO
     assert corpo["previsao_restaurada"] == corpo["previsao_em_memoria"] > 0
-    assert cliente.get("/v1/modelo/artefatos/9999/verificar").status_code == 404
+    assert cliente.get("/v1/modelo/artefatos/9999/verificar", headers=ADMIN).status_code == 404
+    assert cliente.get(f"/v1/modelo/artefatos/{artefato_id}/verificar").status_code == 401
 
 
 def test_explorador_do_banco_mostra_modelos_sem_blob(cliente):
@@ -92,7 +93,15 @@ def test_blob_adulterado_nao_e_integro(cliente):
                    "VALUES ('v2', 'adulterado.joblib', ?, ?, 'joblib', '2026-11-03', 0, ?)",
                    (hashlib.sha256(original).hexdigest()[::-1], len(adulterado), adulterado))
     adulterado_id = banco.um("SELECT id FROM modelos WHERE nome_arquivo = 'adulterado.joblib'")["id"]
-    corpo = cliente.get(f"/v1/modelo/artefatos/{adulterado_id}/verificar").json()
+    corpo = cliente.get(f"/v1/modelo/artefatos/{adulterado_id}/verificar", headers=ADMIN).json()
     assert corpo["integro"] is False
     assert corpo["sha256_blob"] != corpo["sha256_disco"]
     banco.executar("DELETE FROM modelos WHERE id = ?", (adulterado_id,))
+
+
+def test_resumo_mlflow_sem_registro_explica_como_criar(cliente, monkeypatch, tmp_path):
+    monkeypatch.setenv("AVALIADOR_MLFLOW_DB", str(tmp_path / "inexistente.db"))
+    monkeypatch.setenv("AVALIADOR_MLFLOW_URL", "http://127.0.0.1:9")
+    corpo = cliente.get("/v1/modelo/mlflow").json()
+    assert corpo["disponivel"] is False and corpo["ui_no_ar"] is False
+    assert "registrar_mlflow" in corpo["comando_registrar"] and "mlflow ui" in corpo["comando_ui"]

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/assets/app.css?v=28">
+  <link rel="stylesheet" href="/assets/app.css?v=29">
   <link rel="stylesheet" href="/assets/banco.css?v=1">
   <script>
     // Aplica o tema salvo antes da pintura para evitar o "piscar" de cores.
@@ -457,7 +457,11 @@
         <h2>Para desenvolvedores</h2>
         <p>API REST em FastAPI com contrato validado por Pydantic. Explore e teste tudo pelo Swagger.</p>
       </div>
-      <div class="acoes"><a class="btn btn-pri" href="/docs" target="_blank" rel="noopener">Abrir Swagger (/docs)</a><a class="btn btn-borda" href="/redoc" target="_blank" rel="noopener">ReDoc</a></div>
+      <div class="acoes"><a class="btn btn-pri" href="/docs" target="_blank" rel="noopener">Abrir Swagger (/docs)</a><a class="btn btn-borda" href="/redoc" target="_blank" rel="noopener">ReDoc</a><a class="btn btn-borda" id="bt-mlflow-topo" href="http://127.0.0.1:5000" target="_blank" rel="noopener">MLflow</a></div>
+      <div class="cartao mlflow-cartao" id="cartao-mlflow">
+        <div class="codigo-topo"><h3 class="cartao-titulo">MLflow · rastreamento e registro do modelo</h3><span class="chip" id="mlflow-status">verificando…</span></div>
+        <div id="mlflow-corpo"><p class="nota">Consultando o registro do MLflow…</p></div>
+      </div>
       <div class="grade-2">
         <div class="cartao">
           <div class="codigo-topo"><h3 class="cartao-titulo">Requisição com curl</h3><button class="btn-mini" data-copiar="cod-curl">Copiar</button></div>
@@ -646,7 +650,7 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="/assets/app.js?v=28"></script>
+  <script src="/assets/app.js?v=29"></script>
   <script src="/assets/banco.js?v=2"></script>
 </body>
 </html>
