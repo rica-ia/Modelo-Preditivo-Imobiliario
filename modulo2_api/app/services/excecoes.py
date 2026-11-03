@@ -31,3 +31,11 @@ class LimiteExcedidoError(RuntimeError):
 
 class NaoEncontradoError(LookupError):
     """Recurso inexistente (vira HTTP 404)."""
+
+
+class CredenciaisInvalidasError(PermissionError):
+    """Senha ou código do autenticador incorretos no acesso com 2FA (vira HTTP 401)."""
+
+
+class MuitasTentativasError(RuntimeError):
+    """Falhas seguidas no acesso com 2FA: bloqueio temporário (vira HTTP 429)."""

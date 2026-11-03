@@ -47,7 +47,7 @@ Este repositório reúne dois módulos do curso **Desenvolvimento de IA para An�
   <img alt="Pydantic 2.14.2" src="https://img.shields.io/badge/Pydantic-2.14.2-e92063?style=for-the-badge&logo=pydantic&logoColor=white">
   <img alt="Uvicorn 0.54.0" src="https://img.shields.io/badge/Uvicorn-0.54.0-4b5563?style=for-the-badge">
   <img alt="scikit-learn 1.8.0" src="https://img.shields.io/badge/scikit--learn-1.8.0-f59e0b?style=for-the-badge&logo=scikitlearn&logoColor=white">
-  <img alt="pytest 55 aprovados" src="https://img.shields.io/badge/pytest-55%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
+  <img alt="pytest 65 aprovados" src="https://img.shields.io/badge/pytest-65%20aprovados-16a34a?style=for-the-badge&logo=pytest&logoColor=white">
   <img alt="Modelo v2" src="https://img.shields.io/badge/Modelo-v2-16a34a?style=for-the-badge">
   <img alt="Licença MIT" src="https://img.shields.io/badge/Licen%C3%A7a-MIT-475569?style=for-the-badge">
 </p>
@@ -77,9 +77,9 @@ O Módulo 1 terminou com um modelo de regressão validado (R² de 0,896 no teste
 | API | FastAPI organizada em `schemas/`, `services/`, `routers/` e `main.py` |
 | Ciclo de vida | modelo lido do disco **uma única vez**, no `lifespan`, e mantido na memória RAM |
 | Contratos | entrada e saída em Pydantic com `Field` (tipos, faixas, padrões e descrições) e `extra="forbid"` |
-| Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de relatórios (`/v1/relatorios/*`) e da visão 3D (`/v1/config/mapa3d`) |
+| Endpoints | `GET /health`, `POST /v1/predict`, `POST /v1/predict/lote`, `GET /v1/modelo` e `GET /v1/regioes`, mais as rotas de laudos (`/v1/avaliacoes`), comerciais (`/v1/comercial/*`), de acesso com 2FA (`/v1/acesso/*`), de relatórios (`/v1/relatorios/*`) e da visão 3D (`/v1/config/mapa3d`) |
 | Erros | 400, 404, 405, 422, 500 e 503 em JSON padronizado e em português; a API não cai |
-| Qualidade | 55 testes automatizados (`pytest` + `TestClient`) |
+| Qualidade | 65 testes automatizados (`pytest` + `TestClient`) |
 | Produto | plataforma web de gestão que consome a API: painel, nova avaliação com mapa e visão 3D, laudos com exportação, simulador, relatórios de mercado, mapa de valor, transparência do modelo, console comercial, documentação do banco e área do desenvolvedor |
 | Comercial e dados | chave de API por cliente com e-mail real ([M2.13](#m213-módulo-comercial-chaves-de-api-e-e-mail)) e banco SQLite com as 21.613 vendas reais, os laudos e o uso da API ([M2.14](#m214-banco-sqlite-laudos-e-relatórios-de-mercado)) |
 
@@ -123,7 +123,7 @@ O modelo foi **reaproveitado e aprimorado a partir do Módulo 1** deste reposit�
 | RMSE no teste vs. baseline pela média | **US$ 116.823 vs. US$ 373.780** (−69 %) |
 | Faixa provável | preço × 0,826 a preço × 1,180 (80 % central dos erros na validação) |
 | Latência de inferência após o aquecimento | ~20 a 45 ms por requisição |
-| Testes automatizados | **55 aprovados** |
+| Testes automatizados | **65 aprovados** |
 
 ## M2.6 Estrutura do Módulo 2
 
@@ -552,7 +552,7 @@ O módulo comercial transforma a API num serviço que pode ser oferecido a clien
 
 | Método | Rota | Função | Acesso |
 |---|---|---|---|
-| POST | `/v1/comercial/chaves` | cadastra o cliente, emite a chave e envia as instruções por e-mail | console (`X-Admin-Token`) · 201 |
+| POST | `/v1/comercial/chaves` | cadastra o cliente, emite a chave e envia as instruções por e-mail | console (`X-Admin-Token` ou `X-Admin-Sessao`) · 201 |
 | GET | `/v1/comercial/clientes` | lista clientes, chaves e consumo do mês | console |
 | POST | `/v1/comercial/chaves/{chave_id}/revogar` | revoga uma chave | console |
 | GET | `/v1/comercial/emails/{envio_id}` | pré-visualiza o e-mail enviado ao cliente | console |
@@ -565,13 +565,52 @@ O módulo comercial transforma a API num serviço que pode ser oferecido a clien
 | Armazenamento | a chave é guardada **apenas como hash SHA-256**; o texto da chave só aparece na resposta de emissão e no e-mail enviado ao cliente |
 | Uso da chave | header `X-API-Key`, **opcional**, em `POST /v1/predict`, `/v1/predict/lote` e `/v1/avaliacoes`; sem o header as rotas continuam abertas ao portal e ao Swagger |
 | Respostas | chave inexistente → 401 `chave_invalida`; revogada → 403 `chave_revogada`; acima do limite → 429 `limite_excedido` |
-| E-mail | texto e HTML em português, enviado por SMTP com STARTTLS; sem SMTP configurado, ou se o envio falhar, a mensagem fica registrada como `.eml` para pré-visualização, com a chave mascarada (só o prefixo) |
-| Segredos | `AVALIADOR_ADMIN_TOKEN` e as credenciais SMTP ficam no `.env` (fora do Git, com modelo em [`.env.example`](.env.example)); no portal, o token é informado em **Administrador** e fica só na aba do navegador; nenhuma senha vai para log, resposta ou banco |
+| E-mail | texto e HTML em português, com layout profissional: logo embutido na própria mensagem (sem link externo), instruções de uso, exemplo `curl` e assinatura "by Ricardo Pasquali dos Reis"; enviado por SMTP com STARTTLS pela conta própria da plataforma; sem SMTP configurado, ou se o envio falhar, a mensagem fica registrada como `.eml` para pré-visualização, com a chave mascarada (só o prefixo) |
+| Segredos | `AVALIADOR_ADMIN_TOKEN` e as credenciais SMTP ficam no `.env` (fora do Git, com modelo em [`.env.example`](.env.example)); no portal, o token é informado em **Administrador** e fica só na aba do navegador; com o 2FA ligado, a entrada passa a ser por senha e código do autenticador (abaixo); nenhuma senha vai para log, resposta ou banco |
 
 **Console comercial** (chave e e-mail mascarados na captura):
 
 <p align="center">
   <img src="assets/modulo2/portal_comercial.jpg" alt="Portal: console comercial com chave emitida mascarada, e-mail enviado e lista de clientes" width="90%">
+</p>
+
+### Acesso com senha e segundo fator (2FA)
+
+O console da plataforma pode exigir **senha + código de 6 dígitos de um app autenticador** (Google Authenticator, Microsoft Authenticator, Authy etc.). O código segue o padrão **TOTP do RFC 6238**, calculado no celular e conferido pela API com a biblioteca padrão do Python: **sem custo e sem serviço externo**.
+
+**Fluxo**
+
+1. Na raiz do repositório, com o ambiente virtual ativo, gerar o segredo e o QR Code (PowerShell ou WSL):
+
+   ```bash
+   python -m modulo2_api.ferramentas.configurar_2fa
+   ```
+
+   O comando grava `AVALIADOR_TOTP_SEGREDO` no `.env`, preservando as demais linhas, e desenha o QR Code no próprio terminal. Também salva uma cópia em SVG em `modulo2_api/saida/`, pasta fora do Git, para abrir em tela grande.
+2. No celular, ler o QR Code no app autenticador.
+3. Reiniciar a API e conferir o código com `python -m modulo2_api.ferramentas.configurar_2fa --testar`.
+4. No portal, a tela **Entrar na plataforma** pede a **Senha** e o **Código do autenticador**. Depois de entrar, a sessão vale 8 horas, fica só na aba do navegador e segue no cabeçalho `X-Admin-Sessao`; **Administrador → Sair** encerra a sessão.
+
+| Item | Como funciona |
+|---|---|
+| Senha | `AVALIADOR_SENHA_ACESSO`; se estiver vazia, vale a senha de app do e-mail (`SMTP_SENHA_APP`), por escolha do titular |
+| Segundo fator | TOTP (HMAC-SHA1, 6 dígitos, 30 s), com tolerância de ±1 janela para relógio adiantado ou atrasado; testado contra os vetores oficiais do RFC 6238 |
+| Proteção | comparação em tempo constante (`hmac.compare_digest`); 5 falhas seguidas bloqueiam novas tentativas por 5 minutos |
+| Sessão | token aleatório de 256 bits, guardado na memória da API só como hash SHA-256; expira em 8 h ou quando a API reinicia |
+| Opções do comando | `--novo` troca o segredo (o celular precisa ler o QR de novo); `--mostrar-qr` mostra o QR atual; `--testar` confere um código; `--mostrar-chave` exibe a chave para digitar no app, se preferir |
+| Sem configuração | com `AVALIADOR_TOTP_SEGREDO` vazio, o 2FA fica desligado e o console segue com o token de administrador; quem clona o repositório roda tudo sem configurar nada |
+| API pública | `POST /v1/predict`, `/v1/predict/lote` e a documentação `/docs` **continuam abertos**: o 2FA protege só o console administrativo |
+
+| Método | Rota | Função | Respostas |
+|---|---|---|---|
+| GET | `/v1/acesso/estado` | informa se o console exige 2FA (`exige_2fa`) | 200 |
+| POST | `/v1/acesso/entrar` | recebe `senha` e `codigo` e devolve a sessão e a expiração | 200 · 401 `acesso_negado` · 422 · 429 `muitas_tentativas` |
+| POST | `/v1/acesso/sair` | encerra a sessão enviada em `X-Admin-Sessao` | 200 |
+
+Sessão inventada ou expirada nas rotas do console devolve 401 `nao_autorizado`, e o portal volta para a tela de entrada.
+
+<p align="center">
+  <img src="assets/modulo2/portal_15_entrar_2fa.jpg" alt="Portal: tela Entrar na plataforma com senha e código do autenticador" width="70%">
 </p>
 
 ## M2.14 Banco SQLite, laudos e relatórios de mercado
@@ -660,9 +699,19 @@ Os testes usam o `TestClient` do FastAPI, com o `lifespan` real e um banco SQLit
 | 53 | `test_relatorio_de_mercado_filtrado_e_exportado` | relatório filtrado por cidade e exportado em CSV | 200 |
 | 54 | `test_mapa3d_sem_chave_indisponivel` | sem chave, a configuração 3D informa indisponível e não expõe nada | 200 |
 | 55 | `test_plano_invalido_422_em_portugues` | plano inexistente na emissão da chave devolve 422 com a mensagem em português | 422 |
+| 56 | `test_email_profissional_com_logo_embutido_e_titular` | o e-mail sai com o logo embutido na mensagem e a assinatura do titular | — |
+| 57 | `test_totp_vetores_do_rfc_6238` | o TOTP reproduz os vetores oficiais do RFC 6238 | — |
+| 58 | `test_codigo_aceita_uma_janela_de_tolerancia` | aceita o código anterior e o seguinte, recusa o de 90 s atrás e o mal formado | — |
+| 59 | `test_sem_segredo_2fa_desligado` | sem segredo configurado, o 2FA fica desligado | 200 |
+| 60 | `test_entrar_200_e_sessao_aceita_no_console` | senha e código certos abrem a sessão, aceita no console; depois de sair, recusada | 200 · 201 · 401 |
+| 61 | `test_senha_ou_codigo_errados_401` | senha ou código errados devolvem `acesso_negado` | 401 |
+| 62 | `test_codigo_mal_formado_422_em_portugues` | código que não tem 6 dígitos é barrado pelo contrato | 422 |
+| 63 | `test_sexta_tentativa_429_e_bloqueio` | depois de 5 falhas, a 6ª tentativa é bloqueada, mesmo com a senha certa | 401 · 429 |
+| 64 | `test_sessao_inventada_ou_expirada_401` | sessão inventada ou vencida não entra no console | 401 |
+| 65 | `test_predicao_publica_continua_aberta_com_2fa` | com 2FA ligado, `POST /v1/predict` continua aberto | 200 |
 
 <p align="center">
-  <img src="assets/modulo2/api_06_pytest.jpg" alt="Saída do pytest com 55 testes aprovados" width="90%">
+  <img src="assets/modulo2/api_06_pytest.jpg" alt="Saída do pytest com 65 testes aprovados" width="90%">
 </p>
 
 > O único aviso do `pytest` é uma depreciação interna do Starlette sobre o `httpx` usado pelo `TestClient`. Ele não afeta a API nem os resultados.
@@ -888,7 +937,7 @@ O crédito ao template e aos mapas também aparece no rodapé de todas as telas 
 |---|---|
 | Código da API | [`modulo2_api/app/`](modulo2_api/app/) |
 | Artefato e métricas | [`modulo2_api/models/`](modulo2_api/models/) |
-| Testes | [`modulo2_api/tests/`](modulo2_api/tests/): 55 aprovados |
+| Testes | [`modulo2_api/tests/`](modulo2_api/tests/): 65 aprovados |
 | Capturas do Swagger, do pytest, do 404/405 e das telas da plataforma | [`assets/modulo2/`](assets/modulo2/) |
 | Transparência sobre o uso de IA | [seção 21](#21-transparência-sobre-uso-de-ia) |
 

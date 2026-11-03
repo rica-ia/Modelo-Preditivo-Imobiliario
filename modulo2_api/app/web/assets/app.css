@@ -648,3 +648,23 @@ main:has(.view-cheia:not([hidden])) { max-width: none; }
 #form-chave .form-acoes { grid-template-columns: minmax(0, 1fr); }
 .form-acoes .btn { white-space: normal; text-align: center; }
 @media (max-width: 420px) { .form-acoes { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------------------------------------------------------------- entrada com senha e 2FA */
+.tela-entrar { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px; overflow-y: auto;
+  background: radial-gradient(120% 90% at 50% 0%, rgba(112, 59, 247, .22), transparent 60%), var(--bg); }
+.tela-entrar[hidden] { display: none; }
+.entrar-caixa { width: min(420px, 100%); display: grid; gap: 14px; background: var(--card); border: 1px solid var(--line2);
+  border-radius: 22px; padding: 28px 26px; box-shadow: var(--sombra-flut); }
+.entrar-marca { display: flex; align-items: center; gap: 12px; }
+.entrar-marca b { display: block; font-size: 16px; }
+.entrar-marca small { color: var(--muted, #999); font-size: 12px; }
+.entrar-caixa h2 { margin: 6px 0 0; font-size: 24px; font-weight: 700; }
+.entrar-caixa input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line2); background: var(--card2); outline: none; min-width: 0; }
+.entrar-caixa input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+#en-codigo { font-family: var(--mono); font-size: 22px; letter-spacing: .35em; text-align: center; }
+.entrar-erro { border: 1px solid rgba(239, 68, 68, .45); background: rgba(239, 68, 68, .12); color: #fca5a5;
+  border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+:root[data-theme="light"] .entrar-erro { color: #b91c1c; }
+.entrar-btn { width: 100%; justify-content: center; }
+.entrar-rodape { font-size: 12px; margin: 0; }
+.entrar-erro.info { border-color: var(--line2); background: var(--card2); color: var(--soft); }

@@ -1,4 +1,4 @@
-"""Isola os testes: banco SQLite temporário, SMTP desligado e token de teste."""
+"""Isola os testes: banco SQLite temporário, SMTP e 2FA desligados e token de teste."""
 
 import os
 import tempfile
@@ -10,3 +10,5 @@ os.environ["AVALIADOR_ADMIN_TOKEN"] = "token-de-teste"
 os.environ["SMTP_USUARIO"] = ""
 os.environ["SMTP_SENHA_APP"] = ""
 os.environ["GOOGLE_MAPS_API_KEY"] = ""
+os.environ["AVALIADOR_TOTP_SEGREDO"] = ""
+os.environ["AVALIADOR_SENHA_ACESSO"] = ""

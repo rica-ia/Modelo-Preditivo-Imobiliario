@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/assets/app.css?v=16">
+  <link rel="stylesheet" href="/assets/app.css?v=17">
   <script>
     // Aplica o tema salvo antes da pintura para evitar o "piscar" de cores.
     try {
@@ -560,13 +560,32 @@
     </div>
   </div>
 
+  <div class="tela-entrar" id="tela-entrar" hidden role="dialog" aria-modal="true" aria-labelledby="entrar-titulo">
+    <form class="entrar-caixa" id="form-entrar" novalidate autocomplete="off">
+      <div class="entrar-marca"><img src="/assets/logo.svg" alt="" width="40" height="40"><div><b>Avaliador Imobiliário</b><small>Plataforma de gestão e análise</small></div></div>
+      <h2 id="entrar-titulo">Entrar na plataforma</h2>
+      <p class="nota">Acesso protegido por senha e segundo fator. Abra o app autenticador do celular e digite o código de 6 dígitos.</p>
+      <div class="campo"><label for="en-senha">Senha</label><input id="en-senha" type="password" autocomplete="current-password" required></div>
+      <div class="campo"><label for="en-codigo">Código do autenticador</label><input id="en-codigo" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></div>
+      <div class="entrar-erro" id="entrar-erro" role="alert" hidden></div>
+      <button type="submit" class="btn btn-pri entrar-btn" id="en-entrar">Entrar</button>
+      <p class="nota entrar-rodape">A API pública continua aberta: <a href="/docs">documentação interativa</a> e <code>POST /v1/predict</code> não exigem login.</p>
+    </form>
+  </div>
+
   <div class="modal" id="modal-admin" hidden role="dialog" aria-modal="true" aria-labelledby="admin-titulo">
     <div class="modal-caixa modal-pequeno">
       <div class="codigo-topo"><h3 class="cartao-titulo" id="admin-titulo">Administrador</h3><button type="button" class="btn-mini" data-fechar-modal>Fechar</button></div>
+      <div id="admin-token">
       <p class="nota">O token de administrador libera as rotas comerciais e fica só nesta aba do navegador (sessionStorage).</p>
       <div class="campo admin-campo"><label for="adm-token">Token de administrador</label>
         <input id="adm-token" type="password" autocomplete="off" spellcheck="false" placeholder="Cole o token de administrador"></div>
       <div class="acoes"><button type="button" class="btn btn-pri" id="adm-usar">Usar token</button><button type="button" class="btn btn-borda" id="adm-esquecer">Esquecer token</button></div>
+      </div>
+      <div class="admin-2fa" id="admin-2fa" hidden>
+        <p class="nota">Sessão aberta com senha e segundo fator (2FA). Ela vale por 8 horas e fica só nesta aba do navegador.</p>
+        <div class="acoes"><button type="button" class="btn btn-borda" id="adm-sair">Sair</button></div>
+      </div>
     </div>
   </div>
 
@@ -592,6 +611,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="/assets/app.js?v=16"></script>
+  <script src="/assets/app.js?v=17"></script>
 </body>
 </html>
