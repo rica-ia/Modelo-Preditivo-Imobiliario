@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="700" viewBox="0 0 1500 700" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="2550" height="700" viewBox="0 0 2550 700" role="img" aria-labelledby="title desc">
   <title id="title">Fluxo de branches do Módulo 2</title>
-  <desc id="desc">A develop nasce da main; cada fase do Módulo 2 é desenvolvida num feature branch criado a partir da develop e integrado por pull request; ao final a develop é integrada à main. Nenhum branch é excluído.</desc>
+  <desc id="desc">A develop nasce da main; cada etapa do Módulo 2 é desenvolvida num feature branch criado a partir da develop e integrado por pull request; ao final a develop é integrada à main. Nenhum branch é excluído.</desc>
   <defs>
     <linearGradient id="header" x1="0" x2="1"><stop stop-color="#0b2036"/><stop offset="1" stop-color="#286879"/></linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0b2036" flood-opacity=".13"/></filter>
@@ -9,65 +9,93 @@
     <style>
       .heading{font:750 30px Inter,Segoe UI,Arial,sans-serif;fill:#fff}.subheading{font:400 15px Inter,Segoe UI,Arial,sans-serif;fill:#c7dce1}
       .lane{font:750 16px Inter,Segoe UI,Arial,sans-serif;fill:#fff}.small{font:500 12px Inter,Segoe UI,Arial,sans-serif;fill:#b9d0d5}
-      .card{font:750 13px Inter,Segoe UI,Arial,sans-serif;fill:#102a3e}.desc{font:500 12px Inter,Segoe UI,Arial,sans-serif;fill:#52606d}
+      .card{font:750 11.5px Inter,Segoe UI,Arial,sans-serif;fill:#102a3e}.desc{font:500 11.5px Inter,Segoe UI,Arial,sans-serif;fill:#52606d}
       .pr{font:700 11px Inter,Segoe UI,Arial,sans-serif;fill:#0f766e}
       .main{fill:none;stroke:#0b2036;stroke-width:5;stroke-linecap:round}.dev{fill:none;stroke:#21485f;stroke-width:5;stroke-linecap:round}
       .ramo{fill:none;stroke:#1baf7a;stroke-width:2.5;marker-end:url(#setaV)}.sobe{fill:none;stroke:#21485f;stroke-width:2.5;stroke-dasharray:6 5;marker-end:url(#seta)}
     </style>
   </defs>
-  <rect width="1500" height="700" rx="24" fill="#f6f9fb"/>
-  <rect width="1500" height="96" rx="24" fill="url(#header)"/><rect y="72" width="1500" height="24" fill="url(#header)"/>
+  <rect width="2550" height="700" rx="24" fill="#f6f9fb"/>
+  <rect width="2550" height="96" rx="24" fill="url(#header)"/><rect y="72" width="2550" height="24" fill="url(#header)"/>
   <text x="54" y="43" class="heading">Fluxo de versionamento do Módulo 2</text>
-  <text x="54" y="70" class="subheading">Um feature branch por fase, criado a partir da develop e integrado por pull request; nenhum branch é excluído</text>
+  <text x="54" y="70" class="subheading">Um feature branch por etapa (15 no total), criado a partir da develop e integrado por pull request; nenhum branch é excluído</text>
 
   <rect x="34" y="130" width="170" height="90" rx="15" fill="#0b2036"/><text x="119" y="170" text-anchor="middle" class="lane">main</text><text x="119" y="192" text-anchor="middle" class="small">Módulo 1 + Módulo 2</text>
   <rect x="34" y="270" width="170" height="90" rx="15" fill="#21485f"/><text x="119" y="310" text-anchor="middle" class="lane">develop</text><text x="119" y="332" text-anchor="middle" class="small">integrações</text>
-  <path class="main" d="M220 175 H1460"/>
-  <path class="dev" d="M220 315 H1360"/>
+  <path class="main" d="M220 175 H2510"/>
+  <path class="dev" d="M220 315 H2460"/>
   <path class="sobe" d="M235 182 C235 240 235 260 235 300"/>
-  <path class="sobe" d="M1360 308 C1390 300 1400 240 1400 190"/>
-  <text x="1408" y="250" class="pr">PR final</text>
-  <text x="1408" y="266" class="pr">develop → main</text>
+  <path class="sobe" d="M2460 308 C2490 300 2500 240 2500 190"/>
+  <text x="2310" y="250" class="pr">PR final</text>
+  <text x="2310" y="266" class="pr">develop → main</text>
 
   <g filter="url(#shadow)">
-    <rect x="230" y="430" width="132" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
-    <rect x="372" y="430" width="132" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
-    <rect x="514" y="430" width="132" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
-    <rect x="656" y="430" width="132" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
-    <rect x="798" y="430" width="132" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
-    <rect x="940" y="430" width="132" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
-    <rect x="1082" y="430" width="132" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
-    <rect x="1224" y="430" width="132" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="230" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="378" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="526" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="674" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="822" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="970" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="1118" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="1266" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="1414" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="1562" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="1710" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="1858" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="2006" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="2154" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
+    <rect x="2302" y="430" width="140" height="150" rx="14" fill="#fff" stroke="#d5e1e8"/>
   </g>
   <g>
-    <text x="296" y="462" text-anchor="middle" class="card">fase1-modelo</text><text x="296" y="488" text-anchor="middle" class="desc">treino 60/20/20</text><text x="296" y="506" text-anchor="middle" class="desc">.joblib + métricas</text><text x="296" y="524" text-anchor="middle" class="desc">requirements</text>
-    <text x="438" y="462" text-anchor="middle" class="card">fase2-estrutura</text><text x="438" y="488" text-anchor="middle" class="desc">pacote em camadas</text><text x="438" y="506" text-anchor="middle" class="desc">schemas · services</text><text x="438" y="524" text-anchor="middle" class="desc">routers · main</text>
-    <text x="580" y="462" text-anchor="middle" class="card">fase3-lifespan</text><text x="580" y="488" text-anchor="middle" class="desc">carga única</text><text x="580" y="506" text-anchor="middle" class="desc">modelo em RAM</text><text x="580" y="524" text-anchor="middle" class="desc">teste de carga 1×</text>
-    <text x="722" y="462" text-anchor="middle" class="card">fase4-schemas</text><text x="722" y="488" text-anchor="middle" class="desc">Pydantic + Field</text><text x="722" y="506" text-anchor="middle" class="desc">entrada e saída</text><text x="722" y="524" text-anchor="middle" class="desc">422 em pt-BR</text>
-    <text x="864" y="462" text-anchor="middle" class="card">fase5-endpoints</text><text x="864" y="488" text-anchor="middle" class="desc">/health · /v1/predict</text><text x="864" y="506" text-anchor="middle" class="desc">400 · 500 · 503</text><text x="864" y="524" text-anchor="middle" class="desc">testes HTTP</text>
-    <text x="1006" y="462" text-anchor="middle" class="card">portal-web</text><text x="1006" y="488" text-anchor="middle" class="desc">interface comercial</text><text x="1006" y="506" text-anchor="middle" class="desc">MapLibre + gráficos</text><text x="1006" y="524" text-anchor="middle" class="desc">módulos ligados</text>
-    <text x="1148" y="462" text-anchor="middle" class="card">ajuste-monotonico</text><text x="1148" y="488" text-anchor="middle" class="desc">restrições</text><text x="1148" y="506" text-anchor="middle" class="desc">monotônicas</text><text x="1148" y="524" text-anchor="middle" class="desc">coerência do preço</text>
-    <text x="1290" y="462" text-anchor="middle" class="card">docs-readme</text><text x="1290" y="488" text-anchor="middle" class="desc">README do</text><text x="1290" y="506" text-anchor="middle" class="desc">Módulo 2</text><text x="1290" y="524" text-anchor="middle" class="desc">capturas · diagramas</text>
+    <text x="300" y="462" text-anchor="middle" class="card">fase1-modelo</text><text x="300" y="488" text-anchor="middle" class="desc">treino 60/20/20</text><text x="300" y="506" text-anchor="middle" class="desc">.joblib + métricas</text><text x="300" y="524" text-anchor="middle" class="desc">requirements</text>
+    <text x="448" y="462" text-anchor="middle" class="card">fase2-estrutura</text><text x="448" y="488" text-anchor="middle" class="desc">pacote em camadas</text><text x="448" y="506" text-anchor="middle" class="desc">schemas · services</text><text x="448" y="524" text-anchor="middle" class="desc">routers · main</text>
+    <text x="596" y="462" text-anchor="middle" class="card">fase3-lifespan</text><text x="596" y="488" text-anchor="middle" class="desc">carga única</text><text x="596" y="506" text-anchor="middle" class="desc">modelo em RAM</text><text x="596" y="524" text-anchor="middle" class="desc">teste de carga 1×</text>
+    <text x="744" y="462" text-anchor="middle" class="card">fase4-schemas</text><text x="744" y="488" text-anchor="middle" class="desc">Pydantic + Field</text><text x="744" y="506" text-anchor="middle" class="desc">entrada e saída</text><text x="744" y="524" text-anchor="middle" class="desc">422 em pt-BR</text>
+    <text x="892" y="462" text-anchor="middle" class="card">fase5-endpoints</text><text x="892" y="488" text-anchor="middle" class="desc">/health · /v1/predict</text><text x="892" y="506" text-anchor="middle" class="desc">400 · 500 · 503</text><text x="892" y="524" text-anchor="middle" class="desc">testes HTTP</text>
+    <text x="1040" y="462" text-anchor="middle" class="card">portal-web</text><text x="1040" y="488" text-anchor="middle" class="desc">interface comercial</text><text x="1040" y="506" text-anchor="middle" class="desc">MapLibre + gráficos</text><text x="1040" y="524" text-anchor="middle" class="desc">módulos ligados</text>
+    <text x="1188" y="462" text-anchor="middle" class="card">ajuste-monotonico</text><text x="1188" y="488" text-anchor="middle" class="desc">restrições</text><text x="1188" y="506" text-anchor="middle" class="desc">monotônicas</text><text x="1188" y="524" text-anchor="middle" class="desc">coerência do preço</text>
+    <text x="1336" y="462" text-anchor="middle" class="card">docs-readme</text><text x="1336" y="488" text-anchor="middle" class="desc">1ª versão do</text><text x="1336" y="506" text-anchor="middle" class="desc">README do M2</text><text x="1336" y="524" text-anchor="middle" class="desc">capturas · diagramas</text>
+    <text x="1484" y="462" text-anchor="middle" class="card">revisao-final</text><text x="1484" y="488" text-anchor="middle" class="desc">404 · 405 em pt-BR</text><text x="1484" y="506" text-anchor="middle" class="desc">+2 testes</text><text x="1484" y="524" text-anchor="middle" class="desc">revisão geral</text>
+    <text x="1632" y="462" text-anchor="middle" class="card">portal-identidade</text><text x="1632" y="488" text-anchor="middle" class="desc">identidade visual</text><text x="1632" y="506" text-anchor="middle" class="desc">mapa em destaque</text><text x="1632" y="524" text-anchor="middle" class="desc">satélite · bento</text>
+    <text x="1780" y="462" text-anchor="middle" class="card">api-comercial</text><text x="1780" y="488" text-anchor="middle" class="desc">chaves de API</text><text x="1780" y="506" text-anchor="middle" class="desc">e-mail · SQLite</text><text x="1780" y="524" text-anchor="middle" class="desc">relatórios de uso</text>
+    <text x="1928" y="462" text-anchor="middle" class="card">portal-gestao</text><text x="1928" y="488" text-anchor="middle" class="desc">plataforma de gestão</text><text x="1928" y="506" text-anchor="middle" class="desc">laudos · mercado</text><text x="1928" y="524" text-anchor="middle" class="desc">visão 3D</text>
+    <text x="2076" y="462" text-anchor="middle" class="card">visao3d-fotorrealista</text><text x="2076" y="488" text-anchor="middle" class="desc">voo 360°</text><text x="2076" y="506" text-anchor="middle" class="desc">imagens 3D</text><text x="2076" y="524" text-anchor="middle" class="desc">vídeo local</text>
+    <text x="2224" y="462" text-anchor="middle" class="card">ajustes-auditoria</text><text x="2224" y="488" text-anchor="middle" class="desc">chave oculta no .eml</text><text x="2224" y="506" text-anchor="middle" class="desc">latência mediana</text><text x="2224" y="524" text-anchor="middle" class="desc">422 em português</text>
+    <text x="2372" y="462" text-anchor="middle" class="card">docs-final</text><text x="2372" y="488" text-anchor="middle" class="desc">README final</text><text x="2372" y="506" text-anchor="middle" class="desc">capturas finais</text><text x="2372" y="524" text-anchor="middle" class="desc">diagramas</text>
   </g>
   <g class="pr">
-    <text x="296" y="566" text-anchor="middle">PR → develop</text>
-    <text x="438" y="566" text-anchor="middle">PR → develop</text>
-    <text x="580" y="566" text-anchor="middle">PR → develop</text>
-    <text x="722" y="566" text-anchor="middle">PR → develop</text>
-    <text x="864" y="566" text-anchor="middle">PR → develop</text>
-    <text x="1006" y="566" text-anchor="middle">PR → develop</text>
-    <text x="1148" y="566" text-anchor="middle">PR → develop</text>
-    <text x="1290" y="566" text-anchor="middle">PR → develop</text>
+    <text x="300" y="566" text-anchor="middle">PR → develop</text>
+    <text x="448" y="566" text-anchor="middle">PR → develop</text>
+    <text x="596" y="566" text-anchor="middle">PR → develop</text>
+    <text x="744" y="566" text-anchor="middle">PR → develop</text>
+    <text x="892" y="566" text-anchor="middle">PR → develop</text>
+    <text x="1040" y="566" text-anchor="middle">PR → develop</text>
+    <text x="1188" y="566" text-anchor="middle">PR → develop</text>
+    <text x="1336" y="566" text-anchor="middle">PR → develop</text>
+    <text x="1484" y="566" text-anchor="middle">PR → develop</text>
+    <text x="1632" y="566" text-anchor="middle">PR → develop</text>
+    <text x="1780" y="566" text-anchor="middle">PR → develop</text>
+    <text x="1928" y="566" text-anchor="middle">PR → develop</text>
+    <text x="2076" y="566" text-anchor="middle">PR → develop</text>
+    <text x="2224" y="566" text-anchor="middle">PR → develop</text>
+    <text x="2372" y="566" text-anchor="middle">PR → develop</text>
   </g>
   <g>
-    <path class="ramo" d="M271 322 V420"/><path class="sobe" d="M321 428 V330"/>
-    <path class="ramo" d="M413 322 V420"/><path class="sobe" d="M463 428 V330"/>
-    <path class="ramo" d="M555 322 V420"/><path class="sobe" d="M605 428 V330"/>
-    <path class="ramo" d="M697 322 V420"/><path class="sobe" d="M747 428 V330"/>
-    <path class="ramo" d="M839 322 V420"/><path class="sobe" d="M889 428 V330"/>
-    <path class="ramo" d="M981 322 V420"/><path class="sobe" d="M1031 428 V330"/>
-    <path class="ramo" d="M1123 322 V420"/><path class="sobe" d="M1173 428 V330"/>
-    <path class="ramo" d="M1265 322 V420"/><path class="sobe" d="M1315 428 V330"/>
+    <path class="ramo" d="M275 322 V420"/><path class="sobe" d="M325 428 V330"/>
+    <path class="ramo" d="M423 322 V420"/><path class="sobe" d="M473 428 V330"/>
+    <path class="ramo" d="M571 322 V420"/><path class="sobe" d="M621 428 V330"/>
+    <path class="ramo" d="M719 322 V420"/><path class="sobe" d="M769 428 V330"/>
+    <path class="ramo" d="M867 322 V420"/><path class="sobe" d="M917 428 V330"/>
+    <path class="ramo" d="M1015 322 V420"/><path class="sobe" d="M1065 428 V330"/>
+    <path class="ramo" d="M1163 322 V420"/><path class="sobe" d="M1213 428 V330"/>
+    <path class="ramo" d="M1311 322 V420"/><path class="sobe" d="M1361 428 V330"/>
+    <path class="ramo" d="M1459 322 V420"/><path class="sobe" d="M1509 428 V330"/>
+    <path class="ramo" d="M1607 322 V420"/><path class="sobe" d="M1657 428 V330"/>
+    <path class="ramo" d="M1755 322 V420"/><path class="sobe" d="M1805 428 V330"/>
+    <path class="ramo" d="M1903 322 V420"/><path class="sobe" d="M1953 428 V330"/>
+    <path class="ramo" d="M2051 322 V420"/><path class="sobe" d="M2101 428 V330"/>
+    <path class="ramo" d="M2199 322 V420"/><path class="sobe" d="M2249 428 V330"/>
+    <path class="ramo" d="M2347 322 V420"/><path class="sobe" d="M2397 428 V330"/>
   </g>
   <text x="230" y="620" class="desc">Prefixo comum: feature/m2-…  ·  commits curtos no imperativo ("implementa…", "corrige…", "documenta…")  ·  branches preservados após o merge</text>
   <path class="ramo" d="M250 650 H300"/><text x="310" y="654" class="desc">criação a partir da develop</text>
