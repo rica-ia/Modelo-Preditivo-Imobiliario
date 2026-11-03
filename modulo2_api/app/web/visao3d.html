@@ -34,6 +34,14 @@
     .valor .rot { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
     .valor .num { font-size: 30px; font-weight: 800; color: #fff; }
     .valor .faixa { color: var(--soft); font-size: 13px; }
+    .recolher { position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; display: grid; place-items: center;
+      border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; transition: .2s; }
+    .recolher:hover { color: var(--text); background: rgba(255, 255, 255, .08); }
+    .recolher svg { width: 14px; height: 14px; transition: transform .25s; }
+    .ficha.recolhida { min-width: 0; padding: 10px 44px 10px 14px; }
+    .ficha.recolhida h1, .ficha.recolhida .sub, .ficha.recolhida .valor { display: none; }
+    .ficha.recolhida .recolher svg { transform: rotate(180deg); }
+    .ficha .sub .coord { display: block; font-size: 12px; opacity: .8; }
 
     .comandos { left: 50%; bottom: 22px; transform: translateX(-50%); padding: 8px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
     .comandos button { font: 700 14px var(--fonte); color: var(--text); background: transparent; border: 1px solid var(--line);
@@ -65,7 +73,10 @@
   <div id="cena" aria-label="Visão 3D do entorno do imóvel"></div>
   <div id="cena-alt" aria-label="Visão 3D simplificada"></div>
 
-  <section class="painel ficha" aria-live="polite">
+  <section class="painel ficha" id="ficha" aria-live="polite">
+    <button class="recolher" id="bt-recolher" type="button" aria-expanded="true" title="Recolher" aria-label="Recolher a ficha">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+    </button>
     <div class="marca"><img src="/assets/logo.svg" alt=""> Avaliador Imobiliário · Visão 3D</div>
     <h1 id="titulo">Entorno do imóvel</h1>
     <div class="sub" id="coords">—</div>
@@ -96,6 +107,6 @@
   <script>window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1.122.0/Build/Cesium/";</script>
   <script src="https://cdn.jsdelivr.net/npm/cesium@1.122.0/Build/Cesium/Cesium.js"></script>
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="/assets/visao3d.js?v=2"></script>
+  <script src="/assets/visao3d.js?v=3"></script>
 </body>
 </html>

@@ -20,6 +20,16 @@
   function preencherFicha() {
     $("#titulo").textContent = P.titulo;
     $("#coords").textContent = `${P.lat.toFixed(4)}, ${P.lng.toFixed(4)} · King County (WA)`;
+    // Endereço completo (OpenStreetMap, via API); as coordenadas ficam embaixo, menores
+    fetch(`/v1/endereco?lat=${P.lat}&lng=${P.lng}`).then((r) => (r.ok ? r.json() : null)).then((e) => {
+      if (!e || !e.disponivel || !e.endereco) return;
+      const sub = $("#coords");
+      sub.textContent = e.endereco;
+      const c = document.createElement("span");
+      c.className = "coord";
+      c.textContent = `${P.lat.toFixed(4)}, ${P.lng.toFixed(4)} · ${e.fonte}`;
+      sub.append(c);
+    }).catch(() => {});
     if (Number.isFinite(P.valor)) {
       $("#bloco-valor").hidden = false;
       $("#valor").textContent = usd(P.valor);
@@ -28,6 +38,18 @@
     }
   }
   if (P.captura) document.body.classList.add("captura");
+
+  // Seta discreta para recolher e expandir a ficha (a escolha fica guardada neste navegador)
+  function recolherFicha(recolher) {
+    $("#ficha").classList.toggle("recolhida", recolher);
+    const b = $("#bt-recolher");
+    b.setAttribute("aria-expanded", String(!recolher));
+    b.title = recolher ? "Expandir" : "Recolher";
+    b.setAttribute("aria-label", recolher ? "Expandir a ficha" : "Recolher a ficha");
+    try { localStorage.setItem("ai-ficha-3d", recolher ? "1" : "0"); } catch (e) {}
+  }
+  $("#bt-recolher").addEventListener("click", () => recolherFicha(!$("#ficha").classList.contains("recolhida")));
+  try { if (localStorage.getItem("ai-ficha-3d") === "1") recolherFicha(true); } catch (e) {}
 
   // ---------------------------------------------------------------- cena: Google 3D (Cesium) ou MapLibre
   const cena = { tipo: null, canvas: null, rumo: 0, voando: false, ultimo: 0, creditos: "Imagens © Google" };
