@@ -27,6 +27,7 @@ PASTA_WEB = PASTA_APP / "web"
 
 PASTA_BANCO = PASTA_MODULO2 / "banco"
 ARQUIVO_ESQUEMA = PASTA_BANCO / "esquema.sql"
+ARQUIVO_CEPS = PASTA_BANCO / "ceps_king_county.json"
 ARQUIVO_ENV = RAIZ_REPOSITORIO / ".env"
 
 

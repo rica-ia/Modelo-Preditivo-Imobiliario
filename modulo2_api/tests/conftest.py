@@ -9,3 +9,4 @@ os.environ["AVALIADOR_BANCO"] = str(_PASTA / "teste.db")
 os.environ["AVALIADOR_ADMIN_TOKEN"] = "token-de-teste"
 os.environ["SMTP_USUARIO"] = ""
 os.environ["SMTP_SENHA_APP"] = ""
+os.environ["GOOGLE_MAPS_API_KEY"] = ""

@@ -10,6 +10,7 @@ Execução, a partir da raiz do repositório:
 """
 
 import logging
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -26,8 +27,10 @@ from .config import (
     caminho_banco,
 )
 from .erros import registrar_tratadores
-from .routers import comercial, modelo, predicao, relatorios, saude
+from .routers import avaliacoes, comercial, mapa3d, modelo, predicao, relatorios, saude
+from .services.avaliacoes import ServicoAvaliacoes
 from .services.banco import Banco
+from .services.carga import carga_inicial, limites_de_faixa
 from .services.comercial import ServicoComercial
 from .services.modelo import ServicoModelo
 
@@ -53,8 +56,16 @@ async def lifespan(app: FastAPI):
         banco.migrar()
     except Exception:
         log.exception("Falha ao preparar o banco SQLite")
+    try:
+        inicio = time.perf_counter()
+        inseridos = carga_inicial(banco, servico)
+        if any(inseridos.values()):
+            log.info("Carga inicial do banco: %s em %.1f s", inseridos, time.perf_counter() - inicio)
+    except Exception:
+        log.exception("Falha na carga inicial do banco")
     app.state.banco = banco
     app.state.comercial = ServicoComercial(banco)
+    app.state.avaliacoes = ServicoAvaliacoes(banco, servico, app.state.comercial, limites_de_faixa(banco))
     yield
     servico.descarregar()
 
@@ -73,6 +84,8 @@ app.include_router(predicao.router)
 app.include_router(modelo.router)
 app.include_router(comercial.router)
 app.include_router(relatorios.router)
+app.include_router(avaliacoes.router)
+app.include_router(mapa3d.router)
 
 # ## Portal web (opcional): servido pela própria API quando a pasta existir
 app.mount("/assets", StaticFiles(directory=PASTA_WEB / "assets", check_dir=False), name="assets")

@@ -6,6 +6,7 @@ from fastapi import Request, Security
 from fastapi.security import APIKeyHeader
 
 from ..config import obter
+from ..services.avaliacoes import ServicoAvaliacoes
 from ..services.banco import Banco
 from ..services.comercial import ServicoComercial
 from ..services.excecoes import AcessoNegadoError, ConsoleNaoConfiguradoError
@@ -26,6 +27,10 @@ def obter_banco(request: Request) -> Banco:
 
 def obter_comercial(request: Request) -> ServicoComercial:
     return request.app.state.comercial
+
+
+def obter_avaliacoes(request: Request) -> ServicoAvaliacoes:
+    return request.app.state.avaliacoes
 
 
 def exigir_admin(token: str | None = Security(cabecalho_admin)) -> None:

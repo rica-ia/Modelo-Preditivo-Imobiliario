@@ -80,6 +80,7 @@ async def modelo_indisponivel(request: Request, exc: ModeloIndisponivelError) ->
 
 
 HTTP_MENSAGENS = {
+    400: ("corpo_invalido", "Não foi possível ler o corpo da requisição. Envie JSON em UTF-8."),
     404: ("nao_encontrado", "Rota não encontrada. Consulte a documentação em /docs."),
     405: ("metodo_nao_permitido", "Método HTTP não permitido nesta rota."),
 }
