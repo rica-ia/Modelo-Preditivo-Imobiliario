@@ -12,3 +12,5 @@ pydantic==2.14.2
 # Testes automatizados da API
 httpx==0.28.1
 pytest==9.2.0
+# QR Code do segundo fator (2FA) no terminal
+qrcode==8.2
