@@ -32,7 +32,7 @@ def nova_chave(cliente):
 
 def test_criar_chave_201(nova_chave):
     assert nova_chave["chave"].startswith("aval_")
-    assert nova_chave["limite_mensal"] == 100
+    assert nova_chave["limite_mensal"] == 100 and nova_chave["preco_mensal_usd"] == 29.0
     assert nova_chave["prefixo"] == nova_chave["chave"][:12]
 
 
@@ -143,3 +143,13 @@ def test_email_profissional_com_logo_embutido_e_titular():
     logo = next(p for p in msg.walk() if p.get_content_type() == "image/png")
     assert f'cid:{logo["Content-ID"][1:-1]}' in corpo
     assert "by Ricardo Pasquali dos Reis" in corpo
+
+
+def test_planos_com_preco_e_custo_por_predicao(cliente):
+    r = cliente.get("/v1/comercial/planos")
+    assert r.status_code == 200
+    planos = {p["plano"]: p for p in r.json()}
+    assert planos["basico"]["limite_mensal"] == 100 and planos["basico"]["preco_mensal_usd"] == 29.0
+    assert planos["profissional"]["preco_mensal_usd"] == 199.0 and planos["empresarial"]["preco_mensal_usd"] == 1490.0
+    custos = [planos[k]["preco_por_predicao_usd"] for k in ("basico", "profissional", "empresarial")]
+    assert custos == sorted(custos, reverse=True)  # quem contrata mais paga menos por predição
