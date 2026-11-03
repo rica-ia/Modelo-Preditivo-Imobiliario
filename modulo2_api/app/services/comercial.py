@@ -7,7 +7,8 @@ corrente e é comparado ao limite do plano.
 
 Gestão do cliente: troca de plano (o limite vale na hora), suspensão temporária e
 reativação, troca da chave (a antiga é revogada e a nova vai por e-mail), edição do
-cadastro e revogação definitiva. Cada ação fica na trilha `eventos_comerciais`, e o
+cadastro e revogação definitiva, com aviso por e-mail ao cliente (só com o prefixo
+da chave). Cada ação fica na trilha `eventos_comerciais`, e o
 faturamento soma as mensalidades das chaves ativas.
 """
 
@@ -19,7 +20,7 @@ from email import message_from_bytes, policy
 from pathlib import Path
 
 from .banco import Banco, agora
-from .email import enviar, montar_email
+from .email import enviar, montar_email, montar_email_revogacao
 from .excecoes import (
     ChaveInvalidaError,
     ChaveRevogadaError,
@@ -66,12 +67,6 @@ class ServicoComercial:
             (cliente_id, prefixo, _hash(chave), limite, agora()),
         )
         mensagem = montar_email(nome, email, chave, plano, limite)
-        resultado = enviar(mensagem, self.banco.pasta_emails, f"cliente{cliente_id}", chave, prefixo)
-        envio_id = self.banco.executar(
-            "INSERT INTO envios_email (cliente_id, destinatario, assunto, modo, status, criado_em, arquivo)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (cliente_id, email, mensagem["Subject"], resultado["modo"], resultado["status"], agora(), resultado["arquivo"]),
-        )
         return {
             "cliente_id": cliente_id,
             "chave_id": chave_id,
@@ -80,13 +75,23 @@ class ServicoComercial:
             "plano": plano,
             "limite_mensal": limite,
             "preco_mensal_usd": PRECOS_USD[plano],
-            "email": {
-                "enviado": resultado["enviado"],
-                "modo": resultado["modo"],
-                "destinatario": email,
-                "mensagem": resultado["mensagem"],
-                "envio_id": envio_id,
-            },
+            "email": self._enviar_ao_cliente(cliente_id, email, mensagem, chave, prefixo),
+        }
+
+    def _enviar_ao_cliente(self, cliente_id: int, email: str, mensagem, chave: str | None, prefixo: str) -> dict:
+        """Envia (ou salva em .eml) e registra o envio em `envios_email`."""
+        resultado = enviar(mensagem, self.banco.pasta_emails, f"cliente{cliente_id}", chave, prefixo)
+        envio_id = self.banco.executar(
+            "INSERT INTO envios_email (cliente_id, destinatario, assunto, modo, status, criado_em, arquivo)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (cliente_id, email, mensagem["Subject"], resultado["modo"], resultado["status"], agora(), resultado["arquivo"]),
+        )
+        return {
+            "enviado": resultado["enviado"],
+            "modo": resultado["modo"],
+            "destinatario": email,
+            "mensagem": resultado["mensagem"],
+            "envio_id": envio_id,
         }
 
     def listar_clientes(self) -> list[dict]:
@@ -122,7 +127,7 @@ class ServicoComercial:
 
     def _chave(self, chave_id: int, viva: bool = True) -> dict:
         chave = self.banco.um(
-            "SELECT k.id, k.cliente_id, k.revogada_em, k.suspensa_em, c.nome, c.email, c.plano"
+            "SELECT k.id, k.cliente_id, k.prefixo, k.revogada_em, k.suspensa_em, c.nome, c.email, c.plano"
             " FROM chaves k JOIN clientes c ON c.id = k.cliente_id WHERE k.id = ?",
             (chave_id,),
         )
@@ -135,10 +140,13 @@ class ServicoComercial:
     def revogar(self, chave_id: int) -> dict:
         chave = self._chave(chave_id, viva=False)
         revogada_em = chave["revogada_em"] or agora()
+        aviso = None
         if not chave["revogada_em"]:
             self.banco.executar("UPDATE chaves SET revogada_em = ? WHERE id = ?", (revogada_em, chave_id))
             self._evento(chave["cliente_id"], chave_id, "revogacao", "revogação definitiva")
-        return {"chave_id": chave_id, "revogada_em": revogada_em}
+            mensagem = montar_email_revogacao(chave["nome"], chave["email"], chave["prefixo"], chave["plano"])
+            aviso = self._enviar_ao_cliente(chave["cliente_id"], chave["email"], mensagem, None, chave["prefixo"])
+        return {"chave_id": chave_id, "revogada_em": revogada_em, "email": aviso}
 
     def trocar_plano(self, chave_id: int, plano: str) -> dict:
         chave = self._chave(chave_id)

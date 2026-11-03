@@ -118,3 +118,20 @@ def test_consumo_alto_aparece_no_faturamento(cliente):
 @pytest.mark.parametrize("rota", ["/v1/comercial/faturamento", "/v1/comercial/clientes/1"])
 def test_gestao_exige_admin(cliente, rota):
     assert cliente.get(rota).status_code == 401
+
+
+def test_revogacao_avisa_o_cliente_por_email_uma_unica_vez(cliente):
+    nova = emitir(cliente, nome="Cliente Revogado")
+    revogada = cliente.post(f"/v1/comercial/chaves/{nova['chave_id']}/revogar", headers=ADMIN)
+    assert revogada.status_code == 200
+    aviso = revogada.json()["email"]
+    assert aviso["destinatario"] == "gestao@exemplo.com" and aviso["modo"] == "arquivo"
+    ficha = cliente.get(f"/v1/comercial/clientes/{nova['cliente_id']}", headers=ADMIN).json()
+    assuntos = [e["assunto"] for e in ficha["emails"]]
+    assert any("foi revogada" in a and nova["prefixo"] in a for a in assuntos)
+    html = cliente.get(f"/v1/comercial/emails/{aviso['envio_id']}", headers=ADMIN)
+    assert html.status_code == 200  # o aviso leva só o prefixo, nunca a chave
+    assert nova["chave"] not in html.text and "403" in html.text
+    de_novo = cliente.post(f"/v1/comercial/chaves/{nova['chave_id']}/revogar", headers=ADMIN)
+    assert de_novo.status_code == 200 and de_novo.json()["email"] is None
+    assert prever(cliente, nova["chave"]).status_code == 403

@@ -1,5 +1,5 @@
 """
-# E-mail de boas-vindas com a chave de API
+# E-mails ao cliente: boas-vindas com a chave de API e aviso de revogação
 
 Monta a mensagem (texto e HTML, em pt-BR) e envia pelo Gmail com STARTTLS,
 usando SMTP_USUARIO e SMTP_SENHA_APP do .env. Sem SMTP configurado, ou se o envio
@@ -147,6 +147,84 @@ by Ricardo Pasquali dos Reis
     return msg
 
 
+def montar_email_revogacao(nome: str, destinatario: str, prefixo: str, plano: str) -> EmailMessage:
+    """Aviso ao cliente de que a chave foi revogada; leva só o prefixo, nunca a chave."""
+    base = _url_base()
+    plano_nome = NOMES_PLANOS.get(plano, plano)
+    remetente_nome = obter("SMTP_REMETENTE_NOME", "Avaliador Imobiliário")
+    remetente = obter("SMTP_USUARIO") or "nao-responda@avaliador.local"
+    revogada = datetime.now().strftime("%d/%m/%Y às %Hh%M")
+
+    msg = EmailMessage()
+    msg["Subject"] = f"Sua chave de API do Avaliador Imobiliário foi revogada · {prefixo}…"
+    msg["From"] = formataddr((remetente_nome, remetente))
+    msg["To"] = destinatario
+    msg["Message-ID"] = make_msgid(domain="avaliador.local")
+
+    texto = f"""Olá, {nome}!
+
+A chave de API {prefixo}… do Avaliador Imobiliário foi revogada em {revogada}.
+
+A partir de agora, as chamadas com esta chave recebem 403 (chave_revogada) e a
+mensalidade do plano {plano_nome} deixa de ser cobrada.
+
+Se a revogação não foi pedida por você, ou se precisa de uma nova chave, responda
+a este e-mail. A documentação da API continua em {base}/docs.
+
+Equipe Avaliador Imobiliário
+by Ricardo Pasquali dos Reis
+"""
+    e = html.escape
+    cid_logo = make_msgid(domain="avaliador.local")
+    corpo_html = f"""<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#eeeef2;font-family:Urbanist,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eeeef2"><tr><td align="center" style="padding:32px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;border-radius:20px;overflow:hidden;background:#ffffff;box-shadow:0 6px 24px rgba(20,20,20,.10)">
+  <tr><td style="background:#141414;padding:26px 32px">
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+      <td style="vertical-align:middle"><img src="cid:{cid_logo[1:-1]}" width="52" height="52" alt="Avaliador Imobiliário" style="display:block;border:0;border-radius:14px"></td>
+      <td style="vertical-align:middle;padding-left:14px">
+        <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:.01em">Avaliador Imobiliário</div>
+        <div style="font-size:13px;color:#a685fa;margin-top:2px">Plataforma de gestão e análise · API preditiva</div>
+      </td></tr></table>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a;text-align:right;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:14px;letter-spacing:.03em;color:#c2acfc">by Ricardo Pasquali dos Reis</div>
+  </td></tr>
+  <tr><td style="height:4px;background:#c0392b;line-height:4px;font-size:0">&nbsp;</td></tr>
+  <tr><td style="padding:32px 32px 8px">
+    <p style="margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#c0392b;font-weight:700">Chave de API revogada</p>
+    <h1 style="margin:0 0 12px;font-size:26px;line-height:1.25;color:#141414">Olá, {e(nome)}!</h1>
+    <p style="margin:0;font-size:16px;line-height:1.6;color:#3a3a3c">A chave de acesso abaixo foi revogada e não aceita mais chamadas à API do Avaliador Imobiliário.</p>
+  </td></tr>
+  <tr><td style="padding:16px 32px 4px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#3a3a3c;border-collapse:collapse">
+      <tr><td style="padding:9px 0;border-bottom:1px solid #ececf0;color:#6e6e73">Chave</td><td align="right" style="padding:9px 0;border-bottom:1px solid #ececf0;font-family:Consolas,Menlo,monospace;color:#141414">{e(prefixo)}…</td></tr>
+      <tr><td style="padding:9px 0;border-bottom:1px solid #ececf0;color:#6e6e73">Plano</td><td align="right" style="padding:9px 0;border-bottom:1px solid #ececf0;font-weight:700;color:#141414">{e(plano_nome)}</td></tr>
+      <tr><td style="padding:9px 0;border-bottom:1px solid #ececf0;color:#6e6e73">Revogada em</td><td align="right" style="padding:9px 0;border-bottom:1px solid #ececf0;color:#141414">{revogada}</td></tr>
+      <tr><td style="padding:9px 0;color:#6e6e73">Resposta da API</td><td align="right" style="padding:9px 0;font-weight:700;color:#c0392b">403 · chave_revogada</td></tr>
+    </table>
+  </td></tr>
+  <tr><td style="padding:20px 32px 30px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff6e8;border-radius:12px"><tr><td style="padding:14px 16px;font-size:13px;line-height:1.55;color:#8a4b00">
+      <b>Não reconhece esta revogação?</b> Responda a este e-mail. Para voltar a usar a API, solicite uma nova chave: ela é enviada por e-mail, no mesmo plano.
+    </td></tr></table>
+  </td></tr>
+  <tr><td style="background:#f6f6f8;padding:18px 32px;border-top:1px solid #ececf0">
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#86868b">Equipe Avaliador Imobiliário · Avaliação automatizada de imóveis em King County (WA).<br>Mensagem automática enviada na revogação da chave.</p>
+    <p style="margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;color:#6e6e73">© 2026 Ricardo Pasquali dos Reis · todos os direitos reservados</p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>"""
+    msg.set_content(texto)
+    msg.add_alternative(corpo_html, subtype="html")
+    logo = PASTA_WEB / "assets" / "logo_email.png"
+    if logo.exists():
+        msg.get_payload()[1].add_related(logo.read_bytes(), maintype="image", subtype="png",
+                                         cid=cid_logo, filename="logo.png")
+    return msg
+
+
 def _salvar_eml(msg: EmailMessage, pasta: Path, sufixo: str) -> Path:
     pasta.mkdir(parents=True, exist_ok=True)
     arquivo = pasta / f"{datetime.now():%Y%m%d-%H%M%S}-{sufixo}.eml"
@@ -154,8 +232,10 @@ def _salvar_eml(msg: EmailMessage, pasta: Path, sufixo: str) -> Path:
     return arquivo
 
 
-def _copia_mascarada(msg: EmailMessage, chave: str, prefixo: str) -> EmailMessage:
+def _copia_mascarada(msg: EmailMessage, chave: str | None, prefixo: str) -> EmailMessage:
     """Cópia do e-mail para o disco: a chave completa nunca é gravada, só o prefixo."""
+    if not chave:  # aviso de revogação: a mensagem já leva só o prefixo
+        return msg
     copia = copy.deepcopy(msg)
     for parte in copia.walk():
         if parte.get_content_maintype() == "text":
@@ -164,7 +244,7 @@ def _copia_mascarada(msg: EmailMessage, chave: str, prefixo: str) -> EmailMessag
     return copia
 
 
-def enviar(msg: EmailMessage, pasta: Path, sufixo: str, chave: str, prefixo: str) -> dict:
+def enviar(msg: EmailMessage, pasta: Path, sufixo: str, chave: str | None, prefixo: str) -> dict:
     """Tenta o SMTP; se não houver configuração ou falhar, salva o .eml."""
     usuario, senha = obter("SMTP_USUARIO"), obter("SMTP_SENHA_APP")
     if usuario and senha:
