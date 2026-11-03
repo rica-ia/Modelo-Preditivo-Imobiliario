@@ -29,3 +29,7 @@ modulo2_api/banco/sessoes.tmp
 
 # Vídeos 360° gerados localmente (imagens do Google não são redistribuídas)
 modulo2_api/saida/
+
+# MLflow local (gerado por modulo2_api/ferramentas/registrar_mlflow.py)
+mlruns/
+mlartifacts/
