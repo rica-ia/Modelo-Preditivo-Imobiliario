@@ -5,7 +5,8 @@ Cada falha vira um JSON previsível, em português, e a API nunca cai:
 - 400: regra de negócio violada (dados bem formados, mas incoerentes);
 - 422: contrato Pydantic violado (tipo, faixa, campo ausente ou desconhecido);
 - 404/405: rota inexistente ou método não permitido;
-- 503: modelo fora da memória;
+- 401/403/429: chave de API inválida, revogada ou acima do limite do plano;
+- 503: modelo fora da memória ou console sem token configurado;
 - 500: qualquer erro inesperado, sem expor detalhes internos.
 """
 
@@ -16,7 +17,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .services.excecoes import ModeloIndisponivelError, RegraDeNegocioError
+from .services.excecoes import (
+    AcessoNegadoError,
+    ChaveInvalidaError,
+    ChaveRevogadaError,
+    ConsoleNaoConfiguradoError,
+    LimiteExcedidoError,
+    ModeloIndisponivelError,
+    NaoEncontradoError,
+    RegraDeNegocioError,
+)
 
 log = logging.getLogger("avaliador")
 
@@ -88,7 +98,25 @@ async def erro_interno(request: Request, exc: Exception) -> JSONResponse:
     )
 
 
+# ## Erros do módulo comercial: exceção de domínio -> (status, código do erro)
+ERROS_DE_DOMINIO = {
+    AcessoNegadoError: (401, "nao_autorizado"),
+    ChaveInvalidaError: (401, "chave_invalida"),
+    ChaveRevogadaError: (403, "chave_revogada"),
+    NaoEncontradoError: (404, "nao_encontrado"),
+    LimiteExcedidoError: (429, "limite_excedido"),
+    ConsoleNaoConfiguradoError: (503, "console_nao_configurado"),
+}
+
+
+async def erro_de_dominio(request: Request, exc: Exception) -> JSONResponse:
+    status, codigo = ERROS_DE_DOMINIO[type(exc)]
+    return JSONResponse(status_code=status, content={"erro": codigo, "mensagem": str(exc)})
+
+
 def registrar_tratadores(app: FastAPI) -> None:
+    for excecao in ERROS_DE_DOMINIO:
+        app.add_exception_handler(excecao, erro_de_dominio)
     app.add_exception_handler(RequestValidationError, dados_invalidos)
     app.add_exception_handler(StarletteHTTPException, erro_http)
     app.add_exception_handler(RegraDeNegocioError, regra_de_negocio)
