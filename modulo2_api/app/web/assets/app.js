@@ -1317,11 +1317,18 @@
     const btn = $("#en-entrar");
     btn.disabled = true;
     btn.textContent = "Conferindo…";
+    // Entrada iniciada pelo comando "avaliador": abre em tela cheia (o clique em Entrar autoriza o navegador)
+    let telaCheia = false;
+    try { telaCheia = sessionStorage.getItem("ai-tela-cheia") === "1"; } catch (e) {}
+    if (telaCheia && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
     const r = await api("/v1/acesso/entrar", { metodo: "POST", corpo: { senha, codigo } });
     btn.disabled = false;
     btn.textContent = "Entrar";
     if (r.ok && r.dados && r.dados.sessao) {
       gravarSessao(r.dados.sessao);
+      try { sessionStorage.removeItem("ai-tela-cheia"); } catch (e) {}
       if (inicializadas.has("banco") && window.TelaBanco) window.TelaBanco.atualizar();
       esconderEntrada();
       toast("Acesso liberado por 8 horas");
@@ -1346,6 +1353,13 @@
     // Entrada de contingência (comando "avaliador direto"): a sessão chega no fragmento, que não vai ao servidor
     const direta = /^#entrar=([\w-]+)$/.exec(location.hash);
     if (direta) { gravarSessao(direta[1]); history.replaceState(null, "", location.pathname + "#painel"); }
+    // Entrada inicial pelo comando "avaliador": encerra a sessão anterior e pede de novo senha e código
+    if (location.hash === "#nova-entrada") {
+      if (sessaoAdmin()) await api("/v1/acesso/sair", { metodo: "POST", headers: cabAdmin() });
+      gravarSessao("");
+      try { sessionStorage.setItem("ai-tela-cheia", "1"); } catch (e) {}
+      history.replaceState(null, "", location.pathname + "#painel");
+    }
     const r = await api("/v1/acesso/estado");
     acesso.exige = !!(r.ok && r.dados && r.dados.exige_2fa);
     atualizarAdmin();
@@ -2280,7 +2294,9 @@
       if (!conf || conf.value.trim() !== b.dataset.prefixo) return;
       await executar(b, "Revogando…",
         () => api(`/v1/comercial/chaves/${cid}/revogar`, { metodo: "POST", headers: cabAdmin() }),
-        () => toast("Chave revogada: as próximas chamadas com ela recebem 403"));
+        (d) => toast(d.email && d.email.enviado
+          ? `Chave revogada: 403 nas próximas chamadas · aviso enviado para ${d.email.destinatario}`
+          : "Chave revogada: as próximas chamadas com ela recebem 403 · aviso salvo na aba E-mails"));
     }
   }
   const ERROS_CHAVE = {
