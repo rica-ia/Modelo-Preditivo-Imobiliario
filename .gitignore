@@ -12,12 +12,7 @@ sample_data/
 venv/
 git_askpass.sh
 .git-credentials
-Controle_Git_Colab.ipynb
-notebook_operacional_colab.ipynb
 modelo_preditivo_imobiliario_publico.ipynb
-tempo_execucao_colab_tmp.ipynb
-GUIA-PRIVADO-VERSIONAMENTO-COLAB.html
-ROTEIRO-COMMITS-MODELO-PREDITIVO.html
 
 # Módulo 2 · configuração local e banco gerado
 .env
