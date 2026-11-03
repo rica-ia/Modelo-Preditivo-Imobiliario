@@ -27,7 +27,8 @@ from .config import (
     caminho_banco,
 )
 from .erros import registrar_tratadores
-from .routers import avaliacoes, comercial, mapa3d, modelo, predicao, relatorios, saude
+from .routers import acesso, avaliacoes, comercial, mapa3d, modelo, predicao, relatorios, saude
+from .services.acesso import ServicoAcesso
 from .services.avaliacoes import ServicoAvaliacoes
 from .services.banco import Banco
 from .services.carga import carga_inicial, limites_de_faixa
@@ -86,6 +87,10 @@ app.include_router(comercial.router)
 app.include_router(relatorios.router)
 app.include_router(avaliacoes.router)
 app.include_router(mapa3d.router)
+app.include_router(acesso.router)
+
+# Sessões do console com 2FA ficam em memória e zeram a cada reinício
+app.state.acesso = ServicoAcesso()
 
 # ## Portal web (opcional): servido pela própria API quando a pasta existir
 app.mount("/assets", StaticFiles(directory=PASTA_WEB / "assets", check_dir=False), name="assets")

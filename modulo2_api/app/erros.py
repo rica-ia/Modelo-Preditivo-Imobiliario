@@ -6,6 +6,7 @@ Cada falha vira um JSON previsível, em português, e a API nunca cai:
 - 422: contrato Pydantic violado (tipo, faixa, campo ausente ou desconhecido);
 - 404/405: rota inexistente ou método não permitido;
 - 401/403/429: chave de API inválida, revogada ou acima do limite do plano;
+- 401/429 no acesso com 2FA: senha ou código incorretos e bloqueio após 5 falhas;
 - 503: modelo fora da memória ou console sem token configurado;
 - 500: qualquer erro inesperado, sem expor detalhes internos.
 """
@@ -22,7 +23,9 @@ from .services.excecoes import (
     ChaveInvalidaError,
     ChaveRevogadaError,
     ConsoleNaoConfiguradoError,
+    CredenciaisInvalidasError,
     LimiteExcedidoError,
+    MuitasTentativasError,
     ModeloIndisponivelError,
     NaoEncontradoError,
     RegraDeNegocioError,
@@ -108,6 +111,8 @@ ERROS_DE_DOMINIO = {
     ChaveRevogadaError: (403, "chave_revogada"),
     NaoEncontradoError: (404, "nao_encontrado"),
     LimiteExcedidoError: (429, "limite_excedido"),
+    CredenciaisInvalidasError: (401, "acesso_negado"),
+    MuitasTentativasError: (429, "muitas_tentativas"),
     ConsoleNaoConfiguradoError: (503, "console_nao_configurado"),
 }
 
