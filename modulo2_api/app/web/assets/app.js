@@ -1020,6 +1020,54 @@
       $("#modelo-faixa").textContent = `Divisão por imóvel${div.criterio ? " (" + div.criterio + ")" : ""}. Faixa provável: 80 % dos imóveis de validação ficaram entre ${sinal(relativo(m.faixa_erro.p10))} e ${sinal(relativo(m.faixa_erro.p90))} do preço estimado.`;
     }
     desenharImportancia(m);
+    carregarArtefato();
+  }
+
+  // Artefato registrado: arquivo .joblib em disco + cópia versionada (BLOB) no SQLite
+  const artefatoEstado = { atual: null };
+  const tamanhoLegivel = (b) => (b >= 1048576 ? num(b / 1048576, 2) + " MB" : num(b / 1024, 1) + " KB");
+  async function carregarArtefato() {
+    const caixa = $("#artefato-info"), btn = $("#btn-verificar-artefato");
+    if (!caixa || !btn) return;
+    if (!btn.dataset.ligado) {
+      btn.dataset.ligado = "1";
+      btn.addEventListener("click", verificarArtefato);
+      caixa.addEventListener("click", async (ev) => {
+        if (!ev.target.closest("[data-copiar-sha]") || !artefatoEstado.atual) return;
+        try { await navigator.clipboard.writeText(artefatoEstado.atual.sha256); toast("SHA-256 copiado"); }
+        catch (e) { toast("Não foi possível copiar automaticamente"); }
+      });
+    }
+    const r = await api("/v1/modelo/artefatos");
+    const lista = r.ok && Array.isArray(r.dados) ? r.dados : [];
+    const a = lista.find((x) => x.ativo) || lista[0];
+    artefatoEstado.atual = a || null;
+    if (!a) { caixa.innerHTML = alertaHTML("Registro indisponível", "Não foi possível ler /v1/modelo/artefatos.", [], "aviso"); btn.disabled = true; return; }
+    const sha = String(a.sha256 || "");
+    caixa.innerHTML = `<div><small>Versão</small><b>${esc(a.versao)}</b> <span class="chip">${a.ativo ? "ativo" : "anterior"}</span></div>
+      <div><small>SHA-256</small><div class="artefato-sha"><code title="${esc(sha)}">${esc(sha.slice(0, 12))}…${esc(sha.slice(-6))}</code><button type="button" class="btn-mini" data-copiar-sha>Copiar</button></div></div>
+      <div><small>Tamanho</small><b>${tamanhoLegivel(Number(a.tamanho_bytes) || 0)}</b> <span class="nota">(${num(a.tamanho_bytes)} bytes · ${esc(a.formato)})</span></div>
+      <div><small>Onde está</small><code>${esc(String(a.nome_arquivo || "").replace(/^modulo2_api\//, ""))}</code><br><span class="nota">SQLite · tabela <code>modelos</code>, registro #${esc(a.id)}</span></div>`
+      + (lista.length > 1 ? `<p class="nota">${num(lista.length)} artefatos registrados no total.</p>` : "");
+    btn.disabled = false;
+  }
+  async function verificarArtefato() {
+    const btn = $("#btn-verificar-artefato"), saida = $("#artefato-verificacao"), a = artefatoEstado.atual;
+    if (!a) return;
+    btn.disabled = true;
+    saida.className = "artefato-verificacao";
+    saida.innerHTML = '<p class="nota"><span class="carregando"></span> Restaurando o BLOB e prevendo o imóvel de exemplo…</p>';
+    const r = await api(`/v1/modelo/artefatos/${encodeURIComponent(a.id)}/verificar`, { timeout: 20000 });
+    btn.disabled = false;
+    const v = r.dados;
+    if (!r.ok || !v) { saida.className = "artefato-verificacao falha"; saida.innerHTML = '<span class="selo-int">Não foi possível verificar</span>'; return; }
+    const hashes = v.sha256_blob === v.sha256_disco && v.sha256_blob === v.sha256_carregado;
+    saida.className = "artefato-verificacao " + (v.integro ? "ok" : "falha");
+    saida.innerHTML = `<span class="selo-int">${v.integro ? "✓ Íntegro" : "✗ Divergente"}</span>
+      <p class="nota">SHA-256 do BLOB ${hashes ? "igual" : "diferente"} ao do arquivo em disco e ao do artefato carregado na subida${v.erro ? " · " + esc(v.erro) : ""}.</p>
+      <div class="artefato-prev"><div><small>Previsão do modelo restaurado do SQLite</small><b>${v.previsao_restaurada != null ? usd.format(v.previsao_restaurada) : "—"}</b></div>
+      <div><small>Previsão do modelo em memória</small><b>${v.previsao_em_memoria != null ? usd.format(v.previsao_em_memoria) : "—"}</b></div></div>
+      <p class="nota">Imóvel de exemplo: ${esc(v.imovel_exemplo.quartos)} quartos, ${num(v.imovel_exemplo.area_util_m2)} m², CEP ${esc(v.imovel_exemplo.cep)}. Verificado às ${new Date().toLocaleTimeString("pt-BR")}.</p>`;
   }
   const ENDPOINTS = [
     { metodo: "GET", rota: "/health" },

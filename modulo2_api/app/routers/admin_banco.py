@@ -35,7 +35,7 @@ ERROS_ADMIN = {
 }
 ERROS_SECAO = {**ERROS_ADMIN, 404: {"model": ErroSaida, "description": "Seção ou registro inexistente."}}
 SECAO = Path(..., description="clientes, chaves, faturas, envios_email, eventos_comerciais, avaliacoes, "
-                              "predicoes ou vendas_historicas.", examples=["clientes"])
+                              "predicoes, vendas_historicas ou modelos.", examples=["clientes"])
 
 
 def obter_admin_banco(banco: Banco = Depends(obter_banco)) -> ServicoAdminBanco:

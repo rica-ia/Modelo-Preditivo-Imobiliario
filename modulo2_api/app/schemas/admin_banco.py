@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 Secao = Literal["clientes", "chaves", "faturas", "envios_email", "eventos_comerciais", "avaliacoes", "predicoes",
-                "vendas_historicas"]
+                "vendas_historicas", "modelos"]
 StatusFatura = Literal["paga", "em_aberto", "vencida", "cancelada"]
 Direcao = Literal["asc", "desc"]
 FormatoExportacao = Literal["csv", "json"]

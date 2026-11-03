@@ -1,4 +1,4 @@
-/* Avaliador Imobiliário — tela Banco de dados: explorador por seções, administração e diagrama das 8 tabelas.
+/* Avaliador Imobiliário — tela Banco de dados: explorador por seções, administração e diagrama das 9 tabelas.
    Arquivo independente de app.js: lê a mesma sessão de administrador (2FA ou token) e expõe window.TelaBanco. */
 (function () {
   "use strict";
@@ -108,6 +108,7 @@
   const TITULOS = {
     clientes: "Clientes", chaves: "Chaves de API emitidas", faturas: "Faturamento", envios_email: "E-mails enviados",
     eventos_comerciais: "Histórico comercial", avaliacoes: "Laudos de avaliação", predicoes: "Uso da API", vendas_historicas: "Vendas reais",
+    modelos: "Modelos (artefatos)",
   };
   const ROTULOS = {
     id: "#", id_venda: "#", cliente_id: "Cliente (id)", cliente_nome: "Cliente", chave_id: "Chave (id)", nome: "Nome", email: "E-mail", empresa: "Empresa",
@@ -120,7 +121,8 @@
     chave_prefixo: "Chave", chaves: "Chaves", sintetico: "Exemplo", cliente_chave_id: "Chave do cliente", id_imovel: "Imóvel", versao_modelo: "Versão do modelo",
     faixa_min: "Faixa mínima", faixa_max: "Faixa máxima", area_terreno_m2: "Terreno (m²)", padrao: "Padrão", condicao: "Conservação", vista: "Vista",
     frente_agua: "Frente para a água", ano_construcao: "Ano de construção", ano_reforma: "Ano da reforma", arquivo: "Arquivo", entrada_json: "Entrada (JSON)",
-    hash_sha256: "Hash SHA-256",
+    hash_sha256: "Hash SHA-256", sha256: "SHA-256", versao: "Versão", nome_arquivo: "Arquivo", tamanho_bytes: "Tamanho (bytes)", formato: "Formato",
+    estimador: "Estimador", treinado_em: "Treinado em", registrado_em: "Registrado em", ativo: "Ativo",
   };
   const rotulo = (c) => ROTULOS[c] || (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, " ");
   const nomeCol = (c) => (typeof c === "string" ? c : (c && (c.nome || c.coluna || c.name)) || "");
@@ -642,12 +644,14 @@
     });
   }
 
-  // ---------------------------------------------------------------- diagrama com as 8 tabelas
+  // ---------------------------------------------------------------- diagrama com as 9 tabelas
   const POS_TABELAS = {
     clientes: [0, 0], chaves: [1, 0], predicoes: [2, 0], vendas_historicas: [3, 0],
     envios_email: [0, 1], eventos_comerciais: [1, 1], faturas: [2, 1], avaliacoes: [3, 1],
+    modelos: [0, 2],
   };
   const DESCRICOES = {
+    modelos: "Artefatos do modelo: o .joblib carregado pela API, guardado como BLOB com versão, sha256, tamanho, métricas e a marca do ativo.",
     eventos_comerciais: "Trilha de auditoria do console comercial: emissão, troca de plano, suspensão, reativação, rotação, revogação e edição.",
     faturas: "Faturas mensais por cliente e chave: competência, plano, valor, predições cobradas, status, emissão, vencimento e pagamento.",
   };
@@ -723,7 +727,7 @@
     completarCartoes();
   }
   function vigiarEsquema() {
-    // app.js redesenha o diagrama no formato de 6 tabelas: substitui pelo de 8 sempre que isso acontecer
+    // app.js redesenha o diagrama no formato de 6 tabelas: substitui pelo de 9 sempre que isso acontecer
     const diag = $("#diagrama"), cartoes = $("#esquema-cartoes");
     if (diag && !diag.dataset.bdVigiado) {
       diag.dataset.bdVigiado = "1";

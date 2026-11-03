@@ -146,3 +146,23 @@ CREATE INDEX IF NOT EXISTS idx_avaliacoes_cep ON avaliacoes (cep);
 CREATE INDEX IF NOT EXISTS idx_avaliacoes_quartos ON avaliacoes (quartos);
 CREATE INDEX IF NOT EXISTS idx_avaliacoes_data ON avaliacoes (criado_em);
 CREATE INDEX IF NOT EXISTS idx_avaliacoes_origem ON avaliacoes (origem);
+
+-- Registro versionado do artefato do modelo: o mesmo .joblib que a API carrega do
+-- disco, guardado aqui como BLOB, com sha256, métricas e a marca do artefato ativo.
+-- Inserido no lifespan só quando o sha256 ainda não consta (idempotente).
+CREATE TABLE IF NOT EXISTS modelos (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    versao         TEXT NOT NULL,
+    nome_arquivo   TEXT NOT NULL,
+    sha256         TEXT NOT NULL UNIQUE,
+    tamanho_bytes  INTEGER NOT NULL,
+    formato        TEXT NOT NULL DEFAULT 'joblib' CHECK (formato IN ('joblib')),
+    estimador      TEXT,
+    metricas_json  TEXT,
+    treinado_em    TEXT,
+    registrado_em  TEXT NOT NULL,
+    ativo          INTEGER NOT NULL DEFAULT 0,
+    artefato       BLOB NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_modelos_ativo ON modelos (ativo);

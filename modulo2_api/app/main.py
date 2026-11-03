@@ -31,6 +31,7 @@ from .erros import registrar_tratadores
 from .routers import acesso, avaliacoes, comercial, comodidades, endereco, mapa3d, modelo, predicao, relatorios, saude
 from .routers import admin_banco
 from .routers import sinteticos
+from .routers import registro_modelo
 from .services.acesso import ServicoAcesso
 from .services.comodidades import ServicoComodidades
 from .services.endereco import ServicoEndereco
@@ -40,6 +41,7 @@ from .services.carga import carga_inicial, limites_de_faixa
 from .services.sinteticos import carga_automatica
 from .services.comercial import ServicoComercial
 from .services.modelo import ServicoModelo
+from .services.registro_modelo import ServicoRegistroModelo
 
 log = logging.getLogger("avaliador")
 
@@ -63,6 +65,16 @@ async def lifespan(app: FastAPI):
         banco.migrar()
     except Exception:
         log.exception("Falha ao preparar o banco SQLite")
+    # Cópia registrada e versionada do artefato (BLOB na tabela modelos); a API segue servindo o .joblib do disco.
+    app.state.registro_modelo = None
+    if servico.carregado:
+        try:
+            registro = ServicoRegistroModelo(banco, servico)
+            ativo = registro.registrar()
+            app.state.registro_modelo = registro
+            log.info("Artefato %s registrado no SQLite (id %s, sha256 %s…)", ativo["versao"], ativo["id"], ativo["sha256"][:12])
+        except Exception:
+            log.exception("Falha ao registrar o artefato do modelo no SQLite")
     try:
         inicio = time.perf_counter()
         inseridos = carga_inicial(banco, servico)
@@ -95,6 +107,7 @@ registrar_tratadores(app)
 app.include_router(saude.router)
 app.include_router(predicao.router)
 app.include_router(modelo.router)
+app.include_router(registro_modelo.router)
 app.include_router(comercial.router)
 app.include_router(relatorios.router)
 app.include_router(avaliacoes.router)

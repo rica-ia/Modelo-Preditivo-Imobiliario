@@ -74,7 +74,7 @@ def test_secoes_whitelist_e_campos_sensiveis(cliente, emitido):
     assert resposta.status_code == 200
     secoes = {s["secao"]: s for s in resposta.json()}
     assert list(secoes) == ["clientes", "chaves", "faturas", "envios_email", "eventos_comerciais", "avaliacoes",
-                            "predicoes", "vendas_historicas"]
+                            "predicoes", "vendas_historicas", "modelos"]
     assert secoes["faturas"]["titulo"] == "Faturamento"
     assert secoes["clientes"]["total"] >= 1
     assert "hash_sha256" not in secoes["chaves"]["colunas"]
