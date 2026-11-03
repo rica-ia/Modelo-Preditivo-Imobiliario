@@ -7,8 +7,8 @@
   <meta name="description" content="Avaliação instantânea de imóveis por modelo preditivo servido em API REST.">
   <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="/assets/app.css?v=3">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="/assets/app.css?v=7">
   <script>
     // Aplica o tema salvo antes da pintura para evitar o "piscar" de cores.
     try {
@@ -164,7 +164,7 @@
 
         <div class="coluna-dir">
           <div class="cartao mapa-cartao"><div id="mapa-avaliar" class="mapa" aria-label="Mapa para posicionar o imóvel"></div>
-            <p class="dica">Clique no mapa para mover o imóvel.</p></div>
+            <p class="dica">Clique no mapa para mover o imóvel e avaliar na hora.</p></div>
           <div class="cartao resultado" id="resultado" aria-live="polite">
             <div class="vazio" id="resultado-vazio">
               <span class="ic-grande">⌂</span>
@@ -179,7 +179,7 @@
     <section class="view" data-view="simulador" hidden>
       <div class="titulo-view">
         <h2>Simulador de cenários</h2>
-        <p>Parte do imóvel do formulário de avaliação e mede, numa única chamada em lote, quanto cada melhoria altera o preço estimado.</p>
+        <p>Parte do imóvel do formulário de avaliação e mede, numa única chamada em lote, quanto cada melhoria altera o preço estimado. Clique numa barra para aplicar o cenário ao formulário.</p>
       </div>
       <div class="cartao">
         <div class="sim-topo">
@@ -195,11 +195,17 @@
     <section class="view" data-view="mapa" hidden>
       <div class="titulo-view">
         <h2>Mapa de valor</h2>
-        <p>Preço mediano do metro quadrado por CEP, calculado a partir das vendas históricas usadas no treino. O tamanho do círculo acompanha o número de vendas.</p>
+        <p>Preço mediano do metro quadrado por CEP nas vendas históricas. O tamanho do círculo acompanha o número de vendas. Clique num círculo ou numa barra para ligar os dois; clique em qualquer outro ponto para estimar o imóvel do formulário naquele local.</p>
       </div>
-      <div class="cartao mapa-cartao">
-        <div id="mapa-valor" class="mapa mapa-grande" aria-label="Mapa de valor por CEP"></div>
-        <div class="legenda" id="legenda-mapa"></div>
+      <div class="layout-mapa">
+        <div class="cartao mapa-cartao">
+          <div id="mapa-valor" class="mapa mapa-grande" aria-label="Mapa de valor por CEP"></div>
+          <div class="legenda" id="legenda-mapa"></div>
+        </div>
+        <div class="cartao ranking-cartao">
+          <div class="codigo-topo"><h3 class="cartao-titulo">Ranking de US$/m² por CEP</h3><span class="chip" id="cep-ativo">CEP —</span></div>
+          <div class="ranking-scroll" id="ranking-scroll"><div class="ranking-alto" id="ranking-alto"><canvas id="graf-ranking" aria-label="Ranking de preço por metro quadrado por CEP"></canvas></div></div>
+        </div>
       </div>
     </section>
 
@@ -213,6 +219,7 @@
       <div class="grade-2">
         <div class="cartao">
           <h3 class="cartao-titulo">Variáveis que mais pesam no preço</h3>
+          <p class="nota">Clique numa variável para ir ao campo correspondente no formulário.</p>
           <div class="grafico-alto"><canvas id="graf-imp" aria-label="Importância das variáveis"></canvas></div>
         </div>
         <div class="cartao">
@@ -288,8 +295,8 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="/assets/app.js?v=3"></script>
+  <script src="/assets/app.js?v=7"></script>
 </body>
 </html>

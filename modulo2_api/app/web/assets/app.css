@@ -224,14 +224,30 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 24px; }
 .mapa { height: 300px; border-radius: 14px; overflow: hidden; z-index: 0; background: var(--surface-3); }
 .mapa-grande { height: min(68vh, 620px); }
 .dica { margin: 8px 6px 2px; font-size: 13px; color: var(--muted); }
-.leaflet-container { font-family: var(--fonte); }
-.leaflet-tile-pane { filter: saturate(.85); }
-:root[data-theme="dark"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.6); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.6); }
+.maplibregl-map { font-family: var(--fonte); }
+.maplibregl-popup-content {
+  background: var(--surface); color: var(--text); border-radius: 14px; box-shadow: var(--shadow-hover);
+  padding: 12px 14px; font-size: 13.5px; line-height: 1.45; border: 1px solid var(--line);
 }
-.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
-.leaflet-popup-content { margin: 12px 14px; font-size: 13.5px; line-height: 1.45; }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip, .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip, .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: var(--surface); }
+.maplibregl-popup-anchor-top .maplibregl-popup-tip, .maplibregl-popup-anchor-top-left .maplibregl-popup-tip, .maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: var(--surface); }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--surface); }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--surface); }
+.maplibregl-popup-close-button { color: var(--muted); font-size: 18px; padding: 0 6px; }
+.maplibregl-ctrl-attrib { font-size: 11px; }
+.pop-preco { font-size: 20px; font-weight: 700; letter-spacing: -.02em; display: block; margin: 2px 0; }
+.pop-sub { color: var(--muted); font-size: 12.5px; }
+.pop-btn { margin-top: 8px; border: 0; background: var(--accent); color: #fff; font: inherit; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+.marcador-imovel { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); border: 4px solid #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, .35); }
+.layout-mapa { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.layout-mapa > .cartao { margin-bottom: 0; }
+.ranking-cartao { padding-bottom: 12px; }
+.ranking-scroll { height: min(64vh, 590px); overflow-y: auto; overscroll-behavior: contain; }
+.ranking-alto { position: relative; }
+.chip { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--accent-wash); color: var(--accent); white-space: nowrap; }
+.pulsar { animation: pulsar 1.2s ease 2; border-radius: 14px; }
+@keyframes pulsar { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 40% { box-shadow: 0 0 0 6px var(--accent-wash), 0 0 0 2px var(--accent); } }
+.tabela tr.ativo td { background: var(--accent-wash); font-weight: 600; }
 .legenda { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 8px 4px; font-size: 13px; color: var(--muted); }
 .legenda i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 5px; }
 
@@ -320,7 +336,8 @@ pre {
   .nav::-webkit-scrollbar { display: none; }
   .tema { margin-left: auto; }
   .hero { grid-template-columns: 1fr; gap: 24px; }
-  .layout-avaliar { grid-template-columns: 1fr; }
+  .layout-avaliar, .layout-mapa { grid-template-columns: 1fr; }
+  .ranking-scroll { height: 420px; }
   .coluna-dir { position: static; }
 }
 @media (max-width: 760px) {
@@ -332,6 +349,7 @@ pre {
   .lead { font-size: 17px; }
   .kpi strong { font-size: 26px; }
   .grafico-alto { height: 280px; }
+  .mapa-grande { height: 440px; }
 }
 @media (max-width: 400px) {
   .marca span { font-size: 15px; }
