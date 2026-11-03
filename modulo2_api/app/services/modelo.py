@@ -24,7 +24,7 @@ import joblib
 import pandas as pd
 
 from ..config import M2_POR_SQFT, REFERENCIA_MERCADO
-from ..schemas.imovel import FaixaPreco, ImovelEntrada, PrevisaoSaida
+from ..schemas.imovel import EXEMPLO_IMOVEL, FaixaPreco, ImovelEntrada, PrevisaoSaida
 from .excecoes import ModeloIndisponivelError, RegraDeNegocioError
 
 ANO_LIMITE_BASE = 2015
@@ -61,24 +61,27 @@ class ServicoModelo:
         self._ceps = set(self.metricas["ceps_conhecidos"])
         self.carregado_em = datetime.now(timezone.utc)
 
+    def aquecer(self) -> None:
+        """Faz uma predição de exemplo na subida, para a 1ª requisição real não pagar a inicialização."""
+        self.prever([ImovelEntrada(**EXEMPLO_IMOVEL)])
+
     def descarregar(self) -> None:
         self.modelo = None
 
     # ## Regras de negócio
     def _validar_regras(self, imovel: ImovelEntrada, prefixo: str = "") -> None:
+        problema = None
         if imovel.area_porao_m2 >= imovel.area_util_m2:
-            raise RegraDeNegocioError(f"{prefixo}a área do porão deve ser menor que a área útil.")
-        if imovel.ano_reforma is not None:
-            if imovel.ano_reforma < imovel.ano_construcao:
-                raise RegraDeNegocioError(f"{prefixo}o ano da reforma é anterior ao ano de construção.")
-            if imovel.ano_reforma > ANO_LIMITE_BASE:
-                raise RegraDeNegocioError(
-                    f"{prefixo}o ano da reforma passa de {ANO_LIMITE_BASE}, último ano da base de treino."
-                )
-        if imovel.cep not in self._ceps:
-            raise RegraDeNegocioError(
-                f"{prefixo}o CEP {imovel.cep} não pertence à região de King County usada no treino."
-            )
+            problema = "a área do porão deve ser menor que a área útil."
+        elif imovel.ano_reforma is not None and imovel.ano_reforma < imovel.ano_construcao:
+            problema = "o ano da reforma é anterior ao ano de construção."
+        elif imovel.ano_reforma is not None and imovel.ano_reforma > ANO_LIMITE_BASE:
+            problema = f"o ano da reforma passa de {ANO_LIMITE_BASE}, último ano da base de treino."
+        elif imovel.cep not in self._ceps:
+            problema = f"o CEP {imovel.cep} não pertence à região de King County usada no treino."
+        if problema:
+            mensagem = f"{prefixo}{problema}"
+            raise RegraDeNegocioError(mensagem[0].upper() + mensagem[1:])
 
     # ## Conversão do contrato da API para as colunas brutas do pipeline
     def _para_colunas_do_modelo(self, imovel: ImovelEntrada) -> dict:

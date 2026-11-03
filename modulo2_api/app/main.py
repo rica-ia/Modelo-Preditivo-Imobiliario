@@ -30,6 +30,7 @@ async def lifespan(app: FastAPI):
     servico = ServicoModelo(ARQUIVO_MODELO, ARQUIVO_METRICAS, ARQUIVO_REGIOES)
     try:
         servico.carregar()
+        servico.aquecer()
         log.info("Modelo %s carregado na memória", servico.versao)
     except Exception:
         # A API sobe mesmo assim: /health mostra o problema e /v1/predict devolve 503.
