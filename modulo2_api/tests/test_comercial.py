@@ -109,7 +109,9 @@ def test_email_em_modo_arquivo(cliente, nova_chave):
     assert Path(arquivo).suffix == ".eml" and Path(arquivo).exists()
     previa = cliente.get(f"/v1/comercial/emails/{email['envio_id']}", headers=ADMIN)
     assert previa.status_code == 200
-    assert "X-API-Key" in previa.text and nova_chave["chave"] in previa.text
+    # A cópia em disco nunca guarda a chave completa: só o prefixo, marcado como oculto
+    assert nova_chave["chave"] not in previa.text and "(oculta)" in previa.text
+    assert nova_chave["chave"] not in Path(arquivo).read_text(encoding="utf-8", errors="ignore")
 
 
 def test_relatorios_e_esquema_200(cliente):
@@ -122,3 +124,10 @@ def test_relatorios_e_esquema_200(cliente):
     nomes = {t["nome"] for t in esquema.json()["tabelas"]}
     assert {"clientes", "chaves", "predicoes", "envios_email"} <= nomes
     assert cliente.get("/v1/relatorios/predicoes", params={"limite": 500}).status_code == 422
+
+
+def test_plano_invalido_422_em_portugues(cliente):
+    resposta = cliente.post("/v1/comercial/chaves", headers=ADMIN,
+                            json={"nome": "Plano", "email": "plano@exemplo.com", "plano": "ouro"})
+    assert resposta.status_code == 422
+    assert "Input should" not in resposta.text and "opção inválida" in resposta.text
